@@ -16,7 +16,7 @@ Production-ready Zod v4 patterns for reusable, type-safe validation with minimal
 - Parsing untrusted input from APIs, forms, env vars, or external systems
 - Standardizing coercion, transforms, and cross-field validation
 - Building reusable schema utilities across teams
-- Integrating React Hook Form with Zod using `zodResolver`
+- Integrating TanStack Form with Zod (zod-validator)
 
 ## Instructions
 
@@ -146,25 +146,27 @@ export const UserPreferencesSchema = z.object({
 });
 ```
 
-### 6) React Hook Form integration (`zodResolver`)
+### 6) TanStack Form integration (Standard Schema)
 
 ```tsx
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 
 const ProfileFormSchema = z.object({
-  name: z.string().min(2, { error: "Name too short" }),
-  email: z.email({ error: "Invalid email" }),
+  name: z.string().min(2, { message: "Name too short" }),
+  email: z.string().email({ message: "Invalid email" }),
   age: z.coerce.number().int().min(18),
 });
 
-type ProfileFormInput = z.input<typeof ProfileFormSchema>;
-type ProfileFormOutput = z.output<typeof ProfileFormSchema>;
-
-const form = useForm<ProfileFormInput, unknown, ProfileFormOutput>({
-  resolver: zodResolver(ProfileFormSchema),
-  criteriaMode: "all",
+const form = useForm({
+  validators: {
+    onChange: ProfileFormSchema,
+  },
+  defaultValues: {
+    name: "",
+    email: "",
+    age: 0,
+  },
 });
 ```
 
@@ -189,7 +191,7 @@ function parseAndHandle(input: unknown) {
 }
 ```
 
-> **Tip**: For advanced discriminated union patterns and complex React Hook Form workflows, see `references/advanced-patterns.md`.
+> **Tip**: For advanced discriminated union patterns and complex TanStack Form workflows, see `references/advanced-patterns.md`.
 
 ## Best Practices
 

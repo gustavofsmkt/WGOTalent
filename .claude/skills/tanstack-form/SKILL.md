@@ -9,16 +9,15 @@ description: Headless, performant, and type-safe form state management for TS/JS
 TanStack Form is a headless form library with deep TypeScript integration. It provides field-level and form-level validation (sync/async), array fields, linked/dependent fields, fine-grained reactivity, and schema validation adapter support (Zod, Valibot, Yup).
 
 **Package:** `@tanstack/react-form`
-**Adapters:** `@tanstack/zod-form-adapter`, `@tanstack/valibot-form-adapter`
+**Adapters:** Standard Schema is preferred. Only use `@tanstack/zod-form-adapter` if the installed version requires it.
 **Status:** Stable (v1)
 
 ## Installation
 
 ```bash
 npm install @tanstack/react-form
-# Optional schema adapters:
-npm install @tanstack/zod-form-adapter zod
-npm install @tanstack/valibot-form-adapter valibot
+# Zod is typically used via Standard Schema
+npm install zod
 ```
 
 ## Core: useForm
@@ -159,12 +158,17 @@ function MyForm() {
 ### Schema Validation (Zod)
 
 ```tsx
-import { zodValidator } from '@tanstack/zod-form-adapter'
 import { z } from 'zod'
 
 const form = useForm({
   defaultValues: { email: '', age: 0 },
-  validatorAdapter: zodValidator(),
+  // validatorAdapter is not needed if using Standard Schema in modern versions
+  validators: {
+    onChange: z.object({
+      email: z.string().email(),
+      age: z.number().min(18)
+    })
+  },
   onSubmit: async ({ value }) => { /* ... */ },
 })
 
@@ -174,8 +178,6 @@ const form = useForm({
     onChange: z.string().email('Invalid email'),
     onBlur: z.string().min(1, 'Required'),
   }}
-/>
-
 <form.Field
   name="age"
   validators={{
