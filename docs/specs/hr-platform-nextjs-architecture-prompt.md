@@ -5,7 +5,7 @@ You are a senior Next.js/full-stack engineer. Build the MVP of an HR platform th
 
 ## Schema reference
 The full data model is defined separately and is the source of truth for field names, types, and constraints — do not redefine or guess at fields:
-- `bd_triagem_proposta.ts` — canonical TypeScript interface spec (field-level, with SQL type comments)
+- `db_triagem_proposta.ts` — canonical TypeScript interface spec (field-level, with SQL type comments) *(Nota editorial: corrigido o nome do arquivo de `bd_triagem_proposta.ts` para `db_triagem_proposta.ts` no import/referência)*
 - `lib/db/schema.ts` — Drizzle implementation of the same model (generate this from the spec above if it doesn't exist yet)
 
 Entities: `Departamento`, `Cargo`, `Vaga`, `Candidato`, `CandidatoFormacao`, `CandidatoExperienciaProfissional`, `CandidatoCertificacao`, `Triagem`, `AvaliacaoIA`. Relationships: Departamento 1—N Cargo 1—N Vaga. Candidato 1—N Triagem N—1 Vaga. Triagem 1—1 AvaliacaoIA. Candidato 1—N Formacao/Experiencia/Certificacao.
