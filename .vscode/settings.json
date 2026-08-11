@@ -1,0 +1,32 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/coverage": true,
+    "**/storage": true,
+    "**/logs": true,
+    "**/volumes": true,
+    "**/*.tmp": true,
+    "**/*.log": true,
+    "**/tmp": true,
+    "**/temp": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/coverage": true,
+    "**/storage": true,
+    "**/logs": true,
+    "**/volumes": true,
+    "**/*.tmp": true,
+    "**/*.log": true,
+    "**/tmp": true,
+    "**/temp": true
+  }
+}
