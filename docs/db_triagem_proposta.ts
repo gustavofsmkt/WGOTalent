@@ -108,7 +108,8 @@ export interface Candidato {
   origem: "email" | "manual" | "indicacao"; // VARCHAR NOT NULL DEFAULT 'manual' — como o candidato entrou no sistema
  
   curriculo_arquivo_key: string | null; // TEXT — chave/caminho no StorageProvider, NÃO é URL pública
-  texto_curriculo_extraido: string;     // TEXT // precisamos?
+  texto_curriculo_extraido: string | null; // TEXT — texto bruto do PDF. Necessário para reprocessamento e auditoria (PII: não exibir em logs/API)
+  // NOTA (ADR 0001): json_completo_agente NÃO é armazenado no banco relacional para poupar storage e evitar redundância.
 }
  
 // ---------------------------------------------------------------------------
