@@ -29,3 +29,13 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Descartadas instalações desnecessárias (`@tanstack/react-form-nextjs`, `@tanstack/zod-form-adapter`, React Hook Form).
 - Criado o documento `docs/FORM_STACK.md` registrando as versões, decisões e padrões de integração client/server com Server Actions.
 
+## Marco: TASK-026 — Extensão do Ambiente Tipado do T3
+*Data: 2026-08-12*
+
+- Estendida a validação tipada em `src/env.js` com as variáveis server-side `WEBHOOK_N8N_SECRET` e `STORAGE_ROOT`.
+- Preservada `DATABASE_URL` e mantido `src/env.js` como única fonte de validação de variáveis de ambiente.
+- Removidas variáveis de exemplo do T3 (`NEXT_PUBLIC_CLIENTVAR`).
+- Atualizado o arquivo `.env.example` refletindo os novos esquemas e valores padrão para desenvolvimento.
+- Adicionados testes automatizados em `src/env.test.ts` para verificar o parsing, tratamento de falhas e garantir que segredos não sejam expostos em mensagens de erro.
+
+
