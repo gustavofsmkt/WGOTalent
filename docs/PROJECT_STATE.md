@@ -3,12 +3,16 @@
 ## Natureza do Projeto
 **Greenfield** (Novo projeto construído do zero, focado em MVP rápido)
 
-## Stack Congelada
-- **Framework**: Next.js 14+ (App Router)
-- **Linguagem**: TypeScript
-- **Banco de Dados**: PostgreSQL
-- **ORM**: Drizzle ORM
-- **Estilização**: Tailwind CSS
+## Stack Congelada & Versões Instaladas
+> **Nota de Arquitetura**: O `Create T3 App` foi utilizado **exclusivamente como scaffolder** para gerar a fundação integrada. A aplicação **não** utiliza tRPC, Prisma ou Auth.js/NextAuth.
+
+- **Framework**: Next.js 15.2.3 (App Router)
+- **Linguagem**: TypeScript 5.8.2
+- **UI / React**: React 19.0.0
+- **Estilização**: Tailwind CSS 4.0.15 (`@tailwindcss/postcss`)
+- **Banco de Dados**: PostgreSQL (Driver `postgres` 3.4.4)
+- **ORM**: Drizzle ORM 0.41.0 (`drizzle-kit` 0.30.5)
+- **Validação de Env & Dados**: Zod 3.24.2 + `@t3-oss/env-nextjs` 0.12.0
 
 ## Arquitetura Resumida
 A arquitetura é focada em convenções estritas do **Next.js App Router**:

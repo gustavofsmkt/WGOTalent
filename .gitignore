@@ -25,6 +25,10 @@ volumes/
 *.sqlite
 *.sqlite-journal
 
+# Build outputs & TypeScript build info
+.vercel
+*.tsbuildinfo
+
 # OS & Editor temporary files
 .DS_Store
 Thumbs.db
