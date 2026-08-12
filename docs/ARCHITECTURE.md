@@ -56,7 +56,8 @@ src/
 ├── actions/      # Server Actions isoladas
 ├── components/   # UI Components (Client e Server)
 ├── lib/          # Utilitários, hooks, providers e integrações externas
-├── server/db/    # Configuração do Drizzle ORM e definição de schemas
+├── server/
+│   └── db/       # Configuração do Drizzle ORM e definição de schemas
 ├── styles/       # CSS global (Tailwind)
 └── env.js        # Validação de variáveis de ambiente com T3 Env
 ```
