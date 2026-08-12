@@ -20,3 +20,12 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Confirmada a proibição e ausência de orientações que exigissem Prisma, Supabase, tRPC, Auth.js/NextAuth no MVP, n8n com acesso de escrita direta ao banco de dados, API CRUD interna, e hard deletes.
 - Substituídas instruções obsoletas (ex: React Hook Form e adapter Zod específico em skills) pelas abordagens padrão adotadas (TanStack Form e Zod v4).
 - Ajustadas referências no `implementer.agent.md` e em skills fornecidas para alinhar-se à arquitetura pretendida.
+
+## Marco: TASK-024 — Instalação do TanStack Form e Consolidação do Zod
+*Data: 2026-08-12*
+
+- Instalado `@tanstack/react-form` (`1.33.5`) para gerenciamento de formulários no lado do cliente.
+- Mantido o `zod` (`3.24.2`) como validador único, aproveitando o suporte nativo ao protocolo Standard Schema (`~standard`).
+- Descartadas instalações desnecessárias (`@tanstack/react-form-nextjs`, `@tanstack/zod-form-adapter`, React Hook Form).
+- Criado o documento `docs/FORM_STACK.md` registrando as versões, decisões e padrões de integração client/server com Server Actions.
+

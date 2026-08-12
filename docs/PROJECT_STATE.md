@@ -13,6 +13,7 @@
 - **Banco de Dados**: PostgreSQL (Driver `postgres` 3.4.4)
 - **ORM**: Drizzle ORM 0.41.0 (`drizzle-kit` 0.30.5)
 - **Validação de Env & Dados**: Zod 3.24.2 + `@t3-oss/env-nextjs` 0.12.0
+- **Formulários**: TanStack Form 1.33.5 (`@tanstack/react-form`)
 
 ## Arquitetura Resumida
 A arquitetura é focada em convenções estritas do **Next.js App Router**:
