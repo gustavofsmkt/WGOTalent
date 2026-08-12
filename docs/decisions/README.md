@@ -4,7 +4,8 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 
 ## Índice
 
-*(Nenhum ADR criado até o momento)*
+- [0001: Retenção de Texto do Currículo e JSON do Agente](./0001-resume-text-and-agent-json-retention.md)
+- [0002: Comportamento do Webhook para Candidato com Soft Delete](./0002-webhook-deleted-candidate-conflict.md)
 
 ---
 
