@@ -926,31 +926,46 @@ Faça commit `docs(adr): correct disponibilidade_horarios to text`.
 ```text
 Crie ADR documentando os mapeamentos obrigatórios na borda dos dois Route Handlers inbound.
 
-Mapeamentos a decidir e documentar:
+### Mapeamentos do webhook /api/webhooks/n8n/triagem
 
-1. `fase` (n8n Triagem) → `etapa` (DB):
-   - n8n usa: triagem_ia, revisao_rh, entrevista_rh, entrevista_tecnica, proposta, contratado, reprovado, banco_talentos, desistencia.
-   - DB usa: curriculo, testes, entrevista_rh, entrevista_gestor, finalizado.
-   - Decisão recomendada: receber `fase` do n8n e mapear para o enum canônico antes de persistir. Mapeamento inicial: `triagem_ia` → `curriculo`; outros conforme análise dos ADRs. Rejeitar valores não mapeados com 422.
+O payload real enviado pelo n8n Triagem é um **array** onde cada item tem um wrapper `output`:
+```json
+[{ "output": { "candidato_id": "uuid", "vaga_id": "uuid", ... } }]
+```
 
-2. `recomendacao` (n8n Triagem) → `resultado` (DB):
-   - n8n: "Aprovar para Entrevista" | "Aprovar com Ressalvas" | "Banco de Talentos" | "Reprovar".
-   - DB: em_andamento | aprovado | reprovado | desistente | banco_talentos.
-   - Decisão recomendada: "Aprovar para Entrevista" e "Aprovar com Ressalvas" → `em_andamento` (triagem segue; IA aprovou); "Banco de Talentos" → `banco_talentos`; "Reprovar" → `reprovado`.
+1. `etapa` (DB) — **ausente no payload n8n**:
+   - O n8n não envia campo `fase` ou `etapa`.
+   - Decisão: o Route Handler define `etapa = 'curriculo'` como valor fixo para toda triagem criada via webhook IA. Triagens avançam de etapa manualmente pelo RH via Server Action.
 
-3. `pontos_fortes`, `requisitos_faltantes`, `criterios_eliminatorios_falhos`, `alertas_avaliacao` (arrays):
-   - n8n envia como `string[]`.
-   - DB armazena como `TEXT`.
-   - Transformação: filtrar itens vazios, juntar por `\n`.
+2. `resultado` (DB) — **ausente no payload n8n**:
+   - O n8n não envia `recomendacao` nem `resultado`.
+   - Decisão: o Route Handler define `resultado = 'em_andamento'` como valor fixo. O n8n só chama este webhook quando score > 65; candidatos reprovados não geram registro de Triagem.
 
-4. `area_interesse` (string) → `area_interesse_id` (FK Departamento):
+3. `pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos`, `alertas` — **já chegam como TEXT**:
+   - O n8n envia essas strings com newlines embutidos (`\n`), não como arrays.
+   - Nome canônico no payload: `eliminatorios_falhos` (não `criterios_eliminatorios_falhos`).
+   - Transformação: string vazia `""` → persistir como `null`.
+
+4. `score_ia` — **integer no payload, NUMERIC(5,2) no DB**:
+   - Cast direto; nenhuma perda de precisão esperada.
+
+5. `candidato_id` e `vaga_id` — **UUIDs já resolvidos**:
+   - O n8n envia os IDs diretos; não há lookup necessário.
+
+### Mapeamentos do webhook /api/webhooks/n8n/candidatos
+
+6. `area_interesse` (string em `referencias`) → `area_interesse_id` (FK Departamento):
    - n8n envia: "Administrativo" | "Comercial" | "Recursos Humanos" | "Técnico/Operacional".
    - Plataforma faz lookup `Departamento.nome ILIKE :valor` → obtém `id`.
    - Se não encontrar: logar aviso e salvar `NULL` (campo é nullable).
 
-5. `criterios_wgo_atendidos` (objeto n8n):
-   - Contém: cnh_b, disponibilidade_viagem, nr10_nr35, candidato_mesma_cidade.
-   - Decisão: serializar como parte de `alertas` TEXT ou criar campo JSON dedicado — decidir conforme ADR, sem inventar coluna não canônica.
+7. `cargo_interesse` (string em `referencias`) → `cargo_interesse_id` (FK Cargo):
+   - Plataforma faz lookup `Cargo.titulo ILIKE :valor` → obtém `id`.
+   - Se não encontrar: logar aviso e salvar `NULL`.
+
+8. `disponibilidade_horarios` — **boolean ou string no payload**:
+   - Valor `false` (boolean) ou `null` → persistir `NULL`.
+   - String descritiva → persistir como TEXT.
 
 Documente o mapeamento completo. Não implementar ainda.
 Faça commit `docs(adr): define n8n to db field mapping`.
@@ -994,9 +1009,38 @@ Crie `docs/N8N_WEBHOOK_CONTRACT.md` documentando os três endpoints de integraç
 
 ### Endpoint 1 — POST /api/webhooks/n8n/candidatos (inbound de Cadastro_Candidato)
 
-Recebe: dados estruturados do currículo.
-Campos obrigatórios: nome, email, celular, + dados pessoais e de disponibilidade mapeados.
-Campos opcionais: texto_curriculo_extraido, curriculo_arquivo (base64 ou URL), formações, experiências, certificações.
+Recebe: array de candidatos estruturados. O payload é sempre um array JSON — processar cada item individualmente.
+
+Estrutura do payload (array de objetos):
+```json
+[
+  {
+    "candidato": {
+      "nome": "...", "email": "...", "celular": "...",
+      "disponibilidade_horarios": false,
+      "texto_curriculo_extraido": "...",
+      "curriculo_arquivo_key": null,
+      "cargo_interesse_id": null,
+      "area_interesse_id": null
+    },
+    "formacoes": [
+      { "titulo": "...", "instituicao": null, "area_formacao": "...", "data_inicio": "", "data_termino": null }
+    ],
+    "experiencias_profissionais": [
+      { "empresa": "...", "cargo_titulo": "...", "descricao": null, "data_entrada": "", "data_saida": null }
+    ],
+    "certificacoes": [],
+    "referencias": {
+      "cargo_interesse": "...",
+      "area_interesse": "..."
+    }
+  }
+]
+```
+
+Campos obrigatórios por item: `candidato.nome`, `candidato.email`, `candidato.celular`.
+`cargo_interesse_id` e `area_interesse_id` vêm como null no candidato; os valores reais estão em `referencias` como strings para lookup.
+`disponibilidade_horarios` pode ser boolean false (→ null) ou string descritiva (→ persistir como TEXT).
 Header obrigatório: x-webhook-secret (shared secret).
 Idempotência: x-idempotency-key obrigatório.
 Respostas: 200 (criado/atualizado), 409 (candidato soft-deleted bloqueado), 422 (validação), 401 (secret inválido).
@@ -1004,10 +1048,33 @@ Após persistir: disparar Classificador de forma assíncrona.
 
 ### Endpoint 2 — POST /api/webhooks/n8n/triagem (inbound de Triagem)
 
-Recebe: resultado da avaliação IA (candidato + triagem).
-Campos obrigatórios: candidato_id, vaga_id, score_aderencia (0–100), parecer_ia, recomendacao, fase.
-Campos adicionais: pontos_fortes[], requisitos_faltantes[], criterios_eliminatorios_falhos[], alertas_avaliacao[], vaga_foi_inferida.
-Mapeamentos aplicados: fase→etapa, recomendacao→resultado, arrays→TEXT (conforme ADR de mapeamento).
+Recebe: array de resultados de avaliação IA. O payload é sempre um array onde cada item tem um wrapper `output`:
+```json
+[
+  {
+    "output": {
+      "candidato_id": "uuid",
+      "vaga_id": "uuid",
+      "vaga_foi_inferida": false,
+      "pontos_fortes": "texto com\nnewlines",
+      "requisitos_faltantes": "",
+      "eliminatorios_falhos": "",
+      "alertas": "texto",
+      "score_ia": 95,
+      "parecer_ia": "texto longo"
+    }
+  }
+]
+```
+
+Campos obrigatórios por item: `output.candidato_id`, `output.vaga_id`, `output.score_ia`, `output.parecer_ia`.
+Não há campos `fase`, `recomendacao` nem `motivo` — o handler define os defaults:
+- `etapa = 'curriculo'` (fixo para triagem IA)
+- `resultado = 'em_andamento'` (n8n só chama quando score > 65)
+- `motivo = null`
+`pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos` e `alertas` chegam como TEXT com newlines embutidos (não arrays). String vazia → null.
+Header obrigatório: x-webhook-secret (shared secret).
+Idempotência: x-idempotency-key obrigatório.
 Resposta: 200, 422, 401, 409 (idempotência).
 
 ### Endpoint 3 — POST <CLASSIFICADOR_N8N_WEBHOOK_URL> (outbound da plataforma)
@@ -1460,9 +1527,30 @@ Faça commit `feat(validation): enforce screening state invariants`.
 
 ```text
 Crie `src/lib/validation/n8n-webhook.ts` usando `docs/N8N_WEBHOOK_CONTRACT.md`.
-Payload estrito: candidato, filhos, vaga/referência, triagem, avaliação IA, arquivo/metadados e dados de idempotência definidos.
+
+Schema do payload inbound de Candidato (array de itens):
+- Raiz: `z.array(z.object({ candidato, formacoes, experiencias_profissionais, certificacoes, referencias }))`
+- `candidato`: campos da spec, com `disponibilidade_horarios` como `z.union([z.boolean(), z.string(), z.null()])` para acomodar boolean false ou string do n8n
+- `formacoes`: array de `{ titulo, instituicao, area_formacao, data_inicio, data_termino }`
+- `experiencias_profissionais`: array de `{ empresa, cargo_titulo, descricao, data_entrada, data_saida }` — atenção ao nome da chave (`profissionais`, não apenas `experiencias`)
+- `certificacoes`: array de `{ titulo, obtida_em, validade }` (pode ser vazio)
+- `referencias`: `{ cargo_interesse: z.string(), area_interesse: z.string() }` — strings livres para lookup; não são IDs
+
+Schema do payload inbound de Triagem (array com wrapper `output`):
+- Raiz: `z.array(z.object({ output: z.object({ ... }) }))`
+- `output.candidato_id`: UUID obrigatório
+- `output.vaga_id`: UUID obrigatório
+- `output.vaga_foi_inferida`: boolean, default false
+- `output.pontos_fortes`: string (pode ser vazia)
+- `output.requisitos_faltantes`: string (pode ser vazia)
+- `output.eliminatorios_falhos`: string (pode ser vazia) — atenção ao nome exato da chave
+- `output.alertas`: string (pode ser vazia)
+- `output.score_ia`: number (0–100)
+- `output.parecer_ia`: string obrigatória
+- **Não há** `fase`, `recomendacao`, `motivo`, `etapa`, `resultado` — esses são definidos pelo handler com defaults fixos
+
 External input é untrusted; use safeParse no handler depois.
-Teste payload válido e inválidos.
+Teste payload válido e inválidos (array com zero itens, output ausente, score fora do range, campos de texto ausentes vs string vazia).
 Faça commit `feat(validation): add n8n webhook schema`.
 ```
 
@@ -2380,9 +2468,15 @@ Faça commit `feat(webhook): add shared secret authentication`.
 
 ```text
 Crie `src/app/api/webhooks/n8n/triagem/route.ts` com POST, auth (shared secret), parse JSON, safeParse Zod com o schema de resultado de avaliação IA e respostas de validação.
+
+O payload é um **array** com wrapper `output` em cada item:
+```json
+[{ "output": { "candidato_id": "uuid", "vaga_id": "uuid", "score_ia": 95, "parecer_ia": "...", ... } }]
+```
+Validar que o array não está vazio. `output` é obrigatório. Não há `fase`, `recomendacao` nem `etapa` no payload — o handler os define na TASK-111.
 Ainda não persistir.
 Sem stack trace/payload completo em log.
-Testes do boundary.
+Testes do boundary: array vazio (422), output ausente (422), score inválido (422), auth correta/incorreta (200/401).
 Faça commit `feat(webhook): add validated triagem route boundary`.
 ```
 
@@ -2397,17 +2491,23 @@ Faça commit `feat(webhook): add validated triagem route boundary`.
 ```text
 Crie `src/app/api/webhooks/n8n/candidatos/route.ts` com POST, auth (mesmo shared secret), parse JSON, safeParse Zod com o schema de dados de currículo estruturado.
 
-Campos do payload conforme contrato Cadastro_Candidato:
-- candidato: { nome, email, celular, disponibilidade_horarios (string|null), ... }
-- formacoes: array
-- experiencias: array
-- certificacoes: array
-- texto_curriculo_extraido: string (conforme ADR-028)
-- curriculo_arquivo: { nome, base64 } ou URL
+O payload é um **array** — validar com o schema de array definido em TASK-061:
+```
+[
+  {
+    candidato: { nome, email, celular, disponibilidade_horarios (boolean|string|null), texto_curriculo_extraido, curriculo_arquivo_key, ... },
+    formacoes: [{ titulo, instituicao, area_formacao, data_inicio, data_termino }],
+    experiencias_profissionais: [{ empresa, cargo_titulo, descricao, data_entrada, data_saida }],
+    certificacoes: [{ titulo, obtida_em, validade }],
+    referencias: { cargo_interesse: string, area_interesse: string }
+  }
+]
+```
 
+Validar que o array não está vazio. `disponibilidade_horarios` é aceito como boolean ou string (coerção ocorre em TASK-109).
 Ainda não persistir.
 Sem stack trace/payload completo em log.
-Testes do boundary.
+Testes do boundary (array vazio, item sem email, disponibilidade_horarios como boolean e como string).
 Faça commit `feat(webhook): add validated candidatos route boundary`.
 ```
 
@@ -2433,23 +2533,32 @@ Faça commit `feat(webhook): enforce idempotent processing`.
 ### Prompt para o Copilot Chat
 
 ```text
-Implemente service/helper do webhook `/api/webhooks/n8n/candidatos` após payload validado:
-- lookup email incluindo deleted_at IS NOT NULL;
-- candidato ativo: update campos aprovados (não sobrescrever campos manuais sem policy);
-- deleted: comportamento do ADR-030 (sem reativação silenciosa);
-- novo: insert com origem='email';
-- sincronizar formações/experiências/certificações sem hard delete.
+Implemente service/helper do webhook `/api/webhooks/n8n/candidatos` após payload validado.
 
-Mapeamentos da borda (conforme ADR-031b):
-- disponibilidade_horarios: já é string; persistir diretamente;
-- area_interesse: string → lookup Departamento.nome → area_interesse_id;
-- cargo_interesse: string → lookup Cargo.titulo → cargo_interesse_id.
+O payload é um array — iterar cada item `{ candidato, formacoes, experiencias_profissionais, certificacoes, referencias }` e para cada um:
 
-Após persistir com sucesso:
+1. **Lookup por email** (incluindo deleted_at IS NOT NULL).
+2. **Candidato ativo**: update campos aprovados (não sobrescrever campos manuais sem policy).
+3. **Candidato deleted**: comportamento do ADR-030 (sem reativação silenciosa, retornar 409).
+4. **Candidato novo**: insert com `origem='email'`.
+5. **Sincronizar filhos** sem hard delete:
+   - `formacoes` ← array `formacoes` do payload
+   - `experiencias` (tabela `candidato_experiencias`) ← array `experiencias_profissionais` do payload (renomear chave na borda)
+   - `certificacoes` ← array `certificacoes` do payload (pode ser vazio)
+
+Mapeamentos obrigatórios na borda (conforme ADR-031b):
+- `disponibilidade_horarios`: se boolean false/null → persistir NULL; se string → persistir como TEXT
+- `referencias.area_interesse` (string) → lookup `Departamento.nome ILIKE :valor` → `area_interesse_id`; se não encontrar → NULL + log
+- `referencias.cargo_interesse` (string) → lookup `Cargo.titulo ILIKE :valor` → `cargo_interesse_id`; se não encontrar → NULL + log
+- `cargo_interesse_id` e `area_interesse_id` do objeto `candidato` sempre chegam null; ignorar em favor dos lookups acima
+- `data_inicio`/`data_entrada` vazios ("") → converter para null antes de persistir
+- `texto_curriculo_extraido`: persistir diretamente conforme ADR-028
+
+Após persistir cada candidato com sucesso:
 - disparar Classificador (vagas abertas da mesma cidade) de forma fire-and-forget;
 - falha no disparo não reverte o upsert.
 
-Testes de integração.
+Testes de integração: candidato novo, candidato existente, candidato deletado, referencias.area_interesse sem match, disponibilidade_horarios boolean vs string.
 Faça commit `feat(webhook): persist normalized candidate payload`.
 ```
 
@@ -2476,25 +2585,28 @@ Faça commit `feat(webhook): store inbound resume safely`.
 ### Prompt para o Copilot Chat
 
 ```text
-Implemente a transaction principal do Route Handler `/api/webhooks/n8n/triagem`:
+Implemente a transaction principal do Route Handler `/api/webhooks/n8n/triagem`.
 
-1. Resolver vaga_id (recebido do payload; validar que existe e não está deleted).
-2. Resolver candidato_id (recebido do payload).
-3. Mapear campos conforme ADR-031b:
-   - `fase` (n8n) → `etapa` (DB): usar tabela de mapeamento do ADR;
-   - `recomendacao` → `resultado`;
-   - `pontos_fortes[]` → `pontos_fortes TEXT` (juntar por \n);
-   - `requisitos_faltantes[]` → `requisitos_faltantes TEXT`;
-   - `criterios_eliminatorios_falhos[]` → `eliminatorios_falhos TEXT`;
-   - `alertas_avaliacao[]` → `alertas TEXT`;
-   - `score_aderencia` → `score_ia`.
-4. Criar Triagem respeitando partial unique (candidato_id, vaga_id) WHERE resultado='em_andamento'.
-5. Criar/upsert AvaliacaoIA 1:1 com a Triagem.
-6. Finalizar estado de idempotência conforme ADR-029.
-7. Rollback completo em erro.
+O payload já foi validado pelo Zod (TASK-107). Para cada item `{ output }` do array:
+
+1. **Extrair campos do `output`**: `candidato_id`, `vaga_id`, `vaga_foi_inferida`, `pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos`, `alertas`, `score_ia`, `parecer_ia`.
+2. **Validar existência**: confirmar que `candidato_id` existe e não está deleted; confirmar que `vaga_id` existe e não está deleted.
+3. **Mapear campos conforme ADR-031b** — sem campos de fase/recomendacao no payload, usar defaults fixos:
+   - `etapa = 'curriculo'` (fixo para triagem IA — n8n não envia fase)
+   - `resultado = 'em_andamento'` (fixo — n8n só chama para score > 65)
+   - `motivo = null`
+   - `pontos_fortes`: string vazia `""` → `null`; string com conteúdo → persistir como-está
+   - `requisitos_faltantes`: string vazia → `null`
+   - `eliminatorios_falhos`: string vazia → `null` (campo é `eliminatorios_falhos`, não `criterios_eliminatorios_falhos`)
+   - `alertas`: string vazia → `null`
+   - `score_ia`: cast para NUMERIC(5,2) — n8n envia como integer
+4. **Criar Triagem** respeitando partial unique `(candidato_id, vaga_id) WHERE resultado='em_andamento'`.
+5. **Criar AvaliacaoIA** 1:1 com a Triagem (`triagem_id` UNIQUE): `vaga_foi_inferida`, `pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos`, `alertas`, `score_ia`, `parecer_ia`.
+6. **Finalizar idempotência** conforme ADR-029.
+7. **Rollback completo** em erro.
 
 n8n não escreve DB; a plataforma é a única que persiste.
-Testes de integração.
+Testes de integração: item válido, candidato_id inexistente (422), vaga_id deleted (422), partial unique já existente (409), string vazia → null, score integer → numeric.
 Faça commit `feat(webhook): persist screening and ai evaluation transaction`.
 ```
 
@@ -2516,10 +2628,10 @@ Finalize os dois Route Handlers:
 - revalidatePath dos candidatos.
 
 `/api/webhooks/n8n/triagem`:
-- 200: triagem + avaliação persitidas;
+- 200: triagem + AvaliacaoIA persistidas para cada item do array;
 - 200: retry idempotente (já processado);
-- 409: partial unique violado de forma inesperada;
-- 422: validação ou campo não mapeável;
+- 409: partial unique `(candidato_id, vaga_id) WHERE resultado='em_andamento'` violado;
+- 422: array vazio, `output` ausente, `candidato_id`/`vaga_id` inexistente ou deleted, score fora de 0–100;
 - 401: secret inválido;
 - 500: erro interno genérico.
 - revalidatePath de triagens e candidato.
@@ -2541,8 +2653,21 @@ Atualize `docs/N8N_WEBHOOK_CONTRACT.md` com:
 Para cada um dos três endpoints (candidatos inbound, triagem inbound, classificador outbound):
 - URL e método;
 - headers obrigatórios (x-webhook-secret, x-idempotency-key quando aplicável);
-- exemplo de request com dados fictícios;
-- mapeamentos de campos aplicados (onde relevante);
+- exemplo de request com dados fictícios (formato exato):
+  - candidatos inbound: array `[{ candidato, formacoes, experiencias_profissionais, certificacoes, referencias }]`
+  - triagem inbound: array `[{ "output": { candidato_id, vaga_id, vaga_foi_inferida, pontos_fortes, requisitos_faltantes, eliminatorios_falhos, alertas, score_ia, parecer_ia } }]`
+  - `referencias.cargo_interesse` e `referencias.area_interesse` são strings para lookup (não IDs)
+  - `disponibilidade_horarios` pode chegar como boolean false ou string descritiva
+  - `data_inicio`/`data_entrada` podem chegar como string vazia ""
+- mapeamentos de campos aplicados:
+  - triagem: `etapa = 'curriculo'` e `resultado = 'em_andamento'` definidos pelo handler (ausentes no payload n8n)
+  - triagem: `eliminatorios_falhos` (chave exata); string vazia `""` → null
+  - triagem: `score_ia` integer → NUMERIC(5,2)
+  - candidatos: `experiencias_profissionais` (n8n) → tabela `candidato_experiencias` (DB)
+  - candidatos: `referencias.area_interesse` → lookup Departamento → `area_interesse_id`
+  - candidatos: `referencias.cargo_interesse` → lookup Cargo → `cargo_interesse_id`
+  - candidatos: `disponibilidade_horarios` boolean false/null → NULL; string → TEXT
+  - candidatos: datas vazias ("") → NULL
 - respostas possíveis;
 - comportamento de retry.
 
@@ -2569,18 +2694,46 @@ Faça commit `docs(webhook): document complete n8n integration`.
 Com DB local e dados fictícios:
 
 Webhook /api/webhooks/n8n/candidatos:
-1. envie payload Cadastro_Candidato fictício;
-2. confirme candidato + formações + experiências + certificações criados;
-3. confirme arquivo de currículo salvo (StorageProvider);
-4. repita mesma idempotency key → zero duplicata;
-5. teste candidato deleted → resposta 409 conforme ADR.
+Use o formato real do n8n (array com um item):
+```json
+[{
+  "candidato": { "nome": "...", "email": "...", "celular": "...", "disponibilidade_horarios": false, ... },
+  "formacoes": [{ "titulo": "...", "instituicao": null, "area_formacao": "...", "data_inicio": "", "data_termino": null }],
+  "experiencias_profissionais": [{ "empresa": "...", "cargo_titulo": "...", "descricao": null, "data_entrada": "", "data_saida": null }],
+  "certificacoes": [],
+  "referencias": { "cargo_interesse": "...", "area_interesse": "Técnico/Operacional" }
+}]
+```
+1. Envie payload fictício com array de 1 candidato;
+2. Confirme candidato + formações + experiências (tabela candidato_experiencias) + certificações criados;
+3. Confirme lookup de referencias.area_interesse → area_interesse_id e referencias.cargo_interesse → cargo_interesse_id;
+4. Confirme disponibilidade_horarios false convertido para NULL;
+5. Confirme arquivo de currículo salvo (StorageProvider) quando curriculo_arquivo_key presente;
+6. Repita mesma idempotency key → zero duplicata;
+7. Teste candidato deleted → resposta 409 conforme ADR.
 
 Webhook /api/webhooks/n8n/triagem:
-6. envie payload Triagem com candidato e vaga existentes;
-7. confirme Triagem criada com etapa/resultado/motivo mapeados;
-8. confirme AvaliacaoIA 1:1 com campos TEXT preenchidos;
-9. repita mesma key → zero duplicata;
-10. valide mapeamentos: fase→etapa, recomendacao→resultado, arrays→TEXT.
+Use o formato real do n8n (array com wrapper `output`):
+```json
+[{
+  "output": {
+    "candidato_id": "<uuid de candidato existente>",
+    "vaga_id": "<uuid de vaga existente>",
+    "vaga_foi_inferida": false,
+    "pontos_fortes": "ponto 1\nponto 2",
+    "requisitos_faltantes": "",
+    "eliminatorios_falhos": "",
+    "alertas": "texto de alerta",
+    "score_ia": 95,
+    "parecer_ia": "parecer completo do agente"
+  }
+}]
+```
+6. Envie payload com array de 1 item com wrapper `output`;
+7. Confirme Triagem criada com `etapa='curriculo'`, `resultado='em_andamento'`, `motivo=null` (defaults fixos);
+8. Confirme AvaliacaoIA 1:1: `score_ia=95.00`, `pontos_fortes` com texto, `requisitos_faltantes=null`, `eliminatorios_falhos=null` (string vazia → null);
+9. Repita mesma idempotency key → zero duplicata;
+10. Valide: string vazia → null, score integer → numeric(5,2), `vaga_foi_inferida` persistido corretamente.
 
 Disparo outbound:
 11. crie vaga nova → confirme que o disparo ao Classificador foi tentado (log ou mock).
