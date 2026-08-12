@@ -1,6 +1,6 @@
 # Arquitetura do Sistema - WGOTalent
 
-Este documento define a arquitetura Greenfield para o projeto WGOTalent. O projeto utiliza o **Create T3 App** apenas como *scaffolder* inicial, adotando um subconjunto específico de tecnologias e descartando ferramentas padrão não necessárias ao nosso domínio.
+Este documento define a arquitetura Greenfield para o projeto WGOTalent, adotando um subconjunto específico de tecnologias voltado ao domínio de triagem de candidatos.
 
 ## 1. Visão Geral da Stack
 
@@ -46,9 +46,9 @@ flowchart TD
 - **Arquivos:** O manuseio de arquivos é feito utilizando um `StorageProvider` chamado a partir de um Route Handler.
 - **Avaliação de IA:** A funcionalidade de `AvaliacaoIA` roda de forma **inline** dentro do processo de Triagem.
 
-## 4. Estrutura de Diretórios (Convenção T3 preservada)
+## 4. Estrutura de Diretórios
 
-A estrutura de diretórios preserva a convenção `src/` original do scaffold, sendo reduzida aos domínios estritamente utilizados:
+A estrutura de diretórios utiliza a convenção `src/`, reduzida aos domínios estritamente utilizados:
 
 ```text
 src/
@@ -59,15 +59,15 @@ src/
 ├── server/
 │   └── db/       # Configuração do Drizzle ORM e definição de schemas
 ├── styles/       # CSS global (Tailwind)
-└── env.js        # Validação de variáveis de ambiente com T3 Env
+└── env.js        # Validação de variáveis de ambiente com @t3-oss/env-nextjs
 ```
 
-## 5. Regras de Limpeza e Substituição (Scaffold T3)
+## 5. Restrições de Stack
 
-O Create T3 App introduz várias dependências que não fazem parte desta arquitetura. Aplica-se a seguinte regra rigorosa:
+Restrições estritas de stack para o MVP:
 
 - **NÃO** introduzir a pasta `src/server/api` ou o pacote **tRPC**.
-- **NÃO** introduzir **Auth.js** (NextAuth) ou qualquer outra biblioteca/camada não listada na base técnica aprovada, apenas porque compõem outras combinações do T3.
+- **NÃO** introduzir **Auth.js** (NextAuth) ou qualquer outra biblioteca/camada não listada na base técnica aprovada.
 
 ## 6. Fronteiras de Confiança (Trust Boundaries)
 

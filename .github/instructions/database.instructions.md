@@ -23,7 +23,7 @@ Este arquivo define as diretrizes estritas para a arquitetura de banco de dados,
 - **Filtro de Leitura (`notDeleted`):** Todas as queries de leitura DEVEM incluir a restrição que ignora registros deletados (ex: `deletedAt is null` ou usando helpers designados).
 
 ## 3. Constraints e Índices
-- **Unique / Partial Unique:** Utilize índices únicos parciais ou constraints conforme a especificação do produto. Exemplo prático: a unicidade de um identificador deve ser parcial e aplicar-se apenas a registros não deletados (condição `where deletedAt is null`).
+- **Unique Simples (não parcial):** `Departamento.nome` e `Candidato.email` são constraints `UNIQUE` simples, não parciais. Um registro com soft delete **ainda bloqueia** o reuso do mesmo nome/e-mail. Este comportamento é **intencional** — não "corrija" para partial unique. Consulte `.claude/skills/layer-db/SKILL.md` para a regra canônica.
 - Assegure-se de alinhar o schema canônico com as ADRs de arquitetura, focando na consistência de tipos e integridade referencial.
 
 ## 4. Seeds de Dados

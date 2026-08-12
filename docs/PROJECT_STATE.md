@@ -6,7 +6,7 @@
 ## Stack Congelada & Versões Instaladas
 > **Nota de Arquitetura**: O `Create T3 App` foi utilizado **exclusivamente como scaffolder** para gerar a fundação integrada. A aplicação **não** utiliza tRPC, Prisma ou Auth.js/NextAuth.
 
-- **Framework**: Next.js 15.2.3 (App Router)
+- **Framework**: Next.js 16+ (App Router)
 - **Linguagem**: TypeScript 5.8.2
 - **UI / React**: React 19.0.0
 - **Estilização**: Tailwind CSS 4.0.15 (`@tailwindcss/postcss`)
@@ -29,5 +29,5 @@ A arquitetura é focada em convenções estritas do **Next.js App Router**:
 - **Implementação da Autenticação**: Estratégia, provedor de login e autorização não fazem parte do MVP, mas as rotas precisam manter o preparo de fronteira para plugar futuramente.
 
 ## Links de Referência
-- [Spec: Modelo de Dados & SQL Types](specs/db_triagem_proposta.ts)
-- [Spec: Prompt Base & Regras de Arquitetura Next.js](specs/hr-platform-nextjs-architecture-prompt.md)
+- [Spec: Modelo de Dados & SQL Types](db_triagem_proposta.ts)
+- [Spec: Prompt Base & Regras de Arquitetura Next.js](hr-platform-nextjs-architecture-prompt.md)

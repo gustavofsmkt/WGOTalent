@@ -30,7 +30,7 @@ Este documento define os padrões obrigatórios para a criação, escrita e manu
 
 ## 5. Fonte de Verdade e Não Duplicação do Schema
 - **Proibido Duplicar Schema:** É estritamente proibido recriar tabelas, colunas, tipos SQL ou relacionamentos do banco de dados em arquivos de documentação Markdown.
-- **Referência Canônica:** O schema canônico é implementado em `src/server/db/schema.ts` (e especificado em `docs/specs/db_triagem_proposta.ts`). A documentação deve apenas direcionar o leitor para esses arquivos-fonte através de links ou citações curtas.
+- **Referência Canônica:** O schema canônico é implementado em `src/server/db/schema.ts` (e especificado em `docs/db_triagem_proposta.ts`). A documentação deve apenas direcionar o leitor para esses arquivos-fonte através de links ou citações curtas.
 
 ## 6. Ciclo de Vida e Cleanup de Documentos Obsoletos (Superseded)
 - **Remoção de Documentos Obsoletos:** Sempre que uma instrução, guia operacional ou roteiro for substituído (*superseded*) por uma nova arquitetura ou processo, o arquivo antigo DEVE ser removido.

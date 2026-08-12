@@ -24,7 +24,7 @@ Este documento estabelece as regras e padrões obrigatórios para a criação, e
 
 ## 3. Testes de Integração (Postgres Local Descartável)
 - **Banco de Dados Real:** Testes de integração que necessitam de persistência devem rodar contra uma instância do PostgreSQL local descartável e isolada (via Docker Compose).
-- **Validação de Constraints:** Valide o comportamento real de índices únicos parciais (`where deletedAt is null`), integridade referencial, soft deletes e transações (`db.transaction()`).
+- **Validação de Constraints:** Valide o comportamento real de índices únicos simples (não parciais) para `Departamento.nome` e `Candidato.email` — um soft delete não libera o slot. Valide também integridade referencial, soft deletes e transações (`db.transaction()`).
 - **Limpeza de Estado:** Garantir que cada teste limpe seus dados ou rode em um estado isolado para evitar contaminação entre testes (flakiness).
 
 ## 4. Testes de Regressão

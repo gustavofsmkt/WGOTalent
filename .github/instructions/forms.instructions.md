@@ -20,7 +20,8 @@ Diretrizes para a criação, validação e manutenção de formulários.
 - **Responsabilidades**:
   - TanStack Form atua na experiência do usuário e estado local (UX).
   - O Zod no lado do servidor é a barreira de segurança (Security Boundary).
-- **Consistência Client/Server**: O mesmo schema Zod deve ser utilizado tanto na validação do client (TanStack Form) quanto no server (Server Actions/Route Handlers). Evite regras divergentes.
+- **Schemas Client/Server**: O schema do servidor (`src/lib/validation/<entity>.ts`, derivado via `createInsertSchema` do `drizzle-orm/zod`) é a fonte de verdade. Para formulários no cliente, crie `src/lib/validation/<entity>.client.ts` estendendo o schema do servidor via `.extend()` para adicionar mensagens em português e ajustes de UX. O schema do servidor re-valida de forma independente no Server Action — a regra de negócio nunca depende apenas do schema do cliente.
+- Consulte o skill [`tanstack-form`](../../.claude/skills/tanstack-form/SKILL.md) para os padrões de integração com Standard Schema.
 - **Triagem e Invariantes**: Use o `superRefine` do Zod para implementar validações de invariantes de negócio mais complexas (como as regras de negócio de Triagem que envolvem múltiplos campos).
 
 ## 3. Experiência de Usuário e Performance (UI/UX)

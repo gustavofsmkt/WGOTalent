@@ -25,9 +25,14 @@ Este documento consolida as definições, versões e padrões de integração da
 - As submissões de formulário são gerenciadas no client pelo TanStack Form e delegadas diretamente para **Server Actions** do Next.js (`'use server'`).
 - Devido a este fluxo simples e direto de Server Actions assíncronas, o pacote `@tanstack/react-form-nextjs` não foi instalado, evitando complexidades desnecessárias no bundle e no fluxo de reidratação.
 
-### 2.4 Fronteira de Segurança e Reuso de Schemas
-- **Client (UX):** O TanStack Form executa o schema Zod via Standard Schema para feedback instantâneo de interface ao usuário.
-- **Server (Security Boundary):** A Server Action re-valida rigorosamente o payload recebido com o mesmo schema Zod antes de qualquer mutação no banco de dados (Drizzle ORM).
+### 2.4 Fronteira de Segurança e Schemas Client/Server
+
+- **Server schema** (`src/lib/validation/<entity>.ts`): derivado via `createInsertSchema` do `drizzle-orm/zod`. Usado pelas Server Actions como barreira de segurança — re-valida de forma independente o payload antes de qualquer mutação no banco.
+- **Client schema** (`src/lib/validation/<entity>.client.ts`): estende o server schema via `.extend()`, sobrescrevendo as mensagens de erro em Português para UX. Apenas importado por componentes de formulário — **nunca** por Server Actions ou Route Handlers.
+- O TanStack Form recebe o client schema diretamente em `validators: { onChange: clientSchema }` via Standard Schema nativo do Zod v4.
+- A regra de negócio (coupling rule do `motivo` na Triagem) é aplicada em ambos os schemas — não delegue validação de invariante apenas ao lado do cliente.
+
+Para padrões técnicos completos de integração, consulte o skill [`.claude/skills/tanstack-form/SKILL.md`](../.claude/skills/tanstack-form/SKILL.md).
 
 ---
 

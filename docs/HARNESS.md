@@ -67,7 +67,7 @@ Os seguintes diretórios e padrões de arquivos estão excluídos para prevenir 
 ### 5.2. Diretórios Preservados (Obrigatórios no Contexto)
 Os diretórios essenciais do projeto permanecem totalmente acessíveis à busca e indexação do contexto:
 - Código-fonte da aplicação: `src/app`, `src/actions`, `src/lib`, `src/server`, `src/components`, `src/styles`.
-- Governança, especificações e esquemas: `docs/`, `specs/` (ou `docs/specs/`), `drizzle/` e pastas de skills (`.github/skills`, `.claude/skills`).
+- Governança, especificações e esquemas: `docs/` (incluindo `docs/db_triagem_proposta.ts`), `drizzle/` e pastas de skills (`.github/skills`, `.claude/skills`).
 
 ---
 
