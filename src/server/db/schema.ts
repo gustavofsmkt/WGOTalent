@@ -230,5 +230,25 @@ export type CandidatoExperiencia = typeof candidatoExperiencias.$inferSelect;
 export type NovaCandidatoExperiencia = typeof candidatoExperiencias.$inferInsert;
 export type CandidatoExperienciaProfissional = CandidatoExperiencia;
 
+export const candidatoCertificacoes = createTable(
+  "candidato_certificacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    candidatoId: uuid("candidato_id")
+      .notNull()
+      .references(() => candidatos.id),
+    titulo: varchar("titulo", { length: 150 }).notNull(),
+    obtidaEm: date("obtida_em", { mode: "string" }),
+    validade: date("validade", { mode: "string" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("candidato_certificacoes_candidato_id_idx").on(table.candidatoId),
+  ],
+);
+
+export type CandidatoCertificacao = typeof candidatoCertificacoes.$inferSelect;
+export type NovaCandidatoCertificacao = typeof candidatoCertificacoes.$inferInsert;
+
 
 

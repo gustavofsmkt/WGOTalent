@@ -43,6 +43,13 @@
       "when": 1786664712477,
       "tag": "0005_create_candidato_experiencias",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786665296383,
+      "tag": "0006_create_candidato_certificacoes",
+      "breakpoints": true
     }
   ]
 }
