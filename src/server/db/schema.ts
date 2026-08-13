@@ -207,4 +207,28 @@ export const candidatoFormacoes = createTable(
 export type CandidatoFormacao = typeof candidatoFormacoes.$inferSelect;
 export type NovaCandidatoFormacao = typeof candidatoFormacoes.$inferInsert;
 
+export const candidatoExperiencias = createTable(
+  "candidato_experiencias",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    candidatoId: uuid("candidato_id")
+      .notNull()
+      .references(() => candidatos.id),
+    empresa: varchar("empresa", { length: 150 }),
+    cargoTitulo: varchar("cargo_titulo", { length: 150 }).notNull(),
+    descricao: text("descricao"),
+    dataEntrada: date("data_entrada", { mode: "string" }).notNull(),
+    dataSaida: date("data_saida", { mode: "string" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("candidato_experiencias_candidato_id_idx").on(table.candidatoId),
+  ],
+);
+
+export type CandidatoExperiencia = typeof candidatoExperiencias.$inferSelect;
+export type NovaCandidatoExperiencia = typeof candidatoExperiencias.$inferInsert;
+export type CandidatoExperienciaProfissional = CandidatoExperiencia;
+
+
 
