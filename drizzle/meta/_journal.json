@@ -6,42 +6,42 @@
       "idx": 0,
       "version": "7",
       "when": 1786653037624,
-      "tag": "0000_good_the_order",
+      "tag": "0000_create_departamentos",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
       "when": 1786654341131,
-      "tag": "0001_new_prodigy",
+      "tag": "0001_create_cargos",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
       "when": 1786655120338,
-      "tag": "0002_sour_revanche",
+      "tag": "0002_create_vagas",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
       "when": 1786655580727,
-      "tag": "0003_milky_puppet_master",
+      "tag": "0003_create_candidatos",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
       "when": 1786662187383,
-      "tag": "0004_worried_vision",
+      "tag": "0004_create_candidato_formacoes",
       "breakpoints": true
     },
     {
       "idx": 5,
       "version": "7",
       "when": 1786664712477,
-      "tag": "0005_stale_captain_midlands",
+      "tag": "0005_create_candidato_experiencias",
       "breakpoints": true
     }
   ]
