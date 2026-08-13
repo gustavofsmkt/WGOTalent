@@ -79,7 +79,8 @@ Uma referência visual pode orientar composição, hierarquia, densidade, respon
 
 - Reads internas: Server Components.
 - Writes internas: Server Actions.
-- Route Handlers: somente webhook externo e streaming de arquivos.
+- Route Handlers: somente webhook externo (inbound `/api/webhooks/n8n/candidatos` e `/api/webhooks/n8n/triagem`) e streaming de arquivos.
+- Acesso a dados: um repository por entidade em `src/server/db/repositories/<entidade>.ts` (nome singular), objeto nomeado `<entidade>Repository`, sem interface/DI — não é o Repository Pattern de Fowler, é só centralização de queries. Métodos que podem rodar dentro de uma transaction do chamador aceitam `dbOrTx = db` opcional; a "unit of work" é `db.transaction(async (tx) => {...})` direto, sem classe abstrata.
 - `src/server/db/schema.ts` é a implementação canônica do schema.
 - migrations: `drizzle-kit generate` -> revisar SQL -> `drizzle-kit migrate`.
 - `drizzle-kit push` não é workflow oficial.
@@ -1788,17 +1789,16 @@ Faça commit `feat(ui): add shared application components`.
 
 # Fase 9 — Departamento
 
-## TASK-070 — Criar queries Departamento
+## TASK-070 — Criar repository Departamento
 
 **Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
 ```text
-Crie `src/server/db/queries/departamentos.ts` com funções mínimas para list active, get active by id e verificar Cargos ativos antes do delete.
-Use notDeleted.
-Sem repository genérico.
-Faça commit `feat(departments): add database queries`.
+Crie `src/server/db/repositories/departamento.ts` seguindo o padrão Repository do skill `layer-db`: objeto nomeado `departamentoRepository` (sem interface, sem DI) com funções mínimas para list active, get active by id e verificar Cargos ativos antes do delete.
+Use notDeleted() em toda leitura. Métodos que podem participar de uma transaction do chamador aceitam `dbOrTx = db` opcional.
+Faça commit `feat(departments): add repository`.
 ```
 
 ## TASK-071 — Criar Server Actions Departamento
@@ -1895,15 +1895,15 @@ Commit apenas se houver mudança.
 
 # Fase 10 — Cargo
 
-## TASK-076 — Criar queries Cargo
+## TASK-076 — Criar repository Cargo
 
 **Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
 ```text
-Crie queries Cargo com Departamento: list active, detail, options de Departamentos ativos e check de Vagas ativas para delete. notDeleted e sem N+1.
-Faça commit `feat(roles): add role queries`.
+Crie `src/server/db/repositories/cargo.ts` (`cargoRepository`, mesmo padrão do repository Departamento): list active com Departamento, detail, options de Departamentos ativos e check de Vagas ativas para delete. notDeleted e sem N+1.
+Faça commit `feat(roles): add repository`.
 ```
 
 ## TASK-077 — Criar Server Actions Cargo
@@ -1980,16 +1980,16 @@ Registre DEVLOG. Commit somente se necessário.
 
 # Fase 11 — Vaga
 
-## TASK-081 — Criar queries Vaga
+## TASK-081 — Criar repository Vaga
 
 **Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
 ```text
-Crie queries Vaga: list active com Cargo+Departamento, detail e options de Cargos ativos.
-Use notDeleted em listas/options e preserve capacidade de histórico quando necessária.
-Faça commit `feat(jobs): add job queries`.
+Crie `src/server/db/repositories/vaga.ts` (`vagaRepository`, mesmo padrão dos repositories anteriores): list active com Cargo+Departamento, detail e options de Cargos ativos.
+Use notDeleted() em listas/options e preserve capacidade de histórico quando necessária.
+Faça commit `feat(jobs): add repository`.
 ```
 
 ## TASK-082 — Criar Server Actions Vaga
@@ -2073,14 +2073,14 @@ Registre DEVLOG. Commit só se houver correção.
 
 # Fase 12 — Candidato
 
-## TASK-086 — Criar queries Candidato agregadas
+## TASK-086 — Criar repository Candidato
 
 **Modelo recomendado:** Gemini 3.1 Pro
 
 ### Prompt para o Copilot Chat
 
 ```text
-Crie `src/server/db/queries/candidatos.ts` com:
+Crie `src/server/db/repositories/candidato.ts` (`candidatoRepository`, mesmo padrão dos repositories anteriores, incluindo `dbOrTx = db` opcional em métodos usados dentro de transaction) com:
 - list active resumida;
 - detail ativo;
 - detail completo com formacoes/experiencias/certificacoes/triagens;
@@ -2088,7 +2088,7 @@ Crie `src/server/db/queries/candidatos.ts` com:
 - lookup por email incluindo deleted para o webhook futuro.
 
 Evite N+1 e não carregue currículo/texto bruto em listas.
-Faça commit `feat(candidates): add normalized candidate queries`.
+Faça commit `feat(candidates): add repository`.
 ```
 
 ## TASK-087 — Criar formulário base Candidato
@@ -2311,18 +2311,18 @@ Registre DEVLOG. Commit apenas se houver correção.
 
 # Fase 13 — Triagem e AvaliacaoIA
 
-## TASK-099 — Criar queries pipeline de Triagem
+## TASK-099 — Criar repository de pipeline de Triagem
 
 **Modelo recomendado:** Gemini 3.1 Pro
 
 ### Prompt para o Copilot Chat
 
 ```text
-Crie `src/server/db/queries/triagens.ts` com list active + joins Candidato/Vaga/Cargo/AvaliacaoIA, filtros por etapa/resultado/motivo e detail.
+Crie `src/server/db/repositories/triagem.ts` (`triagemRepository`, mesmo padrão dos repositories anteriores) com list active + joins Candidato/Vaga/Cargo/AvaliacaoIA, filtros por etapa/resultado/motivo e detail.
 Crie options ativos para formulário manual.
-Use notDeleted para itens ativos, mas respeite ADR para referências históricas soft-deleted.
+Use notDeleted() para itens ativos, mas respeite ADR para referências históricas soft-deleted.
 Sem N+1.
-Faça commit `feat(screenings): add pipeline queries`.
+Faça commit `feat(screenings): add pipeline repository`.
 ```
 
 ## TASK-100 — Criar Server Actions Triagem
@@ -3088,7 +3088,7 @@ WGOTalent/
 │   │       ├── index.ts
 │   │       ├── schema.ts
 │   │       ├── query-helpers.ts
-│   │       └── queries/
+│   │       └── repositories/
 │   ├── styles/
 │   │   └── globals.css
 │   └── env.js
