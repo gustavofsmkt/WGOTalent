@@ -1,0 +1,161 @@
+{
+  "id": "ca059e12-39ad-4372-aae7-6032ead678ca",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.wgotalent_departamentos": {
+      "name": "wgotalent_departamentos",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nome": {
+          "name": "nome",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "wgotalent_departamentos_nome_unique": {
+          "name": "wgotalent_departamentos_nome_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "nome"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.cnh": {
+      "name": "cnh",
+      "schema": "public",
+      "values": [
+        "a",
+        "b",
+        "ab",
+        "c",
+        "d",
+        "e"
+      ]
+    },
+    "public.estado_civil": {
+      "name": "estado_civil",
+      "schema": "public",
+      "values": [
+        "nao_informado",
+        "solteiro",
+        "casado",
+        "divorciado",
+        "viuvo",
+        "uniao_estavel"
+      ]
+    },
+    "public.origem": {
+      "name": "origem",
+      "schema": "public",
+      "values": [
+        "email",
+        "manual",
+        "indicacao"
+      ]
+    },
+    "public.status_vaga": {
+      "name": "status_vaga",
+      "schema": "public",
+      "values": [
+        "aberta",
+        "concluida",
+        "cancelada",
+        "pausada",
+        "incompleta"
+      ]
+    },
+    "public.triagem_etapa": {
+      "name": "triagem_etapa",
+      "schema": "public",
+      "values": [
+        "curriculo",
+        "testes",
+        "entrevista_rh",
+        "entrevista_gestor",
+        "finalizado"
+      ]
+    },
+    "public.triagem_motivo": {
+      "name": "triagem_motivo",
+      "schema": "public",
+      "values": [
+        "curriculo",
+        "fit_cultural",
+        "testes",
+        "rh",
+        "gestor",
+        "incompatibilidade_salarial",
+        "aceitou_outra_proposta",
+        "nao_atendeu_contato",
+        "motivos_pessoais"
+      ]
+    },
+    "public.triagem_resultado": {
+      "name": "triagem_resultado",
+      "schema": "public",
+      "values": [
+        "em_andamento",
+        "aprovado",
+        "reprovado",
+        "desistente",
+        "banco_talentos"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

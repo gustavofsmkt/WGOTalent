@@ -1,4 +1,11 @@
-import { pgTableCreator, pgEnum, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTableCreator,
+  pgEnum,
+  timestamp,
+  uuid,
+  varchar,
+  text,
+} from "drizzle-orm/pg-core";
 
 /**
  * Multi-project schema feature of Drizzle ORM.
@@ -17,6 +24,16 @@ export const timestamps = {
     .notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "string" }),
 };
+
+export const departamentos = createTable("departamentos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 120 }).notNull().unique(),
+  descricao: text("descricao"),
+  ...timestamps,
+});
+
+export type Departamento = typeof departamentos.$inferSelect;
+export type NovoDepartamento = typeof departamentos.$inferInsert;
 
 export const statusVagaEnum = pgEnum("status_vaga", [
   "aberta",
