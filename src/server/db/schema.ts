@@ -185,4 +185,26 @@ export const candidatos = createTable(
 export type Candidato = typeof candidatos.$inferSelect;
 export type NovoCandidato = typeof candidatos.$inferInsert;
 
+export const candidatoFormacoes = createTable(
+  "candidato_formacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    candidatoId: uuid("candidato_id")
+      .notNull()
+      .references(() => candidatos.id),
+    titulo: varchar("titulo", { length: 150 }).notNull(),
+    instituicao: varchar("instituicao", { length: 150 }),
+    areaFormacao: varchar("area_formacao", { length: 120 }).notNull(),
+    dataInicio: date("data_inicio", { mode: "string" }),
+    dataTermino: date("data_termino", { mode: "string" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("candidato_formacoes_candidato_id_idx").on(table.candidatoId),
+  ],
+);
+
+export type CandidatoFormacao = typeof candidatoFormacoes.$inferSelect;
+export type NovaCandidatoFormacao = typeof candidatoFormacoes.$inferInsert;
+
 
