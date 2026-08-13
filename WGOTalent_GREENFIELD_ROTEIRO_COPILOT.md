@@ -92,7 +92,7 @@ Uma referência visual pode orientar composição, hierarquia, densidade, respon
 
 ## Fora de escopo
 
-Não adicionar: Prisma, Supabase, **tRPC**, Auth.js/NextAuth no MVP, React Hook Form, API REST interna de CRUD, backend separado, Redis, Kafka, Kubernetes, S3/Blob no MVP, n8n no Compose, escrita n8n->DB, múltiplos ORMs ou dois sistemas de formulário. O Create T3 App é apenas o scaffolder inicial.
+Não adicionar: Prisma, Supabase, **tRPC**, Auth.js/NextAuth no MVP, React Hook Form, API REST interna de CRUD, backend separado, Redis, Kafka, Kubernetes, S3/Blob no MVP, escrita n8n->DB, múltiplos ORMs ou dois sistemas de formulário. O Create T3 App é apenas o scaffolder inicial.
 
 ---
 
@@ -332,7 +332,7 @@ Writes internos -> Server Actions.
 n8n externo -> webhook Next -> Zod -> transaction Drizzle.
 Arquivos -> StorageProvider -> Route Handler.
 AvaliacaoIA inline em Triagem.
-Postgres em Docker; n8n fora do Compose.
+Postgres e n8n em Docker Compose (ver ADR-0006). App Next.js roda no host até a Fase 19.
 
 Preserve a convenção `src/` do scaffold:
 - `src/app`;
@@ -1101,11 +1101,30 @@ Faça commit `docs(integration): define complete n8n integration contracts`.
 ```text
 Crie `docker-compose.yml` com apenas PostgreSQL 16.
 Use env, volume nomeado, healthcheck e porta local necessária.
-Não adicionar Next, n8n, Apache, Redis ou outro serviço.
+Não adicionar Next, Apache, Redis ou outro serviço (n8n entra na TASK-033a).
 Confirme que `start-database.sh` do Create T3 App foi removido na TASK-020; Docker Compose passa a ser a única forma oficial de subir o PostgreSQL local.
 Atualize `.env.example` sem segredo real.
 Execute `docker compose config`.
 Faça commit `build(db): add local postgres compose`.
+```
+
+## TASK-033a — Adicionar n8n ao Docker Compose
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+### Prompt para o Copilot Chat
+
+```text
+Adicione o serviço `n8n` ao `docker-compose.yml` existente, ao lado do `postgres`. Ver `docs/decisions/0006-n8n-docker-compose-service.md`.
+
+1. Imagem `n8nio/n8n:latest` (sempre a mais recente, sem tag fixa).
+2. Volume nomeado `n8n_data:/home/node/.n8n` para persistir credenciais e workflows.
+3. Porta publicada `${N8N_PORT:-5678}:5678`.
+4. Auth básica via env: `N8N_BASIC_AUTH_ACTIVE=true`, `N8N_BASIC_AUTH_USER`, `N8N_BASIC_AUTH_PASSWORD`, `GENERIC_TIMEZONE`.
+5. Adicione `extra_hosts: - "host.docker.internal:host-gateway"` (necessário no Linux; inofensivo no Docker Desktop) — a app ainda roda no host até a Fase 19, então o n8n precisa alcançar `http://host.docker.internal:3000` para chamar os webhooks inbound.
+6. Atualize `.env.example` com as novas variáveis e com `CLASSIFICADOR_N8N_WEBHOOK_URL="http://localhost:5678/webhook/classificador"` (aponta para a porta publicada enquanto a app roda fora do compose).
+7. Execute `docker compose config` e suba o serviço para confirmar que o n8n inicializa.
+Faça commit `build(n8n): add n8n service to docker compose`.
 ```
 
 ## TASK-034 — Habilitar unaccent
@@ -1115,11 +1134,12 @@ Faça commit `build(db): add local postgres compose`.
 ### Prompt para o Copilot Chat
 
 ```text
-Primeiro verifique em container temporário se a imagem PostgreSQL escolhida já possui arquivos da extensão `unaccent`.
+Verifique em um container temporário da imagem `postgres:16-alpine` já em uso se `CREATE EXTENSION IF NOT EXISTS unaccent;` roda sem erro.
 
-Se não possuir, crie `infra/postgres/Dockerfile` instalando somente o pacote correto para PostgreSQL 16/base usada e atualize Compose.
-Crie `infra/postgres/init/001-unaccent.sql` com `CREATE EXTENSION IF NOT EXISTS unaccent;`.
-Teste em volume temporário; não apagar dados importantes.
+Caminho padrão (extensão já disponível na imagem — caso mais provável): crie `infra/postgres/init/001-unaccent.sql` com `CREATE EXTENSION IF NOT EXISTS unaccent;` e monte esse diretório em `docker-entrypoint-initdb.d` no serviço `postgres` do `docker-compose.yml`. Não crie Dockerfile customizado.
+
+Fallback (só se a verificação falhar): troque a tag da imagem para `postgres:16` (Debian, garante os módulos contrib) antes de considerar um `infra/postgres/Dockerfile` customizado.
+Teste subindo o volume do zero; não apague dados importantes de um ambiente já em uso.
 Faça commit `build(db): enable postgres unaccent`.
 ```
 
@@ -3027,6 +3047,101 @@ Feche o marco sem feature nova.
 Ao final mostre comandos de reprodução.
 ```
 
+# Fase 19 — Containerização de Produção
+
+## TASK-131 — Criar Dockerfile multi-stage da aplicação
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Crie um Dockerfile multi-stage na raiz do projeto para a aplicação Next.js.
+
+1. Stage `deps`: instala dependências com `npm ci`.
+2. Stage `builder`: copia deps, roda `npm run build` com `SKIP_ENV_VALIDATION=1`.
+3. Stage `runner`: imagem `node:22-alpine` mínima, copia somente `.next/standalone`, `.next/static` e `public/`, roda como usuário não-root, expõe a porta 3000, `CMD ["node", "server.js"]`.
+4. Não copie `node_modules` completo para o stage final — o standalone já inclui o necessário.
+5. Confirme `npm run build` local antes de buildar a imagem.
+Faça commit `build(docker): add production dockerfile`.
+```
+
+## TASK-132 — Configurar output standalone e .dockerignore
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+### Prompt para o Copilot Chat
+
+```text
+1. Adicione `output: "standalone"` ao `next.config.js`.
+2. Crie `.dockerignore` excluindo `node_modules`, `.next`, `.git`, `storage`, `.env*` (exceto `.env.example`), coverage e arquivos temporários de SO/editor.
+3. Rode `npm run build` e confirme que `.next/standalone/server.js` é gerado.
+4. Rebuilde a imagem da TASK-131 e confirme que o container sobe e responde na porta 3000.
+Faça commit `build(docker): enable standalone output and dockerignore`.
+```
+
+## TASK-133 — Adicionar serviço app ao Docker Compose
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Adicione o serviço `app` ao `docker-compose.yml`, ao lado de `postgres` e `n8n`.
+
+1. `build: .` usando o Dockerfile da TASK-131.
+2. `depends_on` com `condition: service_healthy` para o postgres.
+3. Env vars via `.env` (`DATABASE_URL`, `WEBHOOK_N8N_SECRET`, `STORAGE_ROOT`, `CLASSIFICADOR_N8N_WEBHOOK_URL`, etc.).
+4. Porta publicada `3000:3000`.
+5. Não remova a opção de rodar `npm run dev` fora do compose para desenvolvimento local — o serviço `app` é para o caminho de produção/validação, não substitui o fluxo de dev.
+Faça commit `build(docker): add app service to compose`.
+```
+
+## TASK-134 — Volume persistente para storage de currículos
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+### Prompt para o Copilot Chat
+
+```text
+Adicione um volume nomeado (`app_storage`) montado em `STORAGE_ROOT` dentro do serviço `app` no `docker-compose.yml`, para que os currículos sobrevivam a rebuild/redeploy do container.
+Atualize `.env.example` se o caminho de `STORAGE_ROOT` mudar dentro do container.
+Teste: salve um arquivo, recrie o container (`docker compose up -d --force-recreate app`), confirme que o arquivo persiste.
+Faça commit `build(docker): persist resume storage volume`.
+```
+
+## TASK-135 — Ajustar URLs internas para rede do Compose
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Agora que app, postgres e n8n estão no mesmo compose, troque os endereços baseados em `localhost`/`host.docker.internal` por nomes de serviço:
+
+1. `DATABASE_URL` do serviço `app`: host `postgres` (não `localhost`).
+2. `CLASSIFICADOR_N8N_WEBHOOK_URL`: host `n8n` (não `localhost`).
+3. Configuração de callback do n8n para os webhooks inbound: host `app` (não `host.docker.internal`).
+4. Mantenha `.env.example` documentando os dois cenários (app no host vs. app no compose) com comentários claros sobre qual usar em cada caso.
+Faça commit `build(docker): use compose service names for internal urls`.
+```
+
+## TASK-136 — Validar build de produção completo em Docker
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `task-closeout`
+
+### Prompt para o Copilot Chat
+
+```text
+Suba a stack inteira do zero: `docker compose down -v && docker compose up --build`.
+
+Confirme: postgres saudável, n8n acessível, app respondendo, migrations aplicadas, webhook n8n->app funcional dentro da rede do compose, upload/leitura de currículo persistindo no volume.
+Crie `docs/PRODUCTION_DOCKER.md` com os comandos de subida, variáveis obrigatórias e troubleshooting básico.
+Faça commit `docs(docker): validate and document production stack`.
+```
+
 ---
 
 # Gates obrigatórios
@@ -3042,6 +3157,7 @@ Ao final mostre comandos de reprodução.
 - **Gate I — Dashboard/auditorias:** TASK-115 a TASK-120.
 - **Gate J — Limpeza/docs:** TASK-121 a TASK-127.
 - **Gate K — Congelamento:** TASK-128 a TASK-130.
+- **Gate L — Produção:** TASK-131 a TASK-136.
 
 # Estrutura-alvo
 
@@ -3112,6 +3228,8 @@ WGOTalent/
 ├── infra/postgres/
 ├── scripts/
 ├── docker-compose.yml
+├── Dockerfile
+├── .dockerignore
 ├── drizzle.config.ts
 ├── components.json
 ├── package.json
@@ -3163,7 +3281,6 @@ API routes CRUD internas
 src/app/avaliacoes/
 hard DELETE em app layer
 currículos em public/
-n8n no docker-compose
 DATABASE_URL disponível ao n8n
 componentes shadcn sem uso
 assets padrão do Next sem uso

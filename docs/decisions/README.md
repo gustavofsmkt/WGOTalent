@@ -8,6 +8,8 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 - [0002: Comportamento do Webhook para Candidato com Soft Delete](./0002-webhook-deleted-candidate-conflict.md)
 - [0003: Semântica de Soft Delete Organizacional e Efeito Cascata](./0003-organizational-soft-delete-semantics.md)
 - [0004: Mapeamento de Campos n8n para Banco de Dados](./0004-n8n-webhook-field-mapping.md)
+- [0005: Disparo Outbound para n8n Classificador](./0005-outbound-classifier-trigger.md)
+- [0006: n8n como Serviço no Docker Compose](./0006-n8n-docker-compose-service.md)
 
 ---
 
