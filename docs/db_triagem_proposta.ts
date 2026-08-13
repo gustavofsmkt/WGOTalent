@@ -99,7 +99,7 @@ export interface Candidato {
  
   disponivel_viagens: boolean;          // NOT NULL DEFAULT false
   disponivel_mudanca: boolean;          // NOT NULL DEFAULT false
-  disponibilidade_horarios: boolean;    // NOT NULL DEFAULT false
+  disponibilidade_horarios: string | null; // TEXT NULL — string de texto livre (ADR 031a)
   inicio_imediato: boolean;             // NOT NULL DEFAULT false
  
   linkedin: string | null;              // VARCHAR(255)

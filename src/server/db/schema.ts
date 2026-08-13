@@ -10,6 +10,7 @@ import {
   numeric,
   smallint,
   char,
+  date,
   check,
   index,
 } from "drizzle-orm/pg-core";
@@ -140,4 +141,48 @@ export const vagas = createTable(
 
 export type Vaga = typeof vagas.$inferSelect;
 export type NovaVaga = typeof vagas.$inferInsert;
+
+export const candidatos = createTable(
+  "candidatos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: varchar("nome", { length: 150 }).notNull(),
+    nomeSocial: varchar("nome_social", { length: 150 }),
+    nacionalidade: varchar("nacionalidade", { length: 60 }).default("brasileira"),
+    dataNascimento: date("data_nascimento", { mode: "string" }),
+    estadoCivil: estadoCivilEnum("estado_civil").default("nao_informado"),
+    pcd: text("pcd"),
+    email: varchar("email", { length: 254 }).notNull().unique(),
+    celular: varchar("celular", { length: 20 }).notNull(),
+    cep: varchar("cep", { length: 9 }),
+    uf: char("uf", { length: 2 }),
+    cidade: varchar("cidade", { length: 100 }),
+    bairro: varchar("bairro", { length: 100 }),
+    logradouro: varchar("logradouro", { length: 200 }),
+    resumoProfissional: text("resumo_profissional"),
+    cnh: cnhEnum("cnh"),
+    possuiVeiculo: boolean("possui_veiculo").default(false).notNull(),
+    ensinoMedioConcluido: boolean("ensino_medio_concluido").default(false).notNull(),
+    cargoInteresseId: uuid("cargo_interesse_id").references(() => cargos.id),
+    areaInteresseId: uuid("area_interesse_id").references(() => departamentos.id),
+    disponivelViagens: boolean("disponivel_viagens").default(false).notNull(),
+    disponivelMudanca: boolean("disponivel_mudanca").default(false).notNull(),
+    disponibilidadeHorarios: text("disponibilidade_horarios"),
+    inicioImediato: boolean("inicio_imediato").default(false).notNull(),
+    linkedin: varchar("linkedin", { length: 255 }),
+    portfolio: varchar("portfolio", { length: 255 }),
+    origem: origemEnum("origem").default("manual").notNull(),
+    curriculoArquivoKey: text("curriculo_arquivo_key"),
+    textoCurriculoExtraido: text("texto_curriculo_extraido"),
+    ...timestamps,
+  },
+  (table) => [
+    index("candidatos_cargo_interesse_id_idx").on(table.cargoInteresseId),
+    index("candidatos_area_interesse_id_idx").on(table.areaInteresseId),
+  ],
+);
+
+export type Candidato = typeof candidatos.$inferSelect;
+export type NovoCandidato = typeof candidatos.$inferInsert;
+
 
