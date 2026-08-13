@@ -13,6 +13,7 @@ import {
   date,
   check,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -249,6 +250,35 @@ export const candidatoCertificacoes = createTable(
 
 export type CandidatoCertificacao = typeof candidatoCertificacoes.$inferSelect;
 export type NovaCandidatoCertificacao = typeof candidatoCertificacoes.$inferInsert;
+
+export const triagens = createTable(
+  "triagens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    vagaId: uuid("vaga_id")
+      .notNull()
+      .references(() => vagas.id),
+    candidatoId: uuid("candidato_id")
+      .notNull()
+      .references(() => candidatos.id),
+    etapa: triagemEtapaEnum("etapa").notNull(),
+    resultado: triagemResultadoEnum("resultado").default("em_andamento").notNull(),
+    motivo: triagemMotivoEnum("motivo"),
+    parecerRh: text("parecer_rh"),
+    parecerRhData: timestamp("parecer_rh_data", { withTimezone: true, mode: "string" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("triagens_vaga_id_idx").on(table.vagaId),
+    index("triagens_candidato_id_idx").on(table.candidatoId),
+    uniqueIndex("triagens_candidato_vaga_ativa_idx")
+      .on(table.candidatoId, table.vagaId)
+      .where(sql`${table.resultado} = 'em_andamento'`),
+  ],
+);
+
+export type Triagem = typeof triagens.$inferSelect;
+export type NovaTriagem = typeof triagens.$inferInsert;
 
 
 
