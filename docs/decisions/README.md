@@ -6,6 +6,8 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 
 - [0001: Retenção de Texto do Currículo e JSON do Agente](./0001-resume-text-and-agent-json-retention.md)
 - [0002: Comportamento do Webhook para Candidato com Soft Delete](./0002-webhook-deleted-candidate-conflict.md)
+- [0003: Semântica de Soft Delete Organizacional e Efeito Cascata](./0003-organizational-soft-delete-semantics.md)
+- [0004: Mapeamento de Campos n8n para Banco de Dados](./0004-n8n-webhook-field-mapping.md)
 
 ---
 
