@@ -58,8 +58,13 @@ Import in server code as `import { env } from '@/env'` — never use `process.en
   rename them.
 - **Prohibited in MVP**: tRPC, Auth.js/NextAuth, Prisma.
 - **N8N**: orchestration and webhook consumption only — N8N must never write
-  directly to the database; all DB mutations from n8n flow through the Route
-  Handler at `src/app/api/webhooks/n8n/triagem/route.ts`.
+  directly to the database; all DB mutations from n8n flow through the two
+  inbound Route Handlers, `src/app/api/webhooks/n8n/candidatos/route.ts`
+  (candidate registration) and `src/app/api/webhooks/n8n/triagem/route.ts`
+  (screening result). The platform also calls n8n outbound (fire-and-forget) to
+  trigger the Classificador after a Candidato or Vaga is created — see
+  `docs/decisions/0005-outbound-classifier-trigger.md`. Full contract:
+  `docs/N8N_WEBHOOK_CONTRACT.md`.
 - **Dependencies**: install no library without explicit approval.
 
 ## Development practices

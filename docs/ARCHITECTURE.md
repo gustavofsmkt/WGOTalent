@@ -18,7 +18,7 @@ Always check the schema file before writing a query, form, or validation schema 
 - **Auth**: none for MVP (open access) — structure code so auth can be dropped in later without a rewrite (keep server actions/route handlers as the single mutation boundary)
 - **Soft delete**: every table has `deleted_at`. No hard deletes anywhere in the app layer.
 - **File storage**: local disk via a `StorageProvider` abstraction (swappable to S3/Blob later). Resume files referenced by `Candidato.curriculo_arquivo_key`, never stored in `public/`.
-- **AI screening**: external n8n workflow (owned by a teammate) watches an inbox, parses the resume, calls Claude, then POSTs the result to a Next.js webhook route. Next.js is the source of truth — n8n never writes to Postgres directly.
+- **AI screening**: three integration endpoints (see `docs/N8N_WEBHOOK_CONTRACT.md` for the full contract). Inbound: n8n `Cadastro_Candidato` watches an inbox, parses the resume, and POSTs structured candidate data to `POST /api/webhooks/n8n/candidatos`; the platform then triggers n8n's Classificador outbound (fire-and-forget, `CLASSIFICADOR_N8N_WEBHOOK_URL`, per ADR-0005) with candidates/vagas filtered by city. n8n's Classificador/Triagem workflow scores the match and POSTs the result to `POST /api/webhooks/n8n/triagem`, which the platform persists as `Triagem` + `AvaliacaoIA`. Next.js is the source of truth — n8n never writes to Postgres directly.
 - **Styling**: your choice driven by impeccable skill, keep consistent. Use shadcn skills and components. For styling shadcn components make a new component with the tailwind styles. try to keep shadcn styles. 
 
 ## Soft delete pattern — must be used everywhere
@@ -57,7 +57,8 @@ app/
   api/
     webhooks/
       n8n/
-        triagem/route.ts         # POST — receives screening result from n8n
+        candidatos/route.ts      # POST — receives structured candidate data from n8n Cadastro_Candidato
+        triagem/route.ts         # POST — receives screening result from n8n Classificador/Triagem
     files/
       [...path]/route.ts         # GET — streams resume files from local storage (auth-gated later)
 
@@ -100,12 +101,9 @@ components/
    - performs the Drizzle mutation (insert/update/soft-delete)
    - calls `revalidatePath` for the relevant list/detail routes
    - returns a typed `{ success: true, data } | { success: false, error }` result
-3. **External write = Route Handler.** The n8n → Next.js integration is the only mutation path that isn't a Server Action. `app/api/webhooks/n8n/triagem/route.ts`:
-   - validates payload with a dedicated webhook Zod schema
-   - upserts `Candidato` by email (respecting soft-delete: reactivating a soft-deleted candidate needs an explicit decision, see open questions)
-   - saves the resume file through `StorageProvider.save()`, writes `curriculo_arquivo_key`
-   - creates the `Triagem` row (`etapa`, `resultado`, `motivo` per schema) and the linked `AvaliacaoIA` row in one transaction
-   - calls `revalidatePath('/candidatos')` and `revalidatePath('/triagens')`
+3. **External write = Route Handlers.** The n8n → Next.js integration is not a Server Action; it is two inbound Route Handlers (see `docs/N8N_WEBHOOK_CONTRACT.md`, ADR-0004, ADR-0005):
+   - `app/api/webhooks/n8n/candidatos/route.ts` (Cadastro_Candidato result): validates payload with a dedicated webhook Zod schema, resolves `referencias.area_interesse`/`referencias.cargo_interesse` string values to `Departamento`/`Cargo` FKs, upserts `Candidato` + children (Formacao/Experiencia/Certificacao) by email (respecting soft-delete: reactivating a soft-deleted candidate returns 409 per ADR-0002), then triggers the outbound Classificador call (fire-and-forget, `CLASSIFICADOR_N8N_WEBHOOK_URL`, ADR-0005). **Open question:** the contract doc doesn't yet specify when/how the raw resume file is persisted via `StorageProvider.save()`/`curriculo_arquivo_key` — resolve with an ADR before implementing.
+   - `app/api/webhooks/n8n/triagem/route.ts` (Classificador/Triagem result): validates the array payload (each item wrapped in `output`), creates the `Triagem` row with the `etapa`/`resultado` defaults defined in ADR-0004 and the linked `AvaliacaoIA` row in one transaction, calls `revalidatePath('/candidatos')` and `revalidatePath('/triagens')`.
 4. **Storage abstraction.** `StorageProvider` exposes `save()`, `getUrl()`, `delete()`. Files live outside `public/`, served through `app/api/files/[...path]/route.ts` so access can be gated later.
 5. **Foreign key integrity in the UI.** Cargo form selects an existing Departamento. Vaga form selects an existing Cargo. Triagem form selects an existing Candidato and Vaga. Candidato's `cargo_interesse_id` / `area_interesse_id` are optional selects. Use server-fetched option lists (already filtered through `notDeleted`), not client fetches.
 6. **Triagem status is two fields, not one.** UI must drive `etapa` and `resultado` as separate controls (e.g. a stage stepper + an outcome selector), with `motivo` only shown/required when `resultado` is `reprovado` or `desistente`, and constrained to the matching subset of motivo values (reprovado vs. desistente) — see schema comments for the split. Enforce this pairing in the Zod schema, not just the UI.
