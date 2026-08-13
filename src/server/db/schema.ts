@@ -5,6 +5,9 @@ import {
   uuid,
   varchar,
   text,
+  boolean,
+  numeric,
+  index,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -34,6 +37,30 @@ export const departamentos = createTable("departamentos", {
 
 export type Departamento = typeof departamentos.$inferSelect;
 export type NovoDepartamento = typeof departamentos.$inferInsert;
+
+export const cargos = createTable(
+  "cargos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    departamentoId: uuid("departamento_id")
+      .notNull()
+      .references(() => departamentos.id),
+    titulo: varchar("titulo", { length: 150 }).notNull(),
+    descricao: text("descricao"),
+    ativo: boolean("ativo").default(true).notNull(),
+    faixaSalarial: numeric("faixa_salarial", { precision: 10, scale: 2 }),
+    requisitos: text("requisitos"),
+    requisitosDesejaveis: text("requisitos_desejaveis"),
+    criteriosEliminatorios: text("criterios_eliminatorios"),
+    ...timestamps,
+  },
+  (table) => [
+    index("cargos_departamento_id_idx").on(table.departamentoId),
+  ],
+);
+
+export type Cargo = typeof cargos.$inferSelect;
+export type NovoCargo = typeof cargos.$inferInsert;
 
 export const statusVagaEnum = pgEnum("status_vaga", [
   "aberta",
