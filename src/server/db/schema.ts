@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTableCreator,
   pgEnum,
@@ -7,6 +8,9 @@ import {
   text,
   boolean,
   numeric,
+  smallint,
+  char,
+  check,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -27,40 +31,6 @@ export const timestamps = {
     .notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "string" }),
 };
-
-export const departamentos = createTable("departamentos", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  nome: varchar("nome", { length: 120 }).notNull().unique(),
-  descricao: text("descricao"),
-  ...timestamps,
-});
-
-export type Departamento = typeof departamentos.$inferSelect;
-export type NovoDepartamento = typeof departamentos.$inferInsert;
-
-export const cargos = createTable(
-  "cargos",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    departamentoId: uuid("departamento_id")
-      .notNull()
-      .references(() => departamentos.id),
-    titulo: varchar("titulo", { length: 150 }).notNull(),
-    descricao: text("descricao"),
-    ativo: boolean("ativo").default(true).notNull(),
-    faixaSalarial: numeric("faixa_salarial", { precision: 10, scale: 2 }),
-    requisitos: text("requisitos"),
-    requisitosDesejaveis: text("requisitos_desejaveis"),
-    criteriosEliminatorios: text("criterios_eliminatorios"),
-    ...timestamps,
-  },
-  (table) => [
-    index("cargos_departamento_id_idx").on(table.departamentoId),
-  ],
-);
-
-export type Cargo = typeof cargos.$inferSelect;
-export type NovoCargo = typeof cargos.$inferInsert;
 
 export const statusVagaEnum = pgEnum("status_vaga", [
   "aberta",
@@ -110,4 +80,64 @@ export const triagemMotivoEnum = pgEnum("triagem_motivo", [
   "nao_atendeu_contato",
   "motivos_pessoais",
 ]);
+
+export const departamentos = createTable("departamentos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 120 }).notNull().unique(),
+  descricao: text("descricao"),
+  ...timestamps,
+});
+
+export type Departamento = typeof departamentos.$inferSelect;
+export type NovoDepartamento = typeof departamentos.$inferInsert;
+
+export const cargos = createTable(
+  "cargos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    departamentoId: uuid("departamento_id")
+      .notNull()
+      .references(() => departamentos.id),
+    titulo: varchar("titulo", { length: 150 }).notNull(),
+    descricao: text("descricao"),
+    ativo: boolean("ativo").default(true).notNull(),
+    faixaSalarial: numeric("faixa_salarial", { precision: 10, scale: 2 }),
+    requisitos: text("requisitos"),
+    requisitosDesejaveis: text("requisitos_desejaveis"),
+    criteriosEliminatorios: text("criterios_eliminatorios"),
+    ...timestamps,
+  },
+  (table) => [
+    index("cargos_departamento_id_idx").on(table.departamentoId),
+  ],
+);
+
+export type Cargo = typeof cargos.$inferSelect;
+export type NovoCargo = typeof cargos.$inferInsert;
+
+export const vagas = createTable(
+  "vagas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    status: statusVagaEnum("status").default("aberta").notNull(),
+    posicoesDisponiveis: smallint("posicoes_disponiveis").default(1).notNull(),
+    cargoId: uuid("cargo_id")
+      .notNull()
+      .references(() => cargos.id),
+    remuneracaoOferecida: numeric("remuneracao_oferecida", {
+      precision: 10,
+      scale: 2,
+    }),
+    cidade: varchar("cidade", { length: 100 }).notNull(),
+    uf: char("uf", { length: 2 }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("vagas_cargo_id_idx").on(table.cargoId),
+    check("vagas_posicoes_disponiveis_check", sql`${table.posicoesDisponiveis} > 0`),
+  ],
+);
+
+export type Vaga = typeof vagas.$inferSelect;
+export type NovaVaga = typeof vagas.$inferInsert;
 
