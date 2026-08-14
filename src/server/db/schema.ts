@@ -86,7 +86,7 @@ export const triagemMotivoEnum = pgEnum("triagem_motivo", [
 export const departamentos = createTable("departamentos", {
   id: uuid("id").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 120 }).notNull().unique(),
-  descricao: text("descricao"),
+  descricao: text("descricao").notNull(),
   ...timestamps,
 });
 
@@ -101,12 +101,12 @@ export const cargos = createTable(
       .notNull()
       .references(() => departamentos.id),
     titulo: varchar("titulo", { length: 150 }).notNull(),
-    descricao: text("descricao"),
+    descricao: text("descricao").notNull(),
     ativo: boolean("ativo").default(true).notNull(),
     faixaSalarial: numeric("faixa_salarial", { precision: 10, scale: 2 }),
-    requisitos: text("requisitos"),
-    requisitosDesejaveis: text("requisitos_desejaveis"),
-    criteriosEliminatorios: text("criterios_eliminatorios"),
+    requisitos: text("requisitos").notNull(),
+    requisitosDesejaveis: text("requisitos_desejaveis").notNull(),
+    criteriosEliminatorios: text("criterios_eliminatorios").notNull(),
     ...timestamps,
   },
   (table) => [
@@ -149,18 +149,18 @@ export const candidatos = createTable(
     id: uuid("id").primaryKey().defaultRandom(),
     nome: varchar("nome", { length: 150 }).notNull(),
     nomeSocial: varchar("nome_social", { length: 150 }),
-    nacionalidade: varchar("nacionalidade", { length: 60 }).default("brasileira"),
-    dataNascimento: date("data_nascimento", { mode: "string" }),
-    estadoCivil: estadoCivilEnum("estado_civil").default("nao_informado"),
+    nacionalidade: varchar("nacionalidade", { length: 60 }).default("brasileira").notNull(),
+    dataNascimento: date("data_nascimento", { mode: "string" }).notNull(),
+    estadoCivil: estadoCivilEnum("estado_civil").default("nao_informado").notNull(),
     pcd: text("pcd"),
     email: varchar("email", { length: 254 }).notNull().unique(),
     celular: varchar("celular", { length: 20 }).notNull(),
-    cep: varchar("cep", { length: 9 }),
-    uf: char("uf", { length: 2 }),
-    cidade: varchar("cidade", { length: 100 }),
-    bairro: varchar("bairro", { length: 100 }),
-    logradouro: varchar("logradouro", { length: 200 }),
-    resumoProfissional: text("resumo_profissional"),
+    cep: varchar("cep", { length: 9 }).notNull(),
+    uf: char("uf", { length: 2 }).notNull(),
+    cidade: varchar("cidade", { length: 100 }).notNull(),
+    bairro: varchar("bairro", { length: 100 }).notNull(),
+    logradouro: varchar("logradouro", { length: 200 }).notNull(),
+    resumoProfissional: text("resumo_profissional").notNull(),
     cnh: cnhEnum("cnh"),
     possuiVeiculo: boolean("possui_veiculo").default(false).notNull(),
     ensinoMedioConcluido: boolean("ensino_medio_concluido").default(false).notNull(),
@@ -196,7 +196,7 @@ export const candidatoFormacoes = createTable(
     titulo: varchar("titulo", { length: 150 }).notNull(),
     instituicao: varchar("instituicao", { length: 150 }),
     areaFormacao: varchar("area_formacao", { length: 120 }).notNull(),
-    dataInicio: date("data_inicio", { mode: "string" }),
+    dataInicio: date("data_inicio", { mode: "string" }).notNull(),
     dataTermino: date("data_termino", { mode: "string" }),
     ...timestamps,
   },
@@ -271,9 +271,8 @@ export const triagens = createTable(
   (table) => [
     index("triagens_vaga_id_idx").on(table.vagaId),
     index("triagens_candidato_id_idx").on(table.candidatoId),
-    uniqueIndex("triagens_candidato_vaga_ativa_idx")
-      .on(table.candidatoId, table.vagaId)
-      .where(sql`${table.resultado} = 'em_andamento'`),
+    uniqueIndex("triagens_candidato_vaga_idx")
+      .on(table.candidatoId, table.vagaId),
   ],
 );
 
@@ -289,12 +288,12 @@ export const avaliacaoIA = createTable(
       .references(() => triagens.id)
       .unique(),
     vagaFoiInferida: boolean("vaga_foi_inferida").default(false).notNull(),
-    pontosFortes: text("pontos_fortes"),
-    requisitosFaltantes: text("requisitos_faltantes"),
-    eliminatoriosFalhos: text("eliminatorios_falhos"),
-    alertas: text("alertas"),
-    scoreIa: numeric("score_ia", { precision: 5, scale: 2 }),
-    parecerIa: text("parecer_ia"),
+    pontosFortes: text("pontos_fortes").notNull(),
+    requisitosFaltantes: text("requisitos_faltantes").notNull(),
+    eliminatoriosFalhos: text("eliminatorios_falhos").notNull(),
+    alertas: text("alertas").notNull(),
+    scoreIa: numeric("score_ia", { precision: 5, scale: 2 }).notNull(),
+    parecerIa: text("parecer_ia").notNull(),
     ...timestamps,
   },
   (table) => [
