@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   pgTableCreator,
   pgEnum,
@@ -304,6 +304,81 @@ export const avaliacaoIA = createTable(
 
 export type AvaliacaoIA = typeof avaliacaoIA.$inferSelect;
 export type NovaAvaliacaoIA = typeof avaliacaoIA.$inferInsert;
+
+export const departamentosRelations = relations(departamentos, ({ many }) => ({
+  cargos: many(cargos),
+}));
+
+export const cargosRelations = relations(cargos, ({ one, many }) => ({
+  departamento: one(departamentos, {
+    fields: [cargos.departamentoId],
+    references: [departamentos.id],
+  }),
+  vagas: many(vagas),
+}));
+
+export const vagasRelations = relations(vagas, ({ one, many }) => ({
+  cargo: one(cargos, {
+    fields: [vagas.cargoId],
+    references: [cargos.id],
+  }),
+  triagens: many(triagens),
+}));
+
+export const candidatosRelations = relations(candidatos, ({ one, many }) => ({
+  formacoes: many(candidatoFormacoes),
+  experiencias: many(candidatoExperiencias),
+  certificacoes: many(candidatoCertificacoes),
+  triagens: many(triagens),
+  cargoInteresse: one(cargos, {
+    fields: [candidatos.cargoInteresseId],
+    references: [cargos.id],
+  }),
+  areaInteresse: one(departamentos, {
+    fields: [candidatos.areaInteresseId],
+    references: [departamentos.id],
+  }),
+}));
+
+export const candidatoFormacoesRelations = relations(candidatoFormacoes, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [candidatoFormacoes.candidatoId],
+    references: [candidatos.id],
+  }),
+}));
+
+export const candidatoExperienciasRelations = relations(candidatoExperiencias, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [candidatoExperiencias.candidatoId],
+    references: [candidatos.id],
+  }),
+}));
+
+export const candidatoCertificacoesRelations = relations(candidatoCertificacoes, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [candidatoCertificacoes.candidatoId],
+    references: [candidatos.id],
+  }),
+}));
+
+export const triagensRelations = relations(triagens, ({ one }) => ({
+  candidato: one(candidatos, {
+    fields: [triagens.candidatoId],
+    references: [candidatos.id],
+  }),
+  vaga: one(vagas, {
+    fields: [triagens.vagaId],
+    references: [vagas.id],
+  }),
+  avaliacaoIA: one(avaliacaoIA),
+}));
+
+export const avaliacaoIARelations = relations(avaliacaoIA, ({ one }) => ({
+  triagem: one(triagens, {
+    fields: [avaliacaoIA.triagemId],
+    references: [triagens.id],
+  }),
+}));
 
 
 
