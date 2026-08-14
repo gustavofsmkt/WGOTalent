@@ -14,6 +14,7 @@ Este arquivo define as diretrizes estritas para a arquitetura de banco de dados,
 
 ## 1. Drizzle ORM e Migrações
 - **Fluxo Schema-First Versionado:** Gere migrações a partir das alterações no schema (`generate`), revise o SQL gerado (`review`) e aplique (`migrate`).
+- **Nome de migration obrigatório:** Toda execução de `db:generate` (mesmo quando a task não menciona o comando explicitamente — ex.: tasks de "Implementar <Entidade>") deve usar `npm run db:generate -- --name=<verbo>_<entidade>` (ex.: `create_cargos`, `add_status_vagas`, `drop_x`). Convenção: `snake_case`, iniciando com verbo (`create_`, `add_`, `alter_`, `drop_`, `rename_`). Nunca aceite o nome aleatório gerado automaticamente pelo Drizzle Kit (ex.: `lonely_plazm`, `sour_revanche`) — ele não comunica o que a migração faz.
 - **NUNCA use push:** É estritamente proibido usar o comando de push (sincronização direta de schema). Migrações devem ser sempre versionadas.
 - **Revisão de SQL:** Sempre revise o SQL gerado para garantir que as alterações (como deleções de coluna, criação de constraints e renomeações) estão corretas e não geram perda acidental de dados.
 
