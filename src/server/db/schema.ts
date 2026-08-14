@@ -280,5 +280,31 @@ export const triagens = createTable(
 export type Triagem = typeof triagens.$inferSelect;
 export type NovaTriagem = typeof triagens.$inferInsert;
 
+export const avaliacaoIA = createTable(
+  "avaliacao_ia",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    triagemId: uuid("triagem_id")
+      .notNull()
+      .references(() => triagens.id)
+      .unique(),
+    vagaFoiInferida: boolean("vaga_foi_inferida").default(false).notNull(),
+    pontosFortes: text("pontos_fortes"),
+    requisitosFaltantes: text("requisitos_faltantes"),
+    eliminatoriosFalhos: text("eliminatorios_falhos"),
+    alertas: text("alertas"),
+    scoreIa: numeric("score_ia", { precision: 5, scale: 2 }),
+    parecerIa: text("parecer_ia"),
+    ...timestamps,
+  },
+  (table) => [
+    check("avaliacao_ia_score_check", sql`${table.scoreIa} >= 0 AND ${table.scoreIa} <= 100`),
+  ]
+);
+
+export type AvaliacaoIA = typeof avaliacaoIA.$inferSelect;
+export type NovaAvaliacaoIA = typeof avaliacaoIA.$inferInsert;
+
+
 
 
