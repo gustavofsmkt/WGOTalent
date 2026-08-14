@@ -1,0 +1,219 @@
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{"colors":{"on-error-container":"#93000a","surface":"#fbf8ff","on-primary":"#ffffff","surface-tint":"#3456c1","surface-dim":"#dad9e3","surface-container-low":"#f4f2fd","error":"#ba1a1a","surface-container-highest":"#e3e1ec","outline-variant":"#c4c5d5","on-secondary-fixed":"#301400","tertiary-fixed":"#c6e7ff","on-surface":"#1a1b22","inverse-surface":"#2f3038","inverse-primary":"#b6c4ff","on-tertiary-fixed":"#001e2d","primary-container":"#0033a0","on-error":"#ffffff","on-primary-fixed":"#001550","surface-bright":"#fbf8ff","on-tertiary":"#ffffff","secondary-fixed-dim":"#ffb785","on-secondary-container":"#5d2c00","background":"#fbf8ff","surface-container":"#eeedf7","surface-container-high":"#e8e7f1","on-secondary-fixed-variant":"#723700","on-tertiary-fixed-variant":"#004c6b","primary-fixed":"#dce1ff","on-secondary":"#ffffff","outline":"#747684","tertiary-fixed-dim":"#81cfff","on-surface-variant":"#444653","on-tertiary-container":"#31b4f2","secondary":"#954a00","secondary-fixed":"#ffdcc6","error-container":"#ffdad6","tertiary-container":"#00435f","surface-variant":"#e3e1ec","secondary-container":"#fd8100","surface-container-lowest":"#ffffff","inverse-on-surface":"#f1effa","primary-fixed-dim":"#b6c4ff","tertiary":"#002c40","on-background":"#1a1b22","primary":"#00216e","on-primary-container":"#8ea6ff","on-primary-fixed-variant":"#133ca8"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"sm":"8px","max-width":"1440px","md":"16px","base":"4px","gutter":"20px","xl":"32px","lg":"24px","margin":"24px","xs":"4px"},"fontFamily":{"title-md":["Inter"],"code-sm":["Inter"],"headline-lg-mobile":["Inter"],"title-lg":["Inter"],"body-md":["Inter"],"display-lg":["Inter"],"body-lg":["Inter"],"headline-lg":["Inter"],"label-md":["Inter"],"headline-md":["Inter"]},"fontSize":{"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"code-sm":["12px",{"lineHeight":"16px","fontWeight":"400"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","fontWeight":"600"}],"title-lg":["20px",{"lineHeight":"28px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"display-lg":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.01em","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}]}}}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/></head><body class="bg-background font-body-md text-on-surface"><aside class="fixed left-0 top-0 h-full w-72 bg-primary text-on-primary z-50 flex flex-col shadow-xl"><div class="p-lg mb-xl flex flex-col gap-xs"><span class="font-headline-md text-headline-md text-on-primary">WGO</span><span class="font-label-md text-label-md text-on-primary/80">conexão de verdade</span></div><nav class="flex-1 px-md space-y-xs" data-active-classes="bg-primary-container text-on-primary-container font-semibold shadow-sm"><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="dashboard" href="#">Dashboard</a><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="departamentos" href="#">Departamentos</a><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="cargos" href="#">Cargos</a><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="vagas" href="#">Vagas</a><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="candidatos" href="#">Candidatos</a><a class="flex items-center gap-md px-md py-sm rounded-lg text-on-primary/70 hover:bg-primary-container/20 hover:text-on-primary transition-all duration-200" data-path="triagens" href="#">Triagens</a></nav></aside><div class="pl-72 w-full"><header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-xl flex items-center justify-between"><div class="flex items-center gap-md"><span class="font-title-md text-title-md text-on-surface">Portal de Talentos</span></div><div class="flex items-center gap-lg"><div class="flex items-center gap-sm"><div class="text-right hidden sm:block"><p class="font-title-md text-label-md text-on-surface">Admin User</p><p class="font-body-md text-label-md text-on-surface-variant">HR Manager</p></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="relative pt-16 min-h-screen bg-background p-xl"><div class="flex flex-col w-full">
+<div class="mb-xl flex flex-col md:flex-row md:items-center justify-between gap-md">
+<div>
+<div class="flex items-center gap-sm mb-xs">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Marina Costa</h1>
+<span class="px-3 py-1 rounded-full bg-secondary-container/20 text-on-secondary-container font-label-md text-label-md uppercase tracking-wide">Em Andamento</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">work</span>
+        Desenvolvedor Frontend Sênior
+        <span class="text-surface-variant px-1">•</span>
+        Tecnologia
+      </p>
+</div>
+<div class="flex items-center gap-sm">
+<div class="relative">
+<select class="appearance-none bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface font-title-md text-title-md py-sm pl-md pr-xl rounded-lg focus:outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer">
+<option selected="" value="em-andamento">Em Andamento</option>
+<option value="aprovado">Aprovado</option>
+<option value="reprovado">Reprovado</option>
+<option value="banco">Banco de Talentos</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">arrow_drop_down</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-primary hover:bg-primary/90 transition-colors text-on-primary font-title-md text-title-md py-sm pl-md pr-xl rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-container shadow-sm cursor-pointer">
+<option value="triagem-inicial">Triagem Inicial</option>
+<option selected="" value="entrevista-rh">Entrevista RH</option>
+<option value="teste-tecnico">Teste Técnico</option>
+<option value="entrevista-gestor">Entrevista Gestor</option>
+<option value="oferta">Oferta</option>
+</select>
+<span class="material-symbols-outlined absolute right-sm top-1/2 -translate-y-1/2 pointer-events-none text-on-primary">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<div class="mb-xl px-xl py-lg bg-surface-container-lowest rounded-xl shadow-sm">
+<div class="flex items-center justify-between relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-surface-container rounded-full z-0"></div>
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-[37.5%] h-1 bg-primary rounded-full z-0 transition-all duration-500"></div>
+<div class="relative z-10 flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Triagem Inicial</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-md ring-4 ring-surface-container-lowest scale-110 transition-transform">
+<span class="material-symbols-outlined text-[20px]">group</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-bold">Entrevista RH</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Teste Técnico</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]">person_check</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Entrevista Gestor</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-xs">
+<div class="w-10 h-10 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]">contract</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Oferta</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<div class="lg:col-span-5 flex flex-col gap-lg">
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-sm">
+<div class="flex items-center justify-between mb-md">
+<h2 class="font-title-lg text-title-lg text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+            Parecer do RH
+          </h2>
+<span class="font-code-sm text-code-sm text-on-surface-variant">24 Out 2023</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-md">
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+            Candidata demonstrou excelente comunicação e fit cultural alinhado aos valores da WGO. Relatou experiência sólida com React e TypeScript em projetos de grande escala. Mostrou-se muito interessada no desafio de modernização arquitetural proposto pela vaga. Expectativa salarial aderente ao budget.
+          </p>
+</div>
+<button class="mt-md w-full py-sm bg-surface-container hover:bg-surface-container-high transition-colors rounded-lg font-title-md text-title-md text-primary flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+          Editar Parecer
+        </button>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-sm flex flex-col items-center justify-center text-center overflow-hidden relative">
+<div class="absolute -right-12 -top-12 w-40 h-40 bg-secondary/5 rounded-full blur-2xl"></div>
+<div class="absolute -left-12 -bottom-12 w-40 h-40 bg-primary/5 rounded-full blur-2xl"></div>
+<div class="w-24 h-24 rounded-full overflow-hidden shadow-md mb-md border-4 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a confident young woman with curly brown hair, wearing a navy blazer, smiling subtly against a bright, modern office background with soft lighting, matching the modern corporate HR dashboard aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8XGAoHEZT-2SvvLCEC6AW_fF0DKr4iE6-wC-dbKP0tArQrsLPUpDdlZedysb70FmCZfk2gcOzaolUrq6guJgmldO0DYDr5BfwvsHn-GzW7KOdMzKzntiAZlu69JiqAwJfmOsNiTqRwboIvAweo7gxWO92MMLsCmCDJrOxZ8yBv6TAJhrNgtIgSCy-dgbijhRuViqbbRXe_5rPJTnkIsZJeivBOKh6YZqb7rEHUtzLIlcY_NJPSVNjrw"/>
+</div>
+<h3 class="font-title-lg text-title-lg text-on-surface mb-xs">Contato Rápido</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">marina.costa@email.com<br/>(11) 98765-4321</p>
+<div class="flex gap-sm w-full">
+<button class="flex-1 py-sm bg-surface-container hover:bg-surface-container-high transition-colors rounded-lg font-title-md text-label-md text-on-surface flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">mail</span> Email
+          </button>
+<button class="flex-1 py-sm bg-surface-container hover:bg-surface-container-high transition-colors rounded-lg font-title-md text-label-md text-on-surface flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">chat</span> WhatsApp
+          </button>
+</div>
+</div>
+</div>
+<div class="lg:col-span-7">
+<div class="bg-surface-container-lowest rounded-xl p-lg shadow-sm h-full relative overflow-hidden">
+<div class="absolute top-0 right-0 p-lg opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[120px] text-tertiary">psychiatry</span>
+</div>
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md mb-xl relative z-10">
+<div>
+<h2 class="font-title-lg text-title-lg text-on-surface flex items-center gap-sm mb-xs">
+<span class="material-symbols-outlined text-tertiary">memory</span>
+              Avaliação de IA WGO
+            </h2>
+<div class="flex items-center gap-sm">
+<span class="px-2 py-1 bg-tertiary-container/20 text-on-tertiary-container rounded font-label-md text-code-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                Vaga inferida automaticamente
+              </span>
+</div>
+</div>
+<div class="flex items-center gap-md bg-surface-container-low p-sm rounded-xl">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="100, 100" stroke-width="4"></path>
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-title-lg text-title-lg text-on-surface leading-none">92</span>
+</div>
+</div>
+<div class="pr-sm">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Score Global</p>
+<p class="font-title-md text-title-md text-secondary">Excelente fit</p>
+</div>
+</div>
+</div>
+<div class="space-y-lg relative z-10">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary">analytics</span>
+              Parecer Analítico
+            </h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              O currículo apresenta forte aderência aos requisitos técnicos da vaga. A extração de dados confirma mais de 5 anos de experiência com o stack primário (React, TS) e evidências de liderança técnica em projetos anteriores. A estrutura do currículo sugere objetividade e clareza.
+            </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="bg-surface/50 rounded-lg p-md border-l-4 border-primary">
+<h4 class="font-title-md text-label-md text-on-surface uppercase tracking-wide mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-primary">add_circle</span>
+                Pontos Fortes
+              </h4>
+<ul class="space-y-sm">
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-primary mt-1">•</span> Experiência consolidada em React/Redux
+                </li>
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-primary mt-1">•</span> Histórico de mentoria técnica
+                </li>
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-primary mt-1">•</span> Conhecimento em CI/CD e testes automatizados
+                </li>
+</ul>
+</div>
+<div class="bg-surface/50 rounded-lg p-md border-l-4 border-secondary">
+<h4 class="font-title-md text-label-md text-on-surface uppercase tracking-wide mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-secondary">warning</span>
+                Alertas
+              </h4>
+<ul class="space-y-sm">
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-secondary mt-1">•</span> Tempo médio de permanência em empresas recentes é inferior a 1.5 anos
+                </li>
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-secondary mt-1">•</span> Pouca evidência de atuação direta com micro-frontends (desejável)
+                </li>
+</ul>
+</div>
+<div class="bg-surface/50 rounded-lg p-md border-l-4 border-outline-variant md:col-span-2">
+<h4 class="font-title-md text-label-md text-on-surface uppercase tracking-wide mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-outline">remove_circle</span>
+                Requisitos Faltantes
+              </h4>
+<ul class="space-y-sm grid grid-cols-1 sm:grid-cols-2">
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-outline-variant mt-1">•</span> Certificação AWS (Opcional)
+                </li>
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-outline-variant mt-1">•</span> Espanhol Fluente
+                </li>
+</ul>
+</div>
+<div class="hidden bg-error-container/20 rounded-lg p-md border-l-4 border-error md:col-span-2">
+<h4 class="font-title-md text-label-md text-on-error-container uppercase tracking-wide mb-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-error">cancel</span>
+                Eliminatórios Falhados
+              </h4>
+<ul class="space-y-sm">
+<li class="font-body-md text-body-md text-on-surface-variant flex items-start gap-xs">
+<span class="text-error mt-1">•</span> Nenhum requisito eliminatório falhado detectado.
+                </li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></main></div></body></html>
