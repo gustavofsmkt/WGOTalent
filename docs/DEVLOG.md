@@ -38,4 +38,15 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Atualizado o arquivo `.env.example` refletindo os novos esquemas e valores padrão para desenvolvimento.
 - Adicionados testes automatizados em `src/env.test.ts` para verificar o parsing, tratamento de falhas e garantir que segredos não sejam expostos em mensagens de erro.
 
+## Marco: TASK-053 — Aplicação de Migrações em Banco Vazio
+*Data: 2026-08-14*
+
+- Inicializado container PostgreSQL descartável via Docker Compose com volume limpo/recreado (`wgotalent-postgres`).
+- Executado e validado `npm run db:smoke` no banco zerado, confirmando conectividade e suporte à extensão `unaccent`.
+- Aplicadas as 10 migrações Drizzle em sequência através do `npm run db:migrate` sem uso de `db:push`.
+- Confirmada a aplicação completa das migrações na tabela de controle `drizzle.__drizzle_migrations` (10 registros gravados).
+- Re-executado `npm run db:smoke` no banco migrado obtendo sucesso absoluto.
+- Inspecionadas todas as 9 tabelas criadas no schema `public` (`wgotalent_departamentos`, `wgotalent_cargos`, `wgotalent_vagas`, `wgotalent_candidatos`, `wgotalent_candidato_formacoes`, `wgotalent_candidato_experiencias`, `wgotalent_candidato_certificacoes`, `wgotalent_triagens`, `wgotalent_avaliacao_ia`), confirmando a criação de 104 constraints (PKs, FKs, Uniques, Checks) e 22 índices.
+
+
 
