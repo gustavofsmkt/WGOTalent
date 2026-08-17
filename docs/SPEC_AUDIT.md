@@ -8,7 +8,7 @@ Abaixo estão classificadas as regras, questões, necessidades de decisão e cri
 *   **Soft Delete Universal:** Todas as entidades possuem a coluna `deleted_at`. Leituras devem usar helper centralizado `notDeleted`.
 *   **Unique Simples + Soft Delete:** Constraints `UNIQUE` (como `Departamento.nome` e `Candidato.email`) são aplicadas diretamente. O soft delete não libera esses valores para reuso, impedindo recriações com os mesmos dados básicos intencionalmente.
 *   **Delete em Cascata na Aplicação:** A exclusão de um Candidato exige atualização manual de `deleted_at` para suas Formações, Experiências, Certificações e Triagens na mesma transação, sem uso de `ON DELETE CASCADE` do banco de dados.
-*   **Partial Unique de Triagem em Andamento:** Existe um índice parcial `UNIQUE (candidato_id, vaga_id) WHERE resultado = 'em_andamento'` para impedir candidaturas ativas simultâneas na mesma vaga.
+*   **Unique Simples de Triagem por Candidato/Vaga:** Existe um índice único `UNIQUE (candidato_id, vaga_id)` (sem cláusula `WHERE`) que impede mais de uma triagem do mesmo candidato para a mesma vaga, independentemente do `resultado`. O índice parcial cogitado anteriormente foi removido em `2a6c917` para alinhar com o spec canônico (`db_triagem_proposta.ts:184-185`).
 *   **Status de Triagem:** Dividido fisicamente em `etapa` e `resultado`. O `motivo` é obrigatório apenas para resultados de "reprovado" ou "desistente", precisando de validação condicional rigorosa.
 *   **AvaliacaoIA Inline:** A entidade AvaliacaoIA é relação 1:1 com Triagem e exibida em conjunto. Não possui CRUD próprio ou interface separada.
 *   **Armazenamento de Currículos:** Arquivos de currículos devem utilizar o `StorageProvider`, ficando fora de `public/` e sendo servidos através de `/api/files/[...path]/route.ts`.
@@ -31,7 +31,7 @@ Abaixo estão classificadas as regras, questões, necessidades de decisão e cri
 ## 4. Critérios de Aceitação Derivados
 
 *   **Completude CRUD:** As entidades Departamento, Cargo, Vaga, Candidato e Triagem são gerenciáveis via interfaces criadas com Server Components e Server Actions.
-*   **Prevenção de Duplicidade:** O frontend e o backend interceptam o *partial unique* e bloqueiam triagens de um mesmo candidato na mesma vaga se a anterior ainda estiver `em_andamento`.
+*   **Prevenção de Duplicidade:** O frontend e o backend interceptam a constraint `UNIQUE (candidato_id, vaga_id)` e impedem a criação de uma segunda triagem para o mesmo par candidato/vaga, seja qual for o `resultado` da triagem existente.
 *   **Integridade Referencial na UI:** Os formulários exibem apenas opções ativas (Departamentos para Cargos; Cargos para Vagas; Vagas e Candidatos para Triagem) buscadas via servidor (sem API routes).
 *   **Transações Seguras:** Qualquer operação composta (Criação do Candidato com currículo e filhos, exclusão do Candidato em cascata, webhook criando Candidato, Triagem e AvaliacaoIA) roda num bloco de transação única com _rollback_ em falha.
 *   **Validação Estrita do Status de Triagem:** Schemas do Zod bloqueiam salvamento (tanto no form quanto no webhook) se o `motivo` for fornecido em resultados inapropriados ou faltar em reprovações e desistências, de forma pareada aos enumeradores do schema.
