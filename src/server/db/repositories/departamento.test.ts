@@ -29,6 +29,7 @@ describe("departamentoRepository", () => {
     expect(typeof departamentoRepository.softDelete).toBe("function");
     expect(typeof departamentoRepository.hasActiveCargos).toBe("function");
     expect(typeof departamentoRepository.countActiveCargos).toBe("function");
+    expect(typeof departamentoRepository.findActiveCargos).toBe("function");
   });
 
   it("builds query with notDeleted filter for findAll", () => {

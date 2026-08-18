@@ -1,20 +1,29 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { deleteDepartamento } from "~/actions/departamentos";
+import { cn } from "~/lib/utils";
 
 interface DeleteDepartamentoButtonProps {
   departamentoId: string;
   departamentoNome: string;
+  redirectTo?: string;
+  variant?: "icon" | "button";
+  className?: string;
 }
 
 export function DeleteDepartamentoButton({
   departamentoId,
   departamentoNome,
+  redirectTo,
+  variant = "icon",
+  className,
 }: DeleteDepartamentoButtonProps) {
+  const router = useRouter();
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
@@ -25,6 +34,9 @@ export function DeleteDepartamentoButton({
       if (result.success) {
         toast.success(result.message ?? "Departamento excluído com sucesso.");
         setIsConfirming(false);
+        if (redirectTo) {
+          router.push(redirectTo);
+        }
       } else {
         toast.error(result.message ?? "Erro ao excluir departamento.");
         setIsConfirming(false);
@@ -67,12 +79,35 @@ export function DeleteDepartamentoButton({
     );
   }
 
+  if (variant === "button") {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className={cn(
+          "text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30",
+          className,
+        )}
+        onClick={() => setIsConfirming(true)}
+        title={`Excluir departamento ${departamentoNome}`}
+        aria-label={`Excluir departamento ${departamentoNome}`}
+      >
+        <Trash2 className="size-4 mr-1.5" />
+        Excluir
+      </Button>
+    );
+  }
+
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon-sm"
-      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+      className={cn(
+        "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+        className,
+      )}
       onClick={() => setIsConfirming(true)}
       title={`Excluir departamento ${departamentoNome}`}
       aria-label={`Excluir departamento ${departamentoNome}`}

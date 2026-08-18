@@ -72,4 +72,49 @@ describe("DepartamentosPage - Server Component Logic", () => {
     expect(filtered).toHaveLength(1);
     expect(filtered[0]?.nome).toBe("Tecnologia");
   });
+
+  it("fetches single department and its active cargos for detail page", async () => {
+    const mockDept = {
+      id: "dept-1",
+      nome: "Engenharia",
+      descricao: "Engenharia de software",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    };
+
+    const mockCargos = [
+      {
+        id: "cargo-1",
+        departamentoId: "dept-1",
+        titulo: "Desenvolvedor Backend",
+        descricao: "Desenvolvimento de APIs",
+        ativo: true,
+        faixaSalarial: "10000.00",
+        requisitos: "Node.js",
+        requisitosDesejaveis: "Drizzle",
+        criteriosEliminatorios: "TypeScript",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      },
+    ];
+
+    vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce(mockDept);
+    vi.spyOn(departamentoRepository, "findActiveCargos").mockResolvedValueOnce(mockCargos);
+
+    const dept = await departamentoRepository.findById("dept-1");
+    const cargos = await departamentoRepository.findActiveCargos("dept-1");
+
+    expect(dept?.nome).toBe("Engenharia");
+    expect(cargos).toHaveLength(1);
+    expect(cargos[0]?.titulo).toBe("Desenvolvedor Backend");
+  });
+
+  it("returns null when department is not found or soft-deleted", async () => {
+    vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce(null);
+
+    const dept = await departamentoRepository.findById("non-existent-id");
+    expect(dept).toBeNull();
+  });
 });

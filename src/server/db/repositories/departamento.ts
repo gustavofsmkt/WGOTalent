@@ -5,6 +5,7 @@ import {
   cargos,
   type Departamento,
   type NovoDepartamento,
+  type Cargo,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 
@@ -123,5 +124,16 @@ export const departamentoRepository = {
       eq(cargos.ativo, true),
     );
     return Number(rows[0]?.count ?? 0);
+  },
+
+  findActiveCargos: async (
+    departamentoId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<Cargo[]> => {
+    return notDeleted(
+      dbOrTx.select().from(cargos),
+      cargos,
+      eq(cargos.departamentoId, departamentoId),
+    ).orderBy(asc(cargos.titulo));
   },
 };
