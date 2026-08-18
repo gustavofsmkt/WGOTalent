@@ -13,9 +13,8 @@ Validates form payloads before they reach Drizzle. Enforces field constraints
 `docs/db_triagem_proposta.ts`. The `triagem` schema is special: it enforces the
 `etapa`/`resultado`/`motivo` coupling rule that the UI also reflects.
 
-Not responsible for: running the Drizzle insert/update (→ layer-actions),
-validating external webhook payloads (→ WebhookSchema), or rendering form fields
-(→ layer-ui DomainComponents).
+Not responsible for: running the Drizzle insert/update (→ layer-actions)
+or rendering form fields (→ layer-ui DomainComponents).
 
 ### Where does it live?
 
@@ -27,7 +26,7 @@ validating external webhook payloads (→ WebhookSchema), or rendering form fiel
 
 ### Building blocks
 
-No sub-artifacts. Related: [WebhookSchema](webhook-schema.md).
+No sub-artifacts.
 
 ### Structural convention
 
@@ -166,9 +165,7 @@ Add or update a schema when adding a new entity or changing a form field.
 
 ## References
 
-- [WebhookSchema](webhook-schema.md)
 - [../../layer-actions/references/candidatos-actions.md](../../layer-actions/references/candidatos-actions.md)
-- [../../layer-api/references/n8n-webhook-route.md](../../layer-api/references/n8n-webhook-route.md)
 
 Related skills:
 - [zod-validation-utilities](../../zod-validation-utilities/SKILL.md)

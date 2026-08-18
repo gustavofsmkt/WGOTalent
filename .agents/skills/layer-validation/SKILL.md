@@ -2,14 +2,12 @@
 name: layer-validation
 description: >-
   Owns all Zod schemas for the triagem HR platform: one schema per domain entity
-  (departamento, cargo, vaga, candidato, triagem) plus a dedicated schema for the
-  n8n inbound webhook payload. Load when touching src/lib/validation/*.ts, when
-  adding or modifying form fields, when changing allowed enum values, or when the
-  n8n payload contract changes. Trigger terms: Zod, schema, parse, safeParse,
-  z.object, z.enum, z.string, z.uuid, superRefine, validation error, webhook
-  payload, form validation, criarDepartamentoSchema, criarTriagemSchema,
-  n8nTriagemWebhookSchema. Do NOT load for Drizzle table definitions (→ layer-db)
-  or Server Action business logic (→ layer-actions).
+  (departamento, cargo, vaga, candidato, triagem). Load when touching
+  src/lib/validation/*.ts, when adding or modifying form fields, or when changing
+  allowed enum values. Trigger terms: Zod, schema, parse, safeParse, z.object,
+  z.enum, z.string, z.uuid, superRefine, validation error, form validation,
+  criarDepartamentoSchema, criarTriagemSchema. Do NOT load for Drizzle table
+  definitions (→ layer-db) or Server Action business logic (→ layer-actions).
 ---
 
 # Validation Layer
@@ -23,11 +21,10 @@ table definitions, then extends or refines them with business rules. Sits above
 ## Responsibilities
 
 Defines and exports one Zod schema file per entity (create and update variants
-where shapes differ) and a dedicated schema for the n8n webhook payload. Uses
-`createInsertSchema` / `createSelectSchema` from `drizzle-zod` to derive base
-schemas from the Drizzle table so column types and enum values never have to be
-declared twice. Extends the base schema with business-level constraints (e.g. the
-`triagem` motivo pairing rule via `.superRefine()`).
+where shapes differ). Uses `createInsertSchema` / `createSelectSchema` from `drizzle-zod`
+to derive base schemas from the Drizzle table so column types and enum values never
+have to be declared twice. Extends the base schema with business-level constraints
+(e.g. the `triagem` motivo pairing rule via `.superRefine()`).
 
 Not responsible for: Drizzle mutations (→ layer-actions), HTTP route wiring
 (→ layer-api), or UI rendering (→ layer-ui).
@@ -40,7 +37,6 @@ Server schemas (used by Server Actions and Route Handlers):
 - `src/lib/validation/vaga.ts`
 - `src/lib/validation/candidato.ts`
 - `src/lib/validation/triagem.ts`
-- `src/lib/validation/webhook.ts` — n8n `POST /api/webhooks/n8n/triagem` payload
 
 Client schemas (used by TanStack Form; extend server schemas with Portuguese error messages):
 - `src/lib/validation/departamento.client.ts`
@@ -53,7 +49,6 @@ Client schemas (used by TanStack Form; extend server schemas with Portuguese err
 
 - **EntitySchema** — Per-entity Zod schemas (departamento, cargo, vaga, candidato, triagem) with create and update variants. See [Reference](references/entity-schema.md).
 - **ClientFormSchema** — Client-side extensions of EntitySchema with Portuguese error messages for TanStack Form. Live in `*.client.ts` files alongside the server schema. See [Reference](references/entity-schema.md#client-schema).
-- **WebhookSchema** — Zod schema for the n8n inbound screening-result payload. See [Reference](references/webhook-schema.md).
 
 ### Hard rules
 
@@ -71,19 +66,17 @@ Client schemas (used by TanStack Form; extend server schemas with Portuguese err
 
 ## Workflow
 
-Work here when adding a new entity, changing field constraints, or updating the n8n payload contract.
+Work here when adding a new entity or changing field constraints.
 
 1. Import the Drizzle table from `@/server/db/schema`.
 2. Call `createInsertSchema(table)` from `drizzle-zod` to get the base schema.
 3. `.pick()` the user-submittable fields, then add any business constraints with `.extend()` or `.superRefine()`. See [EntitySchema](references/entity-schema.md).
 4. Export a named schema (e.g. `criarDepartamentoSchema`) and its inferred TypeScript type.
 5. Import the schema in the relevant `src/actions/<entity>.ts` or `src/app/api/` route — never duplicate the schema logic there.
-6. For webhook changes, update `src/lib/validation/webhook.ts` first, then update the route handler. See [WebhookSchema](references/webhook-schema.md).
-7. If a form uses TanStack Form, create a `src/lib/validation/<entity>.client.ts` that extends the server schema with Portuguese error messages. See [EntitySchema — Client Schema](references/entity-schema.md#client-schema).
+6. If a form uses TanStack Form, create a `src/lib/validation/<entity>.client.ts` that extends the server schema with Portuguese error messages. See [EntitySchema — Client Schema](references/entity-schema.md#client-schema).
 
 ---
 
 ## References
 
 - [EntitySchema](references/entity-schema.md)
-- [WebhookSchema](references/webhook-schema.md)
