@@ -9,9 +9,9 @@ to a `Vaga`.
 Validates `etapa`/`resultado`/`motivo` using the Zod coupling rule from
 `src/lib/validation/triagem.ts`, runs Drizzle mutations on `triagens`, revalidates
 `/triagens` and the specific triagem detail route. Does not create `AvaliacaoIA`
-rows — that is the exclusive responsibility of `layer-api N8nWebhookRoute`.
+rows — that is the exclusive responsibility of the native AI engine.
 
-Not responsible for: `AvaliacaoIA` mutations (→ layer-api N8nWebhookRoute),
+Not responsible for: `AvaliacaoIA` mutations (→ native AI engine),
 Candidato cascade on soft-delete (→ CandidatosActions), or rendering the pipeline
 view (→ layer-ui).
 
@@ -71,7 +71,7 @@ export async function deletarTriagem(id: string) {
 
 - The `motivo` pairing rule is enforced by the Zod schema — do not duplicate the coupling check inline.
 - Catch the partial unique index violation on `(candidato_id, vaga_id)` for `resultado = 'em_andamento'` and return `{ success: false, error: 'triagem_duplicada' }`.
-- `AvaliacaoIA` is never created or modified by actions in this file — only by the n8n webhook route.
+- `AvaliacaoIA` is never created or modified by actions in this file — only by the native AI engine.
 - Never hard-delete.
 
 ---
@@ -87,7 +87,6 @@ export async function deletarTriagem(id: string) {
 ## References
 
 - [CandidatosActions](candidatos-actions.md)
-- [../../layer-api/references/n8n-webhook-route.md](../../layer-api/references/n8n-webhook-route.md)
 - [../../layer-validation/references/entity-schema.md](../../layer-validation/references/entity-schema.md)
 - [../../layer-db/references/drizzle-schema.md](../../layer-db/references/drizzle-schema.md)
 

@@ -15,6 +15,6 @@ Estas regras se aplicam aos arquivos do Next.js App Router e Server Actions do p
 - **Sem Fetch interno**: NUNCA utilize `fetch` em um Server Component para chamar a própria API do projeto.
 - **Escrita de dados (Writes)**: Todas as mutações e validações devem ser implementadas usando **Server Actions** (`src/actions`).
 - **Revalidação de cache**: Sempre utilize `revalidatePath` (ou `revalidateTag`) nas Server Actions após realizar mutações para refletir os novos dados na UI.
-- **Route Handlers não são BFF interno**: Não utilize Route Handlers (`route.ts`) como BFF para o próprio frontend. Eles são destinados para webhooks (ex: n8n) ou integrações externas.
+- **Route Handlers não são BFF interno**: Não utilize Route Handlers (`route.ts`) como BFF para o próprio frontend. Eles são destinados para webhooks ou integrações externas.
 - **Estados de Rota**: Implemente ativamente os arquivos de convenção do Next.js (`loading.tsx`, `error.tsx` e `not-found.tsx`) para feedback coeso de UI.
 - **Cleanup**: Ao refatorar ou substituir um padrão, remova completamente os arquivos e códigos obsoletos para manter o repositório limpo.
