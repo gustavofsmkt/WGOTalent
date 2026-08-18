@@ -46,7 +46,6 @@ writing a query, form, or validation schema.
 
 Validated via `src/env.js` (`@t3-oss/env-nextjs`). Key server-side vars:
 - `DATABASE_URL` — PostgreSQL connection string
-- `WEBHOOK_N8N_SECRET` — shared secret for the n8n webhook route
 - `STORAGE_ROOT` — absolute path to the file storage directory
 
 Import in server code as `import { env } from '@/env'` — never use `process.env.*` directly.
@@ -57,14 +56,9 @@ Import in server code as `import { env } from '@/env'` — never use `process.en
   `src/server/db/index.ts`, and `src/env.js` are structural — do not move or
   rename them.
 - **Prohibited in MVP**: tRPC, Auth.js/NextAuth, Prisma.
-- **N8N**: orchestration and webhook consumption only — N8N must never write
-  directly to the database; all DB mutations from n8n flow through the two
-  inbound Route Handlers, `src/app/api/webhooks/n8n/candidatos/route.ts`
-  (candidate registration) and `src/app/api/webhooks/n8n/triagem/route.ts`
-  (screening result). The platform also calls n8n outbound (fire-and-forget) to
-  trigger the Classificador after a Candidato or Vaga is created — see
-  `docs/decisions/0005-outbound-classifier-trigger.md`. Full contract:
-  `docs/N8N_WEBHOOK_CONTRACT.md`.
+- **AI Engine**: native agent engine orchestrated inside the platform (see
+  `docs/decisions/0007-encerramento-integracao-n8n.md`), replacing external n8n
+  workflows.
 - **Dependencies**: install no library without explicit approval.
 
 ## Development practices

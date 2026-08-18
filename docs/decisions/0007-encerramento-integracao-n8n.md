@@ -16,6 +16,8 @@ Mover toda a orquestração de IA (extração de currículo, classificação de 
 
 Formatos de currículo suportados no MVP: PDF, DOCX, PNG, JPEG — DOCX via mammoth, sem serviço de conversão externo. Captação via upload manual (recrutador) e via provedor de e-mail configurável (Zimbra/Microsoft 365/Google Workspace), com credenciais de LLM e de e-mail cadastradas via admin, cifradas em repouso.
 
+Ao persistir uma avaliação gerada pelo motor de IA, preserva-se a regra de negócio de definir `etapa = 'curriculo'` e `resultado = 'em_andamento'` como valores padrão iniciais (herdados do ADR-0004).
+
 ## Consequências (Justificativa)
 
 Os 3 fluxos n8n analisados são pipelines sequenciais (extração → classificação → avaliação) sem orquestração complexa que justifique um motor de workflow externo. Trazer isso para dentro da plataforma permite:

@@ -918,60 +918,6 @@ Na mesma TASK:
 Faça commit `docs(adr): correct disponibilidade_horarios to text`.
 ```
 
-## TASK-031b — ADR mapeamento de campos n8n → DB
-
-**Modelo recomendado:** Gemini 3.1 Pro
-
-### Prompt para o Copilot Chat
-
-```text
-Crie ADR documentando os mapeamentos obrigatórios na borda dos dois Route Handlers inbound.
-
-### Mapeamentos do webhook /api/webhooks/n8n/triagem
-
-O payload real enviado pelo n8n Triagem é um **array** onde cada item tem um wrapper `output`:
-```json
-[{ "output": { "candidato_id": "uuid", "vaga_id": "uuid", ... } }]
-```
-
-1. `etapa` (DB) — **ausente no payload n8n**:
-   - O n8n não envia campo `fase` ou `etapa`.
-   - Decisão: o Route Handler define `etapa = 'curriculo'` como valor fixo para toda triagem criada via webhook IA. Triagens avançam de etapa manualmente pelo RH via Server Action.
-
-2. `resultado` (DB) — **ausente no payload n8n**:
-   - O n8n não envia `recomendacao` nem `resultado`.
-   - Decisão: o Route Handler define `resultado = 'em_andamento'` como valor fixo. O n8n só chama este webhook quando score > 65; candidatos reprovados não geram registro de Triagem.
-
-3. `pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos`, `alertas` — **já chegam como TEXT**:
-   - O n8n envia essas strings com newlines embutidos (`\n`), não como arrays.
-   - Nome canônico no payload: `eliminatorios_falhos` (não `criterios_eliminatorios_falhos`).
-   - Transformação: string vazia `""` → persistir como `null`.
-
-4. `score_ia` — **integer no payload, NUMERIC(5,2) no DB**:
-   - Cast direto; nenhuma perda de precisão esperada.
-
-5. `candidato_id` e `vaga_id` — **UUIDs já resolvidos**:
-   - O n8n envia os IDs diretos; não há lookup necessário.
-
-### Mapeamentos do webhook /api/webhooks/n8n/candidatos
-
-6. `area_interesse` (string em `referencias`) → `area_interesse_id` (FK Departamento):
-   - n8n envia: "Administrativo" | "Comercial" | "Recursos Humanos" | "Técnico/Operacional".
-   - Plataforma faz lookup `Departamento.nome ILIKE :valor` → obtém `id`.
-   - Se não encontrar: logar aviso e salvar `NULL` (campo é nullable).
-
-7. `cargo_interesse` (string em `referencias`) → `cargo_interesse_id` (FK Cargo):
-   - Plataforma faz lookup `Cargo.titulo ILIKE :valor` → obtém `id`.
-   - Se não encontrar: logar aviso e salvar `NULL`.
-
-8. `disponibilidade_horarios` — **boolean ou string no payload**:
-   - Valor `false` (boolean) ou `null` → persistir `NULL`.
-   - String descritiva → persistir como TEXT.
-
-Documente o mapeamento completo. Não implementar ainda.
-Faça commit `docs(adr): define n8n to db field mapping`.
-```
-
 ## TASK-031c — ADR disparo outbound para o Classificador
 
 **Modelo recomendado:** Gemini 3.1 Pro
@@ -997,97 +943,6 @@ Decisões a documentar:
 Não implementar ainda.
 Adicione `CLASSIFICADOR_N8N_WEBHOOK_URL` a `docs/specs/` e planeje adicionar a `src/env.js`.
 Faça commit `docs(adr): define outbound classifier trigger`.
-```
-
-## TASK-032 — Fechar contratos de integração n8n
-
-**Modelo recomendado:** Gemini 3.1 Pro
-
-### Prompt para o Copilot Chat
-
-```text
-Crie `docs/N8N_WEBHOOK_CONTRACT.md` documentando os três endpoints de integração com base nas specs, ADRs e análise dos workflows n8n.
-
-### Endpoint 1 — POST /api/webhooks/n8n/candidatos (inbound de Cadastro_Candidato)
-
-Recebe: array de candidatos estruturados. O payload é sempre um array JSON — processar cada item individualmente.
-
-Estrutura do payload (array de objetos):
-```json
-[
-  {
-    "candidato": {
-      "nome": "...", "email": "...", "celular": "...",
-      "disponibilidade_horarios": false,
-      "texto_curriculo_extraido": "...",
-      "curriculo_arquivo_key": null,
-      "cargo_interesse_id": null,
-      "area_interesse_id": null
-    },
-    "formacoes": [
-      { "titulo": "...", "instituicao": null, "area_formacao": "...", "data_inicio": "", "data_termino": null }
-    ],
-    "experiencias_profissionais": [
-      { "empresa": "...", "cargo_titulo": "...", "descricao": null, "data_entrada": "", "data_saida": null }
-    ],
-    "certificacoes": [],
-    "referencias": {
-      "cargo_interesse": "...",
-      "area_interesse": "..."
-    }
-  }
-]
-```
-
-Campos obrigatórios por item: `candidato.nome`, `candidato.email`, `candidato.celular`.
-`cargo_interesse_id` e `area_interesse_id` vêm como null no candidato; os valores reais estão em `referencias` como strings para lookup.
-`disponibilidade_horarios` pode ser boolean false (→ null) ou string descritiva (→ persistir como TEXT).
-Header obrigatório: x-webhook-secret (shared secret).
-Idempotência: x-idempotency-key obrigatório.
-Respostas: 200 (criado/atualizado), 409 (candidato soft-deleted bloqueado), 422 (validação), 401 (secret inválido).
-Após persistir: disparar Classificador de forma assíncrona.
-
-### Endpoint 2 — POST /api/webhooks/n8n/triagem (inbound de Triagem)
-
-Recebe: array de resultados de avaliação IA. O payload é sempre um array onde cada item tem um wrapper `output`:
-```json
-[
-  {
-    "output": {
-      "candidato_id": "uuid",
-      "vaga_id": "uuid",
-      "vaga_foi_inferida": false,
-      "pontos_fortes": "texto com\nnewlines",
-      "requisitos_faltantes": "",
-      "eliminatorios_falhos": "",
-      "alertas": "texto",
-      "score_ia": 95,
-      "parecer_ia": "texto longo"
-    }
-  }
-]
-```
-
-Campos obrigatórios por item: `output.candidato_id`, `output.vaga_id`, `output.score_ia`, `output.parecer_ia`.
-Não há campos `fase`, `recomendacao` nem `motivo` — o handler define os defaults:
-- `etapa = 'curriculo'` (fixo para triagem IA)
-- `resultado = 'em_andamento'` (n8n só chama quando score > 65)
-- `motivo = null`
-`pontos_fortes`, `requisitos_faltantes`, `eliminatorios_falhos` e `alertas` chegam como TEXT com newlines embutidos (não arrays). String vazia → null.
-Header obrigatório: x-webhook-secret (shared secret).
-Idempotência: x-idempotency-key obrigatório.
-Resposta: 200, 422, 401, 409 (idempotência).
-
-### Endpoint 3 — POST <CLASSIFICADOR_N8N_WEBHOOK_URL> (outbound da plataforma)
-
-Disparado após: candidato registrado (flow 1) ou vaga cadastrada (flow 2).
-Payload: { candidato: CandidatoCompleto, vagas: VagaCompleta[] } ou { vaga: VagaCompleta, candidatos: CandidatoCompleto[] }.
-Fire-and-forget; falha não reverte transação principal.
-URL em env `CLASSIFICADOR_N8N_WEBHOOK_URL`.
-
-Documente com exemplos sanitizados (sem PII real).
-Não implementar n8n.
-Faça commit `docs(integration): define complete n8n integration contracts`.
 ```
 
 # Fase 4 — PostgreSQL local
@@ -2857,7 +2712,6 @@ WGOTalent/
 │   ├── UI_REFERENCE_MAP.md
 │   ├── DEVELOPMENT_METHOD.md
 │   ├── HARNESS.md
-│   ├── N8N_WEBHOOK_CONTRACT.md           ← 3 endpoints: candidatos inbound, triagem inbound, classificador outbound
 │   ├── SECURITY.md
 │   └── TECHNICAL_WALKTHROUGH.md
 ├── drizzle/

@@ -76,7 +76,7 @@ the file route, or when a new external-facing endpoint is required.
 1. For candidatos webhook changes: update `src/lib/validation/webhook.ts` first, then the route handler. See [N8nCandidatosWebhookRoute](references/n8n-candidatos-webhook-route.md).
 2. For triagem webhook changes: same schema file, then the route handler. See [N8nTriagemWebhookRoute](references/n8n-webhook-route.md).
 3. For file route changes: update `src/lib/storage/storage.ts` first if a new operation is needed, then update the route. See [FileRoute](references/file-route.md).
-4. Test each webhook route with a cURL or Postman request that includes `x-n8n-secret`, `x-idempotency-key`, and a payload matching the corresponding schema — see `docs/N8N_WEBHOOK_CONTRACT.md` for canonical examples.
+4. Test each webhook route with a cURL or Postman request that includes `x-n8n-secret`, `x-idempotency-key`, and a payload matching the corresponding schema.
 
 ---
 
@@ -85,5 +85,4 @@ the file route, or when a new external-facing endpoint is required.
 - [N8nCandidatosWebhookRoute](references/n8n-candidatos-webhook-route.md)
 - [N8nTriagemWebhookRoute](references/n8n-webhook-route.md)
 - [FileRoute](references/file-route.md)
-- `docs/N8N_WEBHOOK_CONTRACT.md` — canonical payload/response contract for both webhooks
 - `docs/decisions/0004-n8n-webhook-field-mapping.md`, `docs/decisions/0005-outbound-classifier-trigger.md`

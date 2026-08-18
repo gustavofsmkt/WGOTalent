@@ -92,7 +92,7 @@ area/cargo lookup policy changes.
 1. Update `src/lib/validation/webhook.ts` to match the new payload shape.
 2. Update the route handler's upsert + lookup logic.
 3. Update the outbound trigger's city-filter query if the matching rule changes (ADR-0005).
-4. Test with a cURL request including `x-n8n-secret`, `x-idempotency-key`, and a payload matching `docs/N8N_WEBHOOK_CONTRACT.md` section 1.
+4. Test with a cURL request including `x-n8n-secret` and `x-idempotency-key`.
 
 ---
 
@@ -102,7 +102,6 @@ area/cargo lookup policy changes.
 - [FileRoute](file-route.md)
 - [../../layer-validation/references/webhook-schema.md](../../layer-validation/references/webhook-schema.md)
 - [../../layer-db/references/repository.md](../../layer-db/references/repository.md)
-- `docs/N8N_WEBHOOK_CONTRACT.md` — section 1 (canonical payload/response contract)
 - `docs/decisions/0002-webhook-deleted-candidate-conflict.md`
 - `docs/decisions/0005-outbound-classifier-trigger.md`
 
