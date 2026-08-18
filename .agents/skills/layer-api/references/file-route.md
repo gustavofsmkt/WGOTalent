@@ -11,8 +11,8 @@ within `STORAGE_ROOT` (path traversal guard), reads the file, and streams it wit
 the correct `Content-Type` header. In the MVP, access is open — the handler is
 structured so an auth check can be inserted before streaming without a rewrite.
 
-Not responsible for: writing files to storage (→ layer-actions CandidatosActions,
-→ N8nWebhookRoute), access control policy (post-MVP concern), or serving anything
+Not responsible for: writing files to storage (→ layer-actions CandidatosActions),
+access control policy (post-MVP concern), or serving anything
 other than files referenced by `Candidato.curriculo_arquivo_key`.
 
 ### Where does it live?
@@ -74,7 +74,6 @@ Touch when adding auth, supporting additional file MIME types, or changing the s
 
 ## References
 
-- [N8nWebhookRoute](n8n-webhook-route.md)
 - [../../layer-storage/references/local-storage-provider.md](../../layer-storage/references/local-storage-provider.md)
 
 Real implementations:
