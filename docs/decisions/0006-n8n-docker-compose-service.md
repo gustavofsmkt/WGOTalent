@@ -1,10 +1,13 @@
 # 6. n8n como Serviço no Docker Compose
 
+> **Nota:** Superseded pelo ADR-0007 — o serviço n8n foi removido do docker-compose.yml (ver CORR-04).
+
 ## Status
 
-Aceito
+Obsoleta
 
 * **Supersedes:** nota de escopo do roteiro greenfield que excluía n8n do `docker-compose.yml`.
+* **Superseded-by:** [0007. Encerramento da Integração via n8n e Adoção de Motor de Agentes Nativo](0007-encerramento-integracao-n8n.md)
 
 ## Contexto
 
