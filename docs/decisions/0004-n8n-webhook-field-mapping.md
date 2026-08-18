@@ -2,9 +2,15 @@
 
 Data: 2026-08-13
 
+> **Nota:** Superseded parcialmente pelo ADR-0007. O mapeamento de payload n8n (eliminatorios_falhos, wrapper output etc.) não se aplica mais. Sobrevive a decisão de negócio: ao persistir uma AvaliacaoIA gerada por IA, etapa = 'curriculo' e resultado = 'em_andamento' como defaults.
+
 ## Status
 
-Aceito
+Obsoleta (Superseded parcialmente)
+
+## Superseded-by
+
+[0007. Encerramento da Integração com n8n](0007-encerramento-integracao-n8n.md)
 
 ## Contexto
 

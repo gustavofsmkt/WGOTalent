@@ -2,9 +2,15 @@
 
 Data: 2026-08-13
 
+> **Nota:** Superseded parcialmente pelo ADR-0007. O alvo HTTP externo (CLASSIFICADOR_N8N_WEBHOOK_URL) deixa de existir. Sobrevive o princípio: a chamada de classificação/avaliação não deve bloquear a transação principal de registro do candidato/vaga (fire-and-forget ou after()).
+
 ## Status
 
-Aceito
+Obsoleta (Superseded parcialmente)
+
+## Superseded-by
+
+[0007. Encerramento da Integração com n8n](0007-encerramento-integracao-n8n.md)
 
 ## Contexto
 
