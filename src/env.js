@@ -11,9 +11,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    WEBHOOK_N8N_SECRET: z.string().min(1),
     STORAGE_ROOT: z.string().min(1),
-    CLASSIFICADOR_N8N_WEBHOOK_URL: z.string().url(),
   },
 
   /**
@@ -31,9 +29,7 @@ export const env = createEnv({
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
-    WEBHOOK_N8N_SECRET: process.env.WEBHOOK_N8N_SECRET,
     STORAGE_ROOT: process.env.STORAGE_ROOT,
-    CLASSIFICADOR_N8N_WEBHOOK_URL: process.env.CLASSIFICADOR_N8N_WEBHOOK_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
