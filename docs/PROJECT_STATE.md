@@ -30,3 +30,9 @@ Triagem de IA executada nativamente pela plataforma via motor de agentes configu
 ## Links de Referência
 - [Spec: Modelo de Dados & SQL Types](db_triagem_proposta.ts)
 - [Arquitetura](ARCHITECTURE.md)
+
+## Referências Visuais
+- `docs/references/ui/` = fonte visual;
+- `docs/UI_REFERENCE_ANALYSIS.md` = análise completa;
+- `docs/UI_REFERENCE_MAP.md` = índice operacional;
+- `docs/DESIGN.md` será a especificação final derivada desses materiais.
