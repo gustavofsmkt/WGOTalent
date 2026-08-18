@@ -24,10 +24,8 @@ A arquitetura é focada em convenções estritas do **Next.js App Router**:
 - **Armazenamento**: O armazenamento abstrato (`StorageProvider`) lida com os arquivos em File System de forma a não encher os diretórios públicos (`public/`).
 
 
-## Integração n8n
-- Três endpoints: `/api/webhooks/n8n/candidatos` (inbound), `/api/webhooks/n8n/triagem` (inbound), `CLASSIFICADOR_N8N_WEBHOOK_URL` (outbound).
-- Fluxo candidato: n8n extrai currículo → plataforma registra → plataforma aciona Classificador por cidade → n8n avalia → plataforma persiste Triagem+AvaliacaoIA.
-- Fluxo vaga: RH cadastra vaga → plataforma aciona Classificador por cidade → n8n avalia → plataforma persiste Triagem+AvaliacaoIA.
+## Triagem de IA
+Triagem de IA executada nativamente pela plataforma via motor de agentes configurável (ver ADR-0007); detalhamento completo vem com o roteiro da nova Fase 14.
 
 ## Links de Referência
 - [Spec: Modelo de Dados & SQL Types](db_triagem_proposta.ts)
