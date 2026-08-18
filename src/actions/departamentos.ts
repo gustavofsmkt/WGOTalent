@@ -17,7 +17,7 @@ export async function createDepartamento(
   if (!parsed.success) {
     return {
       success: false,
-      message: "Dados invÃ¡lidos",
+      message: "Dados inválidos",
       errors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -34,7 +34,7 @@ export async function createDepartamento(
     if (error?.message?.includes("unique") || error?.code === "23505") {
       return {
         success: false,
-        message: "JÃ¡ existe um departamento com este nome.",
+        message: "Já existe um departamento com este nome.",
       };
     }
     return {
@@ -53,7 +53,7 @@ export async function updateDepartamento(
   if (!parsed.success) {
     return {
       success: false,
-      message: "Dados invÃ¡lidos",
+      message: "Dados inválidos",
       errors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -62,7 +62,7 @@ export async function updateDepartamento(
     const departamento = await departamentoRepository.update(id, parsed.data);
     
     if (!departamento) {
-      return { success: false, message: "Departamento nÃ£o encontrado" };
+      return { success: false, message: "Departamento não encontrado" };
     }
 
     revalidatePath("/departamentos");
@@ -76,7 +76,7 @@ export async function updateDepartamento(
     if (error?.message?.includes("unique") || error?.code === "23505") {
       return {
         success: false,
-        message: "JÃ¡ existe um departamento com este nome.",
+        message: "Já existe um departamento com este nome.",
       };
     }
     return {
@@ -95,20 +95,20 @@ export async function deleteDepartamento(
     if (hasActiveCargos) {
       return {
         success: false,
-        message: "NÃ£o Ã© possÃ­vel excluir um departamento que possui cargos ativos.",
+        message: "Não é possível excluir um departamento que possui cargos ativos.",
       };
     }
 
     const departamento = await departamentoRepository.softDelete(id);
     
     if (!departamento) {
-      return { success: false, message: "Departamento nÃ£o encontrado" };
+      return { success: false, message: "Departamento não encontrado" };
     }
 
     revalidatePath("/departamentos");
     return {
       success: true,
-      message: "Departamento excluÃ­do com sucesso.",
+      message: "Departamento excluído com sucesso.",
     };
   } catch (error) {
     return {
