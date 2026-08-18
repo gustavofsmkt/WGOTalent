@@ -2048,6 +2048,7 @@ Faça commit `feat(candidates): cascade candidate soft delete`.
 ```text
 Verifique PRODUCT/specs.
 Se cadastro manual do MVP precisa aceitar currículo, integre file input ao fluxo e salve via StorageProvider, com tipo/tamanho, key e cleanup em falha. Ao substituir arquivo, só remova o antigo após o novo estar salvo e DB atualizado.
+Após salvar via StorageProvider, disparar o agente extracao_curriculo (motor de agentes da nova Fase 14) de forma assíncrona.
 Se não for requisito, documente a decisão e não implemente.
 Não criar endpoint REST de upload.
 Commit somente se houver mudança válida.
