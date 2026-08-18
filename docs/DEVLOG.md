@@ -48,5 +48,11 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Re-executado `npm run db:smoke` no banco migrado obtendo sucesso absoluto.
 - Inspecionadas todas as 9 tabelas criadas no schema `public` (`wgotalent_departamentos`, `wgotalent_cargos`, `wgotalent_vagas`, `wgotalent_candidatos`, `wgotalent_candidato_formacoes`, `wgotalent_candidato_experiencias`, `wgotalent_candidato_certificacoes`, `wgotalent_triagens`, `wgotalent_avaliacao_ia`), confirmando a criação de 104 constraints (PKs, FKs, Uniques, Checks) e 22 índices.
 
+## Marco: TASK-075 — Validação e Limpeza do Domínio Departamento
+*Data: 2026-08-18*
 
-
+- Revisão completa do domínio `Departamento`: repository (`departamentoRepository`), Server Actions (`createDepartamento`, `updateDepartamento`, `deleteDepartamento`), validação Zod (`departamentoSchema`), formulário compartilhado (`DepartamentoForm`) e páginas de listagem, criação, detalhe e edição.
+- Validação e cobertura de testes para Server Actions em `src/actions/departamentos.test.ts`, confirmando criação, edição, tratamento de erro de unicidade (código 23505) e bloqueio de exclusão quando o departamento possui cargos ativos vinculados (`hasActiveCargos`).
+- Limpeza de import não utilizado em `src/app/(rh)/departamentos/[id]/page.tsx` e correção de tipagem em `src/app/(rh)/departamentos/page.test.ts`.
+- Auditoria de limpeza: confirmada a ausência de APIs CRUD internas de departamento (zero rotas sob `/api/departamentos`), formulário unificado sem duplicidades e ausência de arquivos órfãos.
+- Sucesso nos quality gates: 15 arquivos de teste e 162 testes passando no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e `next build` executado com sucesso.

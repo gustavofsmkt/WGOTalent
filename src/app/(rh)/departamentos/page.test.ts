@@ -78,8 +78,8 @@ describe("DepartamentosPage - Server Component Logic", () => {
       id: "dept-1",
       nome: "Engenharia",
       descricao: "Engenharia de software",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       deletedAt: null,
     };
 
@@ -94,8 +94,8 @@ describe("DepartamentosPage - Server Component Logic", () => {
         requisitos: "Node.js",
         requisitosDesejaveis: "Drizzle",
         criteriosEliminatorios: "TypeScript",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         deletedAt: null,
       },
     ];

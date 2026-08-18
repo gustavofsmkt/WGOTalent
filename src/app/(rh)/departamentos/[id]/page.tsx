@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
-import { Button, buttonVariants } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import {
   Card,
