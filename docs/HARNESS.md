@@ -23,7 +23,7 @@ Os artefatos de configuração do agente e instrução do GitHub Copilot estão 
 O ambiente do agente suporta nativamente a resolução de skills tanto no diretório `.github/skills/` quanto no diretório `.claude/skills/`.
 
 - **`.claude/skills/`:** Armazena as skills técnicas de frontend, arquitetura React/Next.js, componentes shadcn, formulários e validações (ex: `building-components`, `composition-patterns`, `impeccable`, `nextjs-app-router-patterns`, `react-best-practices`, `shadcn`, `tailwind-css-patterns`, `tailwind-design-system`, `tanstack-form`, `zod-validation-utilities`).
-- **`.github/skills/`:** Armazena as skills operacionais e de governança do repositório WGOTalent (ex: `drizzle-migration-check`, `soft-delete-check`, `webhook-contract-check`, `repository-cleanliness-check`, `task-closeout`).
+- **`.github/skills/`:** Armazena as skills operacionais e de governança do repositório WGOTalent (ex: `drizzle-migration-check`, `soft-delete-check`, `repository-cleanliness-check`, `task-closeout`).
 
 Ambas as localizações devem ser tratadas de forma transparente pelo assistente de IA.
 

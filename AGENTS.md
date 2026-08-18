@@ -100,4 +100,3 @@ All skills live under `.agents/skills/` (canonical). `.claude/skills/` and
 - `repository-cleanliness-check` — `.agents/skills/repository-cleanliness-check/SKILL.md`
 - `soft-delete-check` — `.agents/skills/soft-delete-check/SKILL.md`
 - `task-closeout` — `.agents/skills/task-closeout/SKILL.md`
-- `webhook-contract-check` — `.agents/skills/webhook-contract-check/SKILL.md`

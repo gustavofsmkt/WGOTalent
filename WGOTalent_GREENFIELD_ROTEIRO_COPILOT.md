@@ -534,7 +534,6 @@ Faça commit `chore(harness): add workflow prompt files`.
 Sem alterar `.claude/skills`, crie `.github/skills/` somente com skills específicas:
 - drizzle-migration-check;
 - soft-delete-check;
-- webhook-contract-check;
 - repository-cleanliness-check;
 - task-closeout.
 
@@ -2483,7 +2482,7 @@ Faça commit `docs(harness): record greenfield development history`.
 
 **Modelo recomendado:** Gemini 3.1 Pro
 
-**Skills:** `task-closeout`, `repository-cleanliness-check`, `drizzle-migration-check`, `webhook-contract-check`, `soft-delete-check`
+**Skills:** `task-closeout`, `repository-cleanliness-check`, `drizzle-migration-check`, `soft-delete-check`
 
 ### Prompt para o Copilot Chat
 
