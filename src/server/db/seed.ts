@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { env } from "~/env";
+import { env } from "../../env.js";
 import {
   departamentos,
   cargos,
@@ -11,7 +11,7 @@ import {
   candidatoCertificacoes,
   triagens,
   avaliacaoIA,
-} from "./schema";
+} from "./schema.ts";
 
 export async function seed() {
   const databaseUrl = env.DATABASE_URL;
