@@ -74,6 +74,6 @@ describe("LocalStorageProvider", () => {
   it("should return a valid access reference", async () => {
     const key = "test-key.txt";
     const ref = await provider.getAccessReference(key);
-    expect(ref).toBe(`/api/storage/${key}`);
+    expect(ref).toBe(`/api/files/${key}`);
   });
 });

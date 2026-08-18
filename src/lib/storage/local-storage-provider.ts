@@ -96,6 +96,6 @@ export class LocalStorageProvider implements StorageProvider {
     // Ensure key is valid and prevents path traversal before returning reference
     this.getFilePath(key);
     // Return a route that can serve the file
-    return `/api/storage/${key}`;
+    return `/api/files/${key}`;
   }
 }
