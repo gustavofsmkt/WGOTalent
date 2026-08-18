@@ -22,6 +22,7 @@ describe("departamentoRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(departamentoRepository).toBeDefined();
     expect(typeof departamentoRepository.findAll).toBe("function");
+    expect(typeof departamentoRepository.findAllWithActiveCargosCount).toBe("function");
     expect(typeof departamentoRepository.findById).toBe("function");
     expect(typeof departamentoRepository.create).toBe("function");
     expect(typeof departamentoRepository.update).toBe("function");

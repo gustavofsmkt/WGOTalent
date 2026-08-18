@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, isNull, asc } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   departamentos,
@@ -11,9 +11,40 @@ import { notDeleted } from "~/server/db/query-helpers";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
 
+export interface DepartamentoWithCargosCount extends Departamento {
+  activeCargosCount: number;
+}
+
 export const departamentoRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Departamento[]> => {
-    return notDeleted(dbOrTx.select().from(departamentos), departamentos);
+    return notDeleted(dbOrTx.select().from(departamentos), departamentos).orderBy(
+      asc(departamentos.nome),
+    );
+  },
+
+  findAllWithActiveCargosCount: async (
+    dbOrTx: DbOrTx = db,
+  ): Promise<DepartamentoWithCargosCount[]> => {
+    const rows = await dbOrTx
+      .select({
+        id: departamentos.id,
+        nome: departamentos.nome,
+        descricao: departamentos.descricao,
+        createdAt: departamentos.createdAt,
+        updatedAt: departamentos.updatedAt,
+        deletedAt: departamentos.deletedAt,
+        activeCargosCount: sql<number>`count(${cargos.id}) filter (where ${cargos.deletedAt} is null and ${cargos.ativo} = true)::int`,
+      })
+      .from(departamentos)
+      .leftJoin(cargos, eq(cargos.departamentoId, departamentos.id))
+      .where(isNull(departamentos.deletedAt))
+      .groupBy(departamentos.id)
+      .orderBy(asc(departamentos.nome));
+
+    return rows.map((r) => ({
+      ...r,
+      activeCargosCount: Number(r.activeCargosCount ?? 0),
+    }));
   },
 
   findById: async (
