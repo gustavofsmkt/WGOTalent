@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { StorageProvider } from "./storage";
+import type { StorageProvider } from "./storage";
 
 export class LocalStorageProvider implements StorageProvider {
   private readonly rootDir: string;

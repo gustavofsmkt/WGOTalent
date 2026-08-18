@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { storage } from "@/lib/storage";
+import { type NextRequest, NextResponse } from "next/server";
+import { storage } from "~/lib/storage";
 
 function getMimeType(key: string): string {
   const ext = key.split('.').pop()?.toLowerCase();
@@ -34,7 +34,7 @@ export async function GET(
     const buffer = await storage.read(key);
     
     // Stream response with secure headers
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": getMimeType(key),

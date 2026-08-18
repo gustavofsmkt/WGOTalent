@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "./route";
-import { NextRequest } from "next/server";
-import { storage } from "@/lib/storage";
+import type { NextRequest } from "next/server";
+import { storage } from "~/lib/storage";
 
 // Mock the storage singleton
-vi.mock("@/lib/storage", () => ({
+vi.mock("~/lib/storage", () => ({
   storage: {
     read: vi.fn(),
   },

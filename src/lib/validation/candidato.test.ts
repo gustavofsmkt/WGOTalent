@@ -30,7 +30,7 @@ describe("Validação de Candidato", () => {
       const result = formacaoSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain("dataTermino");
+        expect(result.error.issues[0]?.path).toContain("dataTermino");
       }
     });
   });
@@ -54,7 +54,7 @@ describe("Validação de Candidato", () => {
       const result = experienciaSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain("dataSaida");
+        expect(result.error.issues[0]?.path).toContain("dataSaida");
       }
     });
   });
@@ -78,7 +78,7 @@ describe("Validação de Candidato", () => {
       const result = certificacaoSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain("validade");
+        expect(result.error.issues[0]?.path).toContain("validade");
       }
     });
   });
@@ -107,7 +107,7 @@ describe("Validação de Candidato", () => {
       const result = candidatoSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain("email");
+        expect(result.error.issues[0]?.path).toContain("email");
       }
     });
 
