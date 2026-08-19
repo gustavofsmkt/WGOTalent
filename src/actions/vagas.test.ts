@@ -9,7 +9,6 @@ const mockEnv = {
   DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",
   STORAGE_ROOT: "./storage",
   NODE_ENV: "test",
-  CLASSIFICADOR_N8N_WEBHOOK_URL: "http://localhost:5678/webhook/classificador",
 };
 
 vi.mock("~/env", () => ({
@@ -46,7 +45,6 @@ describe("vagas server actions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockEnv.CLASSIFICADOR_N8N_WEBHOOK_URL = "http://localhost:5678/webhook/classificador";
   });
 
   describe("createVaga", () => {

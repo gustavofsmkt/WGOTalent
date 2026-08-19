@@ -45,23 +45,6 @@ describe("T3 Typed Environment Validation", () => {
     await expect(import("~/env")).rejects.toThrow();
   });
 
-  it("validates CLASSIFICADOR_N8N_WEBHOOK_URL correctly when provided", async () => {
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
-    process.env.STORAGE_ROOT = "./storage";
-    process.env.CLASSIFICADOR_N8N_WEBHOOK_URL = "http://localhost:5678/webhook/classificador";
-
-    const { env } = await import("~/env");
-    expect(env.CLASSIFICADOR_N8N_WEBHOOK_URL).toBe("http://localhost:5678/webhook/classificador");
-  });
-
-  it("fails validation when CLASSIFICADOR_N8N_WEBHOOK_URL is not a valid URL", async () => {
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
-    process.env.STORAGE_ROOT = "./storage";
-    process.env.CLASSIFICADOR_N8N_WEBHOOK_URL = "not-a-valid-url";
-
-    await expect(import("~/env")).rejects.toThrow();
-  });
-
   it("does not expose secret values in error messages on validation failure", async () => {
     const sensitiveSecret = "my_top_secret_token_12345";
     process.env.DATABASE_URL = "invalid-url-not-a-postgres-url";
