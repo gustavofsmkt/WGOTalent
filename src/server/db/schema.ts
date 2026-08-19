@@ -379,6 +379,22 @@ export const avaliacaoIARelations = relations(avaliacaoIA, ({ one }) => ({
   }),
 }));
 
+// ---------------------------------------------------------------------------
+// Agregados hidratados (Hydrated Types)
+// ---------------------------------------------------------------------------
 
+export interface CandidatoCompleto extends Candidato {
+  formacoes: CandidatoFormacao[];
+  experiencias: CandidatoExperienciaProfissional[];
+  certificacoes: CandidatoCertificacao[];
+}
 
+export interface VagaCompleta extends Vaga {
+  cargo: Cargo & { departamento: Departamento };
+}
 
+export interface TriagemCompleta extends Triagem {
+  candidato: Candidato;
+  vaga: VagaCompleta;
+  avaliacao_ia: AvaliacaoIA | null;
+}
