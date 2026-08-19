@@ -1,87 +1,20 @@
 "use server";
 
-import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { candidatoRepository, type CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
-import { db } from "~/server/db";
 import { type Candidato } from "~/server/db/schema";
 import {
   candidatoAgregadoSchema,
   type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
-import { env } from "~/env";
 
 export type ActionState<T> =
   | { success: true; data: T; message?: string }
   | { success: false; message?: string; errors?: Record<string, string[]> };
 
-/**
- * Dispara a classificação para um candidato recém-criado,
- * buscando vagas abertas na mesma cidade e acionando o webhook/agente.
- * Fire-and-forget (não falha a transaction).
- */
-async function dispararAgenteClassificador(candidato: Candidato): Promise<void> {
-  try {
-    const webhookUrl = env.CLASSIFICADOR_N8N_WEBHOOK_URL;
-    if (!webhookUrl) return;
-
-    // Buscar vagas abertas na mesma cidade
-    const vagasAbertas = await db.query.vagas.findMany({
-      where: (v, { and, eq, isNull }) =>
-        and(
-          isNull(v.deletedAt),
-          eq(v.status, "aberta"),
-          eq(v.cidade, candidato.cidade)
-        ),
-      with: {
-        cargo: {
-          with: { departamento: true },
-        },
-      },
-      limit: 50,
-    });
-
-    if (vagasAbertas.length === 0) return;
-
-    // Obter candidato completo para o payload
-    const candidatoCompleto = await db.query.candidatos.findFirst({
-      where: (c, { eq }) => eq(c.id, candidato.id),
-      with: {
-        formacoes: { where: (f, { isNull }) => isNull(f.deletedAt) },
-        experiencias: { where: (e, { isNull }) => isNull(e.deletedAt) },
-        certificacoes: { where: (ct, { isNull }) => isNull(ct.deletedAt) },
-      },
-    });
-
-    if (!candidatoCompleto) return;
-
-    const payload = {
-      candidato: candidatoCompleto,
-      vagas: vagasAbertas,
-    };
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.error(
-        `[dispararAgenteClassificador] Falha no disparo (${response.status} ${response.statusText})`
-      );
-    }
-  } catch (error) {
-    console.error("[dispararAgenteClassificador] Erro:", error);
-  }
-}
+// TODO: Motor de agentes nativo (classificador_aderencia) ainda não implementado — ver ADR-0007. Fluxo alvo: comparar resumo x resumo em lote (batch de até 25), aplicar threshold configurável, e só então criar a triagem para avaliação completa.
 
 export async function createCandidato(
   data: unknown,
@@ -130,23 +63,6 @@ export async function createCandidato(
     }
 
     revalidatePath("/candidatos");
-
-    // Disparar classificador fire-and-forget se origem='manual'
-    if (result.origem === "manual") {
-      try {
-        if (typeof after === "function") {
-          after(async () => {
-            await dispararAgenteClassificador(result);
-          });
-        } else {
-          void dispararAgenteClassificador(result);
-        }
-      } catch (err) {
-        void dispararAgenteClassificador(result).catch(
-          e => console.error("[createCandidato] Erro no background:", e)
-        );
-      }
-    }
 
     return {
       success: true,

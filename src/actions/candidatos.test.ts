@@ -9,7 +9,6 @@ vi.mock("~/env", () => ({
     DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",
     STORAGE_ROOT: "./storage",
     NODE_ENV: "test",
-    CLASSIFICADOR_N8N_WEBHOOK_URL: "http://mock-webhook",
   },
 }));
 
