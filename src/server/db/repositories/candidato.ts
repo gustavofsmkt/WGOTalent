@@ -17,6 +17,7 @@ import {
   type Triagem,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
+import { type CandidatoAgregadoOutput } from "~/lib/validation/candidato";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -230,5 +231,51 @@ export const candidatoRepository = {
       .where(eq(candidatos.email, email));
     
     return rows[0] ?? null;
+  },
+
+  createAggregate: async (
+    data: CandidatoAgregadoOutput,
+    dbOrTx: DbOrTx = db,
+  ): Promise<CandidatoDetailCompleto | null> => {
+    return dbOrTx.transaction(async (tx) => {
+      const { formacoes, experiencias, certificacoes, ...candidatoData } = data;
+
+      const [candidato] = await tx
+        .insert(candidatos)
+        .values(candidatoData)
+        .returning();
+
+      if (!candidato) throw new Error("Falha ao inserir candidato");
+
+      if (formacoes.length > 0) {
+        await tx.insert(candidatoFormacoes).values(
+          formacoes.map((f) => ({
+            ...f,
+            candidatoId: candidato.id,
+          }))
+        );
+      }
+
+      if (experiencias.length > 0) {
+        await tx.insert(candidatoExperiencias).values(
+          experiencias.map((e) => ({
+            ...e,
+            candidatoId: candidato.id,
+          }))
+        );
+      }
+
+      if (certificacoes.length > 0) {
+        await tx.insert(candidatoCertificacoes).values(
+          certificacoes.map((c) => ({
+            ...c,
+            candidatoId: candidato.id,
+          }))
+        );
+      }
+
+      const res = await candidatoRepository.findByIdComplete(candidato.id, tx);
+      return res;
+    });
   },
 };
