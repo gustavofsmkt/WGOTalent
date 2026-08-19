@@ -1051,7 +1051,7 @@ Faça commit `feat(db): add soft delete query helpers`.
 
 ## TASK-039 — Criar primitives e enums do schema
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
@@ -1185,7 +1185,7 @@ Faça commit `feat(db): define screenings table and active uniqueness`.
 
 ## TASK-048 — Implementar AvaliacaoIA
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
@@ -1211,7 +1211,7 @@ Faça commit `feat(db): implement webhook idempotency persistence`.
 
 ## TASK-050 — Definir relations Drizzle
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
@@ -2077,7 +2077,7 @@ Faça commit `feat(candidates): add candidate list page`.
 
 ## TASK-096 — Criar detalhe Candidato completo
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 **Skills:** `shadcn`, `vercel-composition-patterns`, `building-components`, `impeccable`
 
@@ -2158,7 +2158,7 @@ Faça commit `feat(screenings): add screening server actions`.
 
 ## TASK-101 — Criar form Triagem
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 **Skills:** `tanstack-form`, `zod-validation-utilities`, `shadcn`, `building-components`
 
@@ -2186,7 +2186,7 @@ Faça commit `feat(screenings): add typed screening form`.
 
 ## TASK-102 — Criar pipeline/listagem Triagens
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 **Skills:** `nextjs-app-router-patterns`, `impeccable`, `shadcn`, `react-best-practices`
 
@@ -2275,7 +2275,7 @@ Faça commit `feat(dashboard): add summary queries`.
 
 ## TASK-116 — Criar Dashboard WGOTalent
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 **Skills:** `impeccable`, `shadcn`, `tailwind-design-system`, `react-best-practices`
 
@@ -2548,7 +2548,7 @@ Ao final mostre comandos de reprodução.
 
 ## TASK-131 — Criar Dockerfile multi-stage da aplicação
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
@@ -2579,7 +2579,7 @@ Faça commit `build(docker): enable standalone output and dockerignore`.
 
 ## TASK-133 — Adicionar serviço app ao Docker Compose
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
@@ -2609,7 +2609,7 @@ Faça commit `build(docker): persist resume storage volume`.
 
 ## TASK-135 — Ajustar URLs internas para rede do Compose
 
-**Modelo recomendado:** Gemini 3.1 Pro
+**Modelo recomendado:** Gemini 3.6 Flash
 
 ### Prompt para o Copilot Chat
 
