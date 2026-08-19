@@ -1,24 +1,21 @@
 ---
-description: "Diretrizes para integrações externas (n8n, webhooks) e armazenamento (storage) de arquivos."
+description: "Diretrizes para o motor de agentes nativo (IA) e armazenamento (storage) de arquivos."
 applyTo: 
-  - "src/app/api/webhooks/**"
-  - "src/app/api/files/**"
+  - "src/actions/**"
+  - "src/app/api/**"
   - "src/lib/storage/**"
 ---
 
 # Integrações e Storage (WGOTalent)
 
-Este documento estabelece as regras de ouro para integrações externas (com ênfase no n8n) e para o upload, manipulação e armazenamento de arquivos no sistema WGOTalent.
+Este documento estabelece as regras de ouro para o motor de agentes nativo e para o upload, manipulação e armazenamento de arquivos no sistema WGOTalent.
 
-## 1. Integrações (N8N e Webhooks)
+## 1. Motor de Agentes Nativo (Vercel AI SDK)
 
-- **N8N Externo e Sem Acesso ao DB:** O n8n é uma ferramenta externa. Ele **NUNCA** deve receber a variável `DATABASE_URL` e não escreve diretamente no banco de dados. Qualquer interação com os dados deve ser feita consumindo endpoints/webhooks da aplicação Next.js.
-- **Next.js como Source of Truth:** O backend da aplicação (Next.js) é a única fonte da verdade e o guardião exclusivo do banco de dados.
-- **Shared Secret:** Todas as rotas de webhook e APIs de integração devem ser autenticadas através de um *shared secret* verificado nos headers da requisição.
-- **Zod Boundary:** Assim que o payload de um webhook/integração for recebido, ele deve ser imediatamente validado contra um schema rígido do Zod.
-- **Idempotência:** A lógica de processamento de webhooks deve ser idempotente, permitindo repetições (retries) seguras sem duplicar dados ou disparar efeitos colaterais repetidos.
-- **Transactions:** Quando a integração causar mudanças em múltiplas entidades no banco de dados, utilize transações (`db.transaction()`) para evitar inconsistências.
-- **Cleanup Contínuo:** Quando alterar contratos de dados, payloads de webhook ou substituir lógicas antigas, garanta a exclusão do código e das rotas substituídas (*cleanup*).
+- **IA Interna:** Chamadas de IA são internas à aplicação (utilizando o Vercel AI SDK) e **NÃO** requerem shared secret de webhook, eliminando a antiga arquitetura via n8n (conforme decidido no **ADR-0007**).
+- **Assincronismo e Fire-and-Forget:** Chamadas para o motor de agentes devem ser fire-and-forget e assíncronas. Recomenda-se utilizar a função `after()` (disponível no Next.js) para garantir que não bloqueiem a transação principal de banco de dados (ex: salvar um candidato ou vaga).
+- **TODOs Explícitos (Fase 14):** Até que o motor de agentes nativo seja completamente implementado (na nova Fase 14), qualquer ponto de código que precise disparar um agente (como o `classificador_aderencia`) deve ser implementado como um comentário de `TODO` explícito referenciando o **ADR-0007**.
+- **Proibido Chamadas HTTP Externas:** **NUNCA** implemente chamadas HTTP de fato para uma URL externa (como disparos de webhooks para o n8n). Mantenha tudo no design nativo.
 
 ## 2. Upload e Armazenamento (Storage)
 
