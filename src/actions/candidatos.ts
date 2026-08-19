@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
-import { candidatoRepository } from "~/server/db/repositories/candidato";
+import { candidatoRepository, type CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { db } from "~/server/db";
@@ -163,8 +163,78 @@ export async function createCandidato(
 
 export async function updateCandidato(
   id: string,
-  data: CandidatoAgregadoInput,
-): Promise<ActionState<Candidato>> {
-  // To be implemented in TASK-092
-  throw new Error("Not implemented yet");
+  data: unknown,
+): Promise<ActionState<CandidatoDetailCompleto>> {
+  const parsed = candidatoAgregadoSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Dados inválidos",
+      errors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { cargoInteresseId, areaInteresseId, email } = parsed.data;
+
+    const existingCandidato = await candidatoRepository.findById(id);
+    if (!existingCandidato) {
+      return { success: false, message: "Candidato não encontrado." };
+    }
+
+    // Validar unicidade de email se foi alterado
+    if (email !== existingCandidato.email) {
+      const emailExists = await candidatoRepository.findByEmailIncludingDeleted(email);
+      if (emailExists) {
+        return {
+          success: false,
+          message: "O e-mail informado já está cadastrado no sistema.",
+        };
+      }
+    }
+
+    // Validar referências
+    if (cargoInteresseId) {
+      const cargo = await cargoRepository.findById(cargoInteresseId);
+      if (!cargo || !cargo.ativo) {
+        return { success: false, message: "O cargo selecionado é inválido ou está inativo." };
+      }
+    }
+
+    if (areaInteresseId) {
+      const depto = await departamentoRepository.findById(areaInteresseId);
+      if (!depto) {
+        return { success: false, message: "O departamento selecionado é inválido." };
+      }
+    }
+
+    // Certificar-se que filhos pertencem a esse candidato caso possuam IDs na request
+    // A validação de IDs de filhos está sendo tratada no repository (atualizando apenas com and(eq(id), eq(candidatoId)))
+    // Evitando duplicações ou modificação de filhos de outro candidato.
+    
+    const result = await candidatoRepository.updateAggregate(id, parsed.data);
+
+    if (!result) {
+      throw new Error("Falha ao retornar o candidato atualizado.");
+    }
+
+    revalidatePath("/candidatos");
+    revalidatePath(`/candidatos/${id}`);
+
+    return {
+      success: true,
+      message: "Candidato atualizado com sucesso.",
+      data: result,
+    };
+  } catch (error) {
+    console.error("[updateCandidato] Erro:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro inesperado ao atualizar o candidato.",
+    };
+  }
 }

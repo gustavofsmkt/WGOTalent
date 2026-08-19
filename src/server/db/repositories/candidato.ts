@@ -278,4 +278,85 @@ export const candidatoRepository = {
       return res;
     });
   },
+
+  updateAggregate: async (
+    id: string,
+    data: CandidatoAgregadoOutput,
+    dbOrTx: DbOrTx = db,
+  ): Promise<CandidatoDetailCompleto | null> => {
+    return dbOrTx.transaction(async (tx) => {
+      const { formacoes, experiencias, certificacoes, origem: _origem, ...candidatoData } = data;
+
+      // Ensure no id is passed in candidatoData just to be safe
+      const { id: _, ...updateData } = candidatoData;
+
+      await tx
+        .update(candidatos)
+        .set({ ...updateData, updatedAt: new Date().toISOString() })
+        .where(eq(candidatos.id, id));
+
+      // Reconcile Formações
+      const currentFormacoes = await notDeleted(tx.select().from(candidatoFormacoes), candidatoFormacoes, eq(candidatoFormacoes.candidatoId, id));
+      const incomingFormacoesIds = formacoes.map(f => f.id).filter(Boolean);
+      const formacoesToDelete = currentFormacoes.filter(f => !incomingFormacoesIds.includes(f.id));
+
+      if (formacoesToDelete.length > 0) {
+        for (const f of formacoesToDelete) {
+           await tx.update(candidatoFormacoes).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoFormacoes.id, f.id));
+        }
+      }
+
+      for (const f of formacoes) {
+        if (f.id) {
+          const { id: fId, ...fData } = f;
+          await tx.update(candidatoFormacoes).set({ ...fData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoFormacoes.id, f.id), eq(candidatoFormacoes.candidatoId, id)));
+        } else {
+          await tx.insert(candidatoFormacoes).values({ ...f, candidatoId: id });
+        }
+      }
+
+      // Reconcile Experiencias
+      const currentExperiencias = await notDeleted(tx.select().from(candidatoExperiencias), candidatoExperiencias, eq(candidatoExperiencias.candidatoId, id));
+      const incomingExperienciasIds = experiencias.map(e => e.id).filter(Boolean);
+      const experienciasToDelete = currentExperiencias.filter(e => !incomingExperienciasIds.includes(e.id));
+
+      if (experienciasToDelete.length > 0) {
+        for (const e of experienciasToDelete) {
+           await tx.update(candidatoExperiencias).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoExperiencias.id, e.id));
+        }
+      }
+
+      for (const e of experiencias) {
+        if (e.id) {
+          const { id: eId, ...eData } = e;
+          await tx.update(candidatoExperiencias).set({ ...eData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoExperiencias.id, e.id), eq(candidatoExperiencias.candidatoId, id)));
+        } else {
+          await tx.insert(candidatoExperiencias).values({ ...e, candidatoId: id });
+        }
+      }
+
+      // Reconcile Certificacoes
+      const currentCertificacoes = await notDeleted(tx.select().from(candidatoCertificacoes), candidatoCertificacoes, eq(candidatoCertificacoes.candidatoId, id));
+      const incomingCertificacoesIds = certificacoes.map(c => c.id).filter(Boolean);
+      const certificacoesToDelete = currentCertificacoes.filter(c => !incomingCertificacoesIds.includes(c.id));
+
+      if (certificacoesToDelete.length > 0) {
+        for (const c of certificacoesToDelete) {
+           await tx.update(candidatoCertificacoes).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoCertificacoes.id, c.id));
+        }
+      }
+
+      for (const c of certificacoes) {
+        if (c.id) {
+          const { id: cId, ...cData } = c;
+          await tx.update(candidatoCertificacoes).set({ ...cData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoCertificacoes.id, c.id), eq(candidatoCertificacoes.candidatoId, id)));
+        } else {
+          await tx.insert(candidatoCertificacoes).values({ ...c, candidatoId: id });
+        }
+      }
+
+      const res = await candidatoRepository.findByIdComplete(id, tx);
+      return res;
+    });
+  },
 };
