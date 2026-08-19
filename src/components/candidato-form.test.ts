@@ -5,9 +5,12 @@ import {
   formacaoBaseSchema,
   formacaoSchema,
   type FormacaoInput,
+  experienciaBaseSchema,
+  experienciaSchema,
+  type ExperienciaInput,
 } from "~/lib/validation/candidato";
 
-describe("CandidatoForm - Formações Array & Validation Integration", () => {
+describe("CandidatoForm - Formações & Experiências Array & Validation Integration", () => {
   const baseValidCandidato = {
     nome: "Ana Pereira da Silva",
     dataNascimento: "1992-05-15",
@@ -156,6 +159,144 @@ describe("CandidatoForm - Formações Array & Validation Integration", () => {
 
       const invalidDate = dataTerminoSchema.safeParse("2024-13-45");
       expect(invalidDate.success).toBe(false);
+    });
+  });
+
+  describe("experiencias array field validation", () => {
+    it("validates candidate aggregate with multiple valid experience entries", () => {
+      const experiencias: ExperienciaInput[] = [
+        {
+          cargoTitulo: "Desenvolvedor Frontend Sênior",
+          empresa: "Tech Corp",
+          dataEntrada: "2020-03-01",
+          dataSaida: "2023-08-31",
+          descricao: "Desenvolvimento de interfaces React e Next.js com foco em acessibilidade.",
+        },
+        {
+          cargoTitulo: "Líder Técnico Frontend",
+          empresa: "Inovação Digital",
+          dataEntrada: "2023-09-01",
+          dataSaida: null, // Experiência atual
+          descricao: "Liderança de equipe ágil e arquitetura de componentes.",
+        },
+      ];
+
+      const input = {
+        ...baseValidCandidato,
+        experiencias,
+      };
+
+      const result = candidatoAgregadoSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.experiencias).toHaveLength(2);
+        expect(result.data.experiencias[0]?.cargoTitulo).toBe("Desenvolvedor Frontend Sênior");
+        expect(result.data.experiencias[0]?.dataSaida).toBe("2023-08-31");
+        expect(result.data.experiencias[1]?.cargoTitulo).toBe("Líder Técnico Frontend");
+        expect(result.data.experiencias[1]?.dataSaida).toBeNull();
+      }
+    });
+
+    it("accepts candidate with empty experiencias array by default", () => {
+      const input = {
+        ...baseValidCandidato,
+        experiencias: [],
+      };
+
+      const result = candidatoAgregadoSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.experiencias).toEqual([]);
+      }
+    });
+
+    it("rejects experience entry where dataSaida is before dataEntrada", () => {
+      const invalidExperiencia: ExperienciaInput = {
+        cargoTitulo: "Analista de Sistemas",
+        empresa: "Empresa ABC",
+        dataEntrada: "2022-01-01",
+        dataSaida: "2021-12-31",
+      };
+
+      const result = experienciaSchema.safeParse(invalidExperiencia);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toContain("dataSaida");
+        expect(result.error.issues[0]?.message).toBe(
+          "A data de saída deve ser posterior ou igual à data de entrada"
+        );
+      }
+    });
+
+    it("validates onBlur field schema for experiencia 'cargoTitulo'", () => {
+      const cargoSchema = experienciaBaseSchema.shape.cargoTitulo;
+
+      const validCargo = cargoSchema.safeParse("Engenheiro de Dados");
+      expect(validCargo.success).toBe(true);
+
+      const emptyCargo = cargoSchema.safeParse("");
+      expect(emptyCargo.success).toBe(false);
+
+      const whitespaceCargo = cargoSchema.safeParse("   ");
+      expect(whitespaceCargo.success).toBe(false);
+
+      const longCargo = cargoSchema.safeParse("a".repeat(151));
+      expect(longCargo.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for experiencia 'empresa'", () => {
+      const empresaSchema = experienciaBaseSchema.shape.empresa;
+
+      const validEmpresa = empresaSchema.safeParse("WGO Telecom");
+      expect(validEmpresa.success).toBe(true);
+
+      const nullEmpresa = empresaSchema.safeParse(null);
+      expect(nullEmpresa.success).toBe(true);
+
+      const emptyEmpresa = empresaSchema.safeParse("");
+      expect(emptyEmpresa.success).toBe(true);
+
+      const longEmpresa = empresaSchema.safeParse("a".repeat(151));
+      expect(longEmpresa.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for experiencia 'dataEntrada'", () => {
+      const dataEntradaSchema = experienciaBaseSchema.shape.dataEntrada;
+
+      const validDate = dataEntradaSchema.safeParse("2021-06-01");
+      expect(validDate.success).toBe(true);
+
+      const emptyDate = dataEntradaSchema.safeParse("");
+      expect(emptyDate.success).toBe(false);
+
+      const invalidDate = dataEntradaSchema.safeParse("01/06/2021");
+      expect(invalidDate.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for experiencia 'dataSaida'", () => {
+      const dataSaidaSchema = experienciaBaseSchema.shape.dataSaida;
+
+      const validDate = dataSaidaSchema.safeParse("2023-12-31");
+      expect(validDate.success).toBe(true);
+
+      const nullDate = dataSaidaSchema.safeParse(null);
+      expect(nullDate.success).toBe(true);
+
+      const invalidDate = dataSaidaSchema.safeParse("2023-99-99");
+      expect(invalidDate.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for experiencia 'descricao'", () => {
+      const descricaoSchema = experienciaBaseSchema.shape.descricao;
+
+      const validDesc = descricaoSchema.safeParse("Responsável pela sustentação e novas features.");
+      expect(validDesc.success).toBe(true);
+
+      const nullDesc = descricaoSchema.safeParse(null);
+      expect(nullDesc.success).toBe(true);
+
+      const emptyDesc = descricaoSchema.safeParse("");
+      expect(emptyDesc.success).toBe(true);
     });
   });
 });
