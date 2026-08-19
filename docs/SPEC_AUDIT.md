@@ -17,7 +17,7 @@ Abaixo estão classificadas as regras, questões, necessidades de decisão e cri
 ## 2. Questões Explicitamente Abertas
 
 *   **`texto_curriculo_extraido` marcado como dúvida:** A especificação questiona se esse campo bruto deve ser persistido (`// precisamos?`).
-*   **Payload de IA:** Triagem de IA executada nativamente pela plataforma via motor de agentes configurável (ver ADR-0007).
+*   **Payload de IA:** O contrato de entrada/saída do motor de agentes nativo (system prompt, user prompt, variáveis por slot, schema de resposta) ainda não está formalizado — ver ADR-0007 para a decisão de arquitetura; o desenho detalhado (etapas de classificação/avaliação, schema de score) é escopo da nova Fase 14.
 *   **Idempotência da IA:** O schema atual não prevê chave de desduplicação ou mecanismo para lidar com múltiplas avaliações seguidas da mesma candidatura.
 *   **Candidato soft-deleted recebido novamente:** A arquitetura aponta como uma questão aberta como lidar na rota webhook quando os dados chegam para um `Candidato.email` cujo registro anterior se encontra soft-deleted.
 
@@ -35,5 +35,5 @@ Abaixo estão classificadas as regras, questões, necessidades de decisão e cri
 *   **Integridade Referencial na UI:** Os formulários exibem apenas opções ativas (Departamentos para Cargos; Cargos para Vagas; Vagas e Candidatos para Triagem) buscadas via servidor (sem API routes).
 *   **Transações Seguras:** Qualquer operação composta (Criação do Candidato com currículo e filhos, exclusão do Candidato em cascata, webhook criando Candidato, Triagem e AvaliacaoIA) roda num bloco de transação única com _rollback_ em falha.
 *   **Validação Estrita do Status de Triagem:** Schemas do Zod bloqueiam salvamento (tanto no form quanto no webhook) se o `motivo` for fornecido em resultados inapropriados ou faltar em reprovações e desistências, de forma pareada aos enumeradores do schema.
-*   **Processamento Completo da Avaliação:** Triagem de IA executada nativamente pela plataforma via motor de agentes configurável (ver ADR-0007).
+*   **Processamento Completo da Avaliação:** A criação/atualização de Candidato, Vaga, Triagem e AvaliacaoIA deve continuar validando todos os dados complexos, protegendo contra reativação indevida de registros soft-deleted, e revalidando as interfaces do RH (`revalidatePath`) — agora via Server Actions e o motor de agentes nativo (ver ADR-0007), não mais via uma rota de webhook externo.
 *   **Reflexo Imediato de Dados:** Funções de listagem são revalidadas adequadamente, não exibindo em tela itens com `deleted_at` preenchido.
