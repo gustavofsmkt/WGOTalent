@@ -8,9 +8,12 @@ import {
   experienciaBaseSchema,
   experienciaSchema,
   type ExperienciaInput,
+  certificacaoBaseSchema,
+  certificacaoSchema,
+  type CertificacaoInput,
 } from "~/lib/validation/candidato";
 
-describe("CandidatoForm - Formações & Experiências Array & Validation Integration", () => {
+describe("CandidatoForm - Formações, Experiências & Certificações Array & Validation Integration", () => {
   const baseValidCandidato = {
     nome: "Ana Pereira da Silva",
     dataNascimento: "1992-05-15",
@@ -297,6 +300,168 @@ describe("CandidatoForm - Formações & Experiências Array & Validation Integra
 
       const emptyDesc = descricaoSchema.safeParse("");
       expect(emptyDesc.success).toBe(true);
+    });
+  });
+
+  describe("certificacoes array field validation", () => {
+    it("validates candidate aggregate with multiple valid certification entries", () => {
+      const certificacoes: CertificacaoInput[] = [
+        {
+          titulo: "AWS Certified Solutions Architect - Associate",
+          obtidaEm: "2022-04-10",
+          validade: "2025-04-10",
+        },
+        {
+          titulo: "Certificação NR10 - Segurança em Instalações e Serviços em Eletricidade",
+          obtidaEm: "2023-01-15",
+          validade: "2025-01-15",
+        },
+        {
+          titulo: "Scrum Master Professional (PSM I)",
+          obtidaEm: "2021-08-20",
+          validade: null, // Sem expiração
+        },
+      ];
+
+      const input = {
+        ...baseValidCandidato,
+        certificacoes,
+      };
+
+      const result = candidatoAgregadoSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.certificacoes).toHaveLength(3);
+        expect(result.data.certificacoes[0]?.titulo).toBe(
+          "AWS Certified Solutions Architect - Associate"
+        );
+        expect(result.data.certificacoes[0]?.validade).toBe("2025-04-10");
+        expect(result.data.certificacoes[2]?.validade).toBeNull();
+      }
+    });
+
+    it("accepts candidate with empty certificacoes array by default", () => {
+      const input = {
+        ...baseValidCandidato,
+        certificacoes: [],
+      };
+
+      const result = candidatoAgregadoSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.certificacoes).toEqual([]);
+      }
+    });
+
+    it("rejects certification entry where validade is before obtidaEm", () => {
+      const invalidCertificacao: CertificacaoInput = {
+        titulo: "Certificação ITIL v4",
+        obtidaEm: "2023-05-01",
+        validade: "2022-05-01",
+      };
+
+      const result = certificacaoSchema.safeParse(invalidCertificacao);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toContain("validade");
+        expect(result.error.issues[0]?.message).toBe(
+          "A validade deve ser posterior ou igual à data de obtenção"
+        );
+      }
+    });
+
+    it("validates onBlur field schema for certificacao 'titulo'", () => {
+      const tituloSchema = certificacaoBaseSchema.shape.titulo;
+
+      const validTitulo = tituloSchema.safeParse("Kubernetes CKA");
+      expect(validTitulo.success).toBe(true);
+
+      const emptyTitulo = tituloSchema.safeParse("");
+      expect(emptyTitulo.success).toBe(false);
+
+      const whitespaceTitulo = tituloSchema.safeParse("   ");
+      expect(whitespaceTitulo.success).toBe(false);
+
+      const longTitulo = tituloSchema.safeParse("a".repeat(151));
+      expect(longTitulo.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for certificacao 'obtidaEm'", () => {
+      const obtidaEmSchema = certificacaoBaseSchema.shape.obtidaEm;
+
+      const validDate = obtidaEmSchema.safeParse("2023-06-15");
+      expect(validDate.success).toBe(true);
+
+      const nullDate = obtidaEmSchema.safeParse(null);
+      expect(nullDate.success).toBe(true);
+
+      const undefinedDate = obtidaEmSchema.safeParse(undefined);
+      expect(undefinedDate.success).toBe(true);
+
+      const invalidDate = obtidaEmSchema.safeParse("2023-15-40");
+      expect(invalidDate.success).toBe(false);
+    });
+
+    it("validates onBlur field schema for certificacao 'validade'", () => {
+      const validadeSchema = certificacaoBaseSchema.shape.validade;
+
+      const validDate = validadeSchema.safeParse("2026-12-31");
+      expect(validDate.success).toBe(true);
+
+      const nullDate = validadeSchema.safeParse(null);
+      expect(nullDate.success).toBe(true);
+
+      const undefinedDate = validadeSchema.safeParse(undefined);
+      expect(undefinedDate.success).toBe(true);
+
+      const invalidDate = validadeSchema.safeParse("not-a-date");
+      expect(invalidDate.success).toBe(false);
+    });
+  });
+
+  describe("full candidate aggregate with formacoes, experiencias and certificacoes", () => {
+    it("validates complete candidate payload with all nested typed arrays", () => {
+      const completePayload = {
+        ...baseValidCandidato,
+        formacoes: [
+          {
+            titulo: "Engenharia de Telecomunicações",
+            instituicao: "INATEL",
+            areaFormacao: "Engenharia",
+            dataInicio: "2015-02-01",
+            dataTermino: "2019-12-10",
+          },
+        ],
+        experiencias: [
+          {
+            cargoTitulo: "Engenheiro de Redes Jr.",
+            empresa: "WGO Telecom",
+            dataEntrada: "2020-01-15",
+            dataSaida: null,
+            descricao: "Suporte e configuração de infraestrutura de fibra óptica.",
+          },
+        ],
+        certificacoes: [
+          {
+            titulo: "Cisco CCNA",
+            obtidaEm: "2020-05-10",
+            validade: "2023-05-10",
+          },
+          {
+            titulo: "NR35 - Trabalho em Altura",
+            obtidaEm: "2023-02-01",
+            validade: "2025-02-01",
+          },
+        ],
+      };
+
+      const result = candidatoAgregadoSchema.safeParse(completePayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.formacoes).toHaveLength(1);
+        expect(result.data.experiencias).toHaveLength(1);
+        expect(result.data.certificacoes).toHaveLength(2);
+      }
     });
   });
 });

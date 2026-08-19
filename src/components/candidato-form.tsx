@@ -9,8 +9,10 @@ import {
   candidatoAgregadoSchema,
   formacaoBaseSchema,
   experienciaBaseSchema,
+  certificacaoBaseSchema,
   type FormacaoInput,
   type ExperienciaInput,
+  type CertificacaoInput,
   type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
 import type { Candidato } from "~/server/db/schema";
@@ -32,7 +34,7 @@ import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import { Plus, Trash2, GraduationCap, Briefcase } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Briefcase, Award } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -64,7 +66,7 @@ export interface CandidatoBaseFormProps {
     | (Partial<Candidato> & {
         formacoes?: FormacaoInput[];
         experiencias?: ExperienciaInput[];
-        certificacoes?: any[];
+        certificacoes?: CertificacaoInput[];
       })
     | null;
   departamentoOptions: DepartamentoOption[];
@@ -1099,6 +1101,165 @@ function ExperienciasSection({ form }: { form: any }) {
   );
 }
 
+function CertificacoesSection({ form }: { form: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Certificações</h3>
+          <p className="text-sm text-muted-foreground">
+            Certificados técnicos, licenças profissionais, cursos livres e habilitações.
+          </p>
+        </div>
+      </div>
+
+      <form.Field name="certificacoes" mode="array">
+        {(field: any) => {
+          const items: CertificacaoInput[] = field.state.value || [];
+
+          return (
+            <div className="space-y-4">
+              {items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  <Award className="mb-2 size-8 text-muted-foreground/60" />
+                  <p className="font-medium">Nenhuma certificação adicionada</p>
+                  <p className="text-xs">Clique no botão abaixo para adicionar.</p>
+                </div>
+              ) : (
+                items.map((_, index) => (
+                  <div
+                    key={index}
+                    className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between border-b pb-3">
+                      <span className="text-sm font-semibold text-foreground">
+                        Certificação #{index + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => field.removeValue(index)}
+                        aria-label={`Remover certificação ${index + 1}`}
+                      >
+                        <Trash2 className="mr-1 size-4" />
+                        Remover
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <div className="md:col-span-1">
+                        <form.Field
+                          name={`certificacoes[${index}].titulo`}
+                          validators={{ onBlur: certificacaoBaseSchema.shape.titulo }}
+                        >
+                          {(subField: any) => {
+                            const hasErrors = subField.state.meta.errors.length > 0;
+                            return (
+                              <Field data-invalid={hasErrors}>
+                                <FieldLabel htmlFor={`certificacao-titulo-${index}`}>
+                                  Título / Certificado *
+                                </FieldLabel>
+                                <Input
+                                  id={`certificacao-titulo-${index}`}
+                                  value={subField.state.value || ""}
+                                  onBlur={subField.handleBlur}
+                                  onChange={(e) => subField.handleChange(e.target.value)}
+                                  aria-invalid={hasErrors}
+                                  placeholder="Ex: AWS Solutions Architect, NR10, Scrum"
+                                />
+                                <FieldError errors={subField.state.meta.errors} />
+                              </Field>
+                            );
+                          }}
+                        </form.Field>
+                      </div>
+
+                      <form.Field
+                        name={`certificacoes[${index}].obtidaEm`}
+                        validators={{ onBlur: certificacaoBaseSchema.shape.obtidaEm }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`certificacao-obtida-em-${index}`}>
+                                Data de Obtenção
+                              </FieldLabel>
+                              <Input
+                                id={`certificacao-obtida-em-${index}`}
+                                type="date"
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(e.target.value ? e.target.value : null)
+                                }
+                                aria-invalid={hasErrors}
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+
+                      <form.Field
+                        name={`certificacoes[${index}].validade`}
+                        validators={{ onBlur: certificacaoBaseSchema.shape.validade }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`certificacao-validade-${index}`}>
+                                Data de Validade
+                              </FieldLabel>
+                              <Input
+                                id={`certificacao-validade-${index}`}
+                                type="date"
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(e.target.value ? e.target.value : null)
+                                }
+                                aria-invalid={hasErrors}
+                              />
+                              <FieldDescription>
+                                Deixe em branco se a certificação não expirar.
+                              </FieldDescription>
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  field.pushValue({
+                    titulo: "",
+                    obtidaEm: null,
+                    validade: null,
+                  })
+                }
+              >
+                <Plus className="mr-1.5 size-4" />
+                Adicionar Certificação
+              </Button>
+            </div>
+          );
+        }}
+      </form.Field>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Formulário Principal
 // ---------------------------------------------------------------------------
@@ -1224,6 +1385,7 @@ export function CandidatoBaseForm({
             <DisponibilidadesSection form={form} />
             <FormacoesSection form={form} />
             <ExperienciasSection form={form} />
+            <CertificacoesSection form={form} />
           </FieldGroup>
         </CardContent>
 
