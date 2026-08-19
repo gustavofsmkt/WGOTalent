@@ -9,6 +9,9 @@ import {
   candidatoAgregadoSchema,
   type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
+import { storage } from "~/lib/storage";
+import crypto from "crypto";
+import path from "path";
 
 export type ActionState<T> =
   | { success: true; data: T; message?: string }
@@ -16,9 +19,65 @@ export type ActionState<T> =
 
 // TODO: Motor de agentes nativo (classificador_aderencia) ainda não implementado — ver ADR-0007. Fluxo alvo: comparar resumo x resumo em lote (batch de até 25), aplicar threshold configurável, e só então criar a triagem para avaliação completa.
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/png",
+  "image/jpeg",
+];
+
+async function handleFileUpload(file: File): Promise<string | null> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("Arquivo excede o limite de 5MB.");
+  }
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error("Tipo de arquivo não suportado. Use PDF, DOCX, PNG ou JPEG.");
+  }
+
+  const ext = path.extname(file.name) || "";
+  const key = `resumes/${crypto.randomUUID()}${ext}`;
+  
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  await storage.save(key, buffer, file.type);
+  
+  return key;
+}
+
+function parsePayload(payload: unknown): { data: unknown; file: File | null; error?: string } {
+  if (typeof FormData !== "undefined" && payload instanceof FormData) {
+    const dataStr = payload.get("data");
+    let data: unknown;
+    if (typeof dataStr === "string") {
+      try {
+        data = JSON.parse(dataStr);
+      } catch (e) {
+        return { data: null, file: null, error: "JSON inválido no campo data" };
+      }
+    } else {
+      return { data: null, file: null, error: "Campo data ausente ou inválido" };
+    }
+    
+    const file = payload.get("file");
+    return { 
+      data, 
+      file: file instanceof File && file.size > 0 ? file : null 
+    };
+  }
+  return { data: payload, file: null };
+}
+
 export async function createCandidato(
-  data: unknown,
+  payload: unknown,
 ): Promise<ActionState<Candidato>> {
+  const { data, file, error } = parsePayload(payload);
+  
+  if (error) {
+    return { success: false, message: error };
+  }
+
   const parsed = candidatoAgregadoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -56,10 +115,35 @@ export async function createCandidato(
       }
     }
 
-    const result = await candidatoRepository.createAggregate(parsed.data);
+    let fileKey: string | null = null;
+    if (file) {
+      try {
+        fileKey = await handleFileUpload(file);
+        parsed.data.curriculoArquivoKey = fileKey;
+      } catch (e: any) {
+        return { success: false, message: e.message || "Erro ao fazer upload do currículo." };
+      }
+    }
+
+    let result: Candidato | undefined | null;
+    try {
+      result = await candidatoRepository.createAggregate(parsed.data);
+    } catch (dbError) {
+      // Cleanup if DB fails
+      if (fileKey) {
+        await storage.delete(fileKey).catch(console.error);
+      }
+      throw dbError;
+    }
 
     if (!result) {
       throw new Error("Falha ao retornar o candidato criado.");
+    }
+    
+    // Disparar o agente extracao_curriculo de forma assíncrona (fire-and-forget)
+    if (fileKey) {
+      console.log(`[Agent Trigger] Disparando extracao_curriculo para o arquivo ${fileKey}`);
+      // TODO: Implementar chamada real do agente
     }
 
     revalidatePath("/candidatos");
@@ -79,8 +163,14 @@ export async function createCandidato(
 
 export async function updateCandidato(
   id: string,
-  data: unknown,
+  payload: unknown,
 ): Promise<ActionState<CandidatoDetailCompleto>> {
+  const { data, file, error } = parsePayload(payload);
+
+  if (error) {
+    return { success: false, message: error };
+  }
+
   const parsed = candidatoAgregadoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -125,14 +215,49 @@ export async function updateCandidato(
       }
     }
 
+    let newFileKey: string | null = null;
+    let oldFileKey = existingCandidato.curriculoArquivoKey;
+
+    if (file) {
+      try {
+        newFileKey = await handleFileUpload(file);
+        parsed.data.curriculoArquivoKey = newFileKey;
+      } catch (e: any) {
+        return { success: false, message: e.message || "Erro ao fazer upload do currículo." };
+      }
+    } else {
+      // Preserve existing key if no new file is uploaded
+      parsed.data.curriculoArquivoKey = oldFileKey;
+    }
+
     // Certificar-se que filhos pertencem a esse candidato caso possuam IDs na request
     // A validação de IDs de filhos está sendo tratada no repository (atualizando apenas com and(eq(id), eq(candidatoId)))
     // Evitando duplicações ou modificação de filhos de outro candidato.
     
-    const result = await candidatoRepository.updateAggregate(id, parsed.data);
+    let result: CandidatoDetailCompleto | undefined | null;
+    try {
+      result = await candidatoRepository.updateAggregate(id, parsed.data);
+      
+      // Cleanup old file only after DB updated successfully
+      if (newFileKey && oldFileKey) {
+        await storage.delete(oldFileKey).catch(console.error);
+      }
+    } catch (dbError) {
+      // Cleanup new file if DB fails
+      if (newFileKey) {
+        await storage.delete(newFileKey).catch(console.error);
+      }
+      throw dbError;
+    }
 
     if (!result) {
       throw new Error("Falha ao retornar o candidato atualizado.");
+    }
+    
+    // Disparar o agente extracao_curriculo de forma assíncrona (fire-and-forget)
+    if (newFileKey) {
+      console.log(`[Agent Trigger] Disparando extracao_curriculo para o novo arquivo ${newFileKey}`);
+      // TODO: Implementar chamada real do agente
     }
 
     revalidatePath("/candidatos");

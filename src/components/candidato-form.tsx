@@ -81,6 +81,46 @@ export interface CandidatoBaseFormProps {
 // Seções Compostas
 // ---------------------------------------------------------------------------
 
+function CurriculoSection({ 
+  file, 
+  setFile,
+  existingKey
+}: { 
+  file: File | null; 
+  setFile: (file: File | null) => void;
+  existingKey?: string | null;
+}) {
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-medium">Currículo Original</h3>
+      <div className="grid grid-cols-1">
+        <div className="space-y-2">
+          <FieldLabel htmlFor="candidato-curriculo">
+            Upload de Arquivo (PDF, DOCX, Imagens)
+          </FieldLabel>
+          <Input 
+            id="candidato-curriculo" 
+            type="file" 
+            accept=".pdf,.docx,image/png,image/jpeg"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              setFile(f || null);
+            }} 
+          />
+          <FieldDescription>
+            Tamanho máximo: 5MB. Ao realizar o upload, o conteúdo será processado pelo motor de agentes.
+            {existingKey && !file && (
+              <span className="block mt-1 text-primary">
+                Já existe um arquivo salvo. Envie um novo para substituir.
+              </span>
+            )}
+          </FieldDescription>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DadosPessoaisSection({ form }: { form: any }) {
   return (
     <div className="space-y-6">
@@ -1276,6 +1316,7 @@ export function CandidatoBaseForm({
   const router = useRouter();
   const isEdit = Boolean(candidato?.id);
 
+  const [resumeFile, setResumeFile] = React.useState<File | null>(null);
   const [serverError, setServerError] = React.useState<{
     message?: string;
     fieldErrors?: Record<string, string[]>;
@@ -1319,11 +1360,17 @@ export function CandidatoBaseForm({
     onSubmit: async ({ value }) => {
       setServerError(null);
 
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(value));
+      if (resumeFile) {
+        formData.append("file", resumeFile);
+      }
+
       // TODO: Replace with aggregated create/update actions when arrays are added
       const result =
         isEdit && candidato?.id
-          ? await updateCandidato(candidato.id, value as any)
-          : await createCandidato(value as any);
+          ? await updateCandidato(candidato.id, formData)
+          : await createCandidato(formData);
 
       if (!result.success) {
         setServerError({
@@ -1382,6 +1429,7 @@ export function CandidatoBaseForm({
             <ContatoURLsSection form={form} />
             <EnderecoSection form={form} />
             <InteressesSection form={form} cargoOptions={cargoOptions} departamentoOptions={departamentoOptions} />
+            <CurriculoSection file={resumeFile} setFile={setResumeFile} existingKey={candidato?.curriculoArquivoKey} />
             <DisponibilidadesSection form={form} />
             <FormacoesSection form={form} />
             <ExperienciasSection form={form} />

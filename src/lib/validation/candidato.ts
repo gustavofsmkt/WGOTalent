@@ -174,6 +174,7 @@ export const candidatoSchema = z.object({
   linkedin: optionalUrlSchema,
   portfolio: optionalUrlSchema,
   origem: origemSchema.default("manual"),
+  curriculoArquivoKey: trimmedString.optional().nullable(),
   textoCurriculoExtraido: trimmedString.optional().nullable(),
 });
 
