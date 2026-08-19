@@ -56,3 +56,12 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Limpeza de import não utilizado em `src/app/(rh)/departamentos/[id]/page.tsx` e correção de tipagem em `src/app/(rh)/departamentos/page.test.ts`.
 - Auditoria de limpeza: confirmada a ausência de APIs CRUD internas de departamento (zero rotas sob `/api/departamentos`), formulário unificado sem duplicidades e ausência de arquivos órfãos.
 - Sucesso nos quality gates: 15 arquivos de teste e 162 testes passando no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e `next build` executado com sucesso.
+
+## Marco: TASK-080 — Validação e Limpeza de Cargo
+*Data: 2026-08-19*
+
+- Validado o CRUD completo de Cargos utilizando o Drizzle ORM e Server Actions.
+- Confirmada a ausência de APIs internas (`src/app/api/cargos/` não existe), centralizando operações em `src/actions/cargos.ts`.
+- Validada a regra de bloqueio de exclusão lógica (soft delete) quando há vagas ativas vinculadas, com testes unitários passando em `cargos.test.ts`.
+- Adicionado `export const dynamic = "force-dynamic"` em `src/app/(rh)/cargos/novo/page.tsx` para contornar falhas de prerenderização estática no processo de build do Next.js sem conexão ao banco.
+- Executadas com sucesso as etapas de verificação de tipos (`typecheck`), testes (`test:run`) e compilação de produção (`build`).

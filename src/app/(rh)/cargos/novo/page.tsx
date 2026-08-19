@@ -6,6 +6,8 @@ import { CargoForm } from "~/components/cargo-form";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { buttonVariants } from "~/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function NovoCargoPage() {
   const departamentos = await cargoRepository.findActiveDepartamentoOptions();
 
