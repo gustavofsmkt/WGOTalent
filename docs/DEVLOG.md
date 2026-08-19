@@ -65,3 +65,12 @@ Este documento mant√©m o registro factual e objetivo das funcionalidades impleme
 - Validada a regra de bloqueio de exclus√£o l√≥gica (soft delete) quando h√° vagas ativas vinculadas, com testes unit√°rios passando em `cargos.test.ts`.
 - Adicionado `export const dynamic = "force-dynamic"` em `src/app/(rh)/cargos/novo/page.tsx` para contornar falhas de prerenderiza√ß√£o est√°tica no processo de build do Next.js sem conex√£o ao banco.
 - Executadas com sucesso as etapas de verifica√ß√£o de tipos (`typecheck`), testes (`test:run`) e compila√ß√£o de produ√ß√£o (`build`).
+
+## Marco: TASK-085 ó ValidaÁ„o e limpeza de Vaga
+*Data: 2026-08-19*
+
+- Validado CRUD, status, constraints e regras de soft delete de Vaga.
+- Verificado e confirmado atravÈs de testes (src/actions/vagas.test.ts) que o soft delete da Vaga preserva o histÛrico (ex. Triagens) n„o causando soft delete em cascata.
+- Qualidade garantida com lint, typecheck, todos os testes (Vitest) passando e build Next.js bem sucedido.
+- Realizada verificaÁ„o com Get-ChildItem procurando por arquivos Ûrf„os (example, demo, placeholder) retornando limpo.
+- Confirmada ausÍncia de chamadas e APIs CRUD rest em favor de Server Actions e Server Components.
