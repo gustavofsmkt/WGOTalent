@@ -4,11 +4,6 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
-vi.mock("next/server", () => ({
-  after: vi.fn((fn: () => any) => {
-    fn();
-  }),
-}));
 
 const mockEnv = {
   DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",
@@ -40,13 +35,11 @@ import {
   createVaga,
   updateVaga,
   deleteVaga,
-  triggerOutboundClassifier,
 } from "./vagas";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { db } from "~/server/db";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 
 describe("vagas server actions", () => {
   const validCargoId = "550e8400-e29b-41d4-a716-446655440000";
@@ -104,7 +97,6 @@ describe("vagas server actions", () => {
       }
       expect(vagaRepository.create).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
-      expect(after).toHaveBeenCalled();
     });
 
     it("creates vaga without triggering classifier when status is not 'aberta'", async () => {
@@ -147,7 +139,6 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(after).not.toHaveBeenCalled();
     });
 
     it("returns error when cargo is inactive", async () => {
@@ -244,7 +235,6 @@ describe("vagas server actions", () => {
       }
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
       expect(revalidatePath).toHaveBeenCalledWith("/vagas/vaga-1");
-      expect(after).not.toHaveBeenCalled();
     });
 
     it("validates cargo is active when updating cargoId", async () => {
@@ -315,7 +305,6 @@ describe("vagas server actions", () => {
       expect(result.message).toBe("Vaga excluída com sucesso.");
       expect(vagaRepository.softDelete).toHaveBeenCalledWith("vaga-1");
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
-      expect(after).not.toHaveBeenCalled();
     });
 
     it("returns error when vaga to delete is not found", async () => {
@@ -325,165 +314,6 @@ describe("vagas server actions", () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toBe("Vaga não encontrada");
-    });
-  });
-
-  describe("triggerOutboundClassifier", () => {
-    it("dispatches outbound POST to webhook URL with VagaCompleta and CandidatoCompleto list", async () => {
-      const mockVagaCompleta = {
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        posicoesDisponiveis: 1,
-        remuneracaoOferecida: "5000.00",
-        cidade: "São Paulo",
-        uf: "SP",
-        cargo: {
-          id: validCargoId,
-          titulo: "Desenvolvedor Full Stack",
-          departamento: {
-            id: "dept-1",
-            nome: "Engenharia",
-          },
-        },
-      };
-
-      const mockCandidatos = [
-        {
-          id: "cand-1",
-          nomeCompleto: "João Silva",
-          cidade: "São Paulo",
-          uf: "SP",
-          formacoes: [{ id: "form-1", curso: "Ciência da Computação" }],
-          experiencias: [{ id: "exp-1", cargo: "Dev Júnior" }],
-          certificacoes: [{ id: "cert-1", nome: "AWS Certified" }],
-        },
-      ];
-
-      (db.query.vagas.findFirst as any).mockResolvedValueOnce(mockVagaCompleta);
-      (db.query.candidatos.findMany as any).mockResolvedValueOnce(mockCandidatos);
-
-      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-      } as any);
-
-      await triggerOutboundClassifier({
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        posicoesDisponiveis: 1,
-        remuneracaoOferecida: "5000.00",
-        cidade: "São Paulo",
-        uf: "SP",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        deletedAt: null,
-      });
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:5678/webhook/classificador",
-        expect.objectContaining({
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            vaga: mockVagaCompleta,
-            candidatos: mockCandidatos,
-          }),
-        }),
-      );
-    });
-
-    it("skips webhook request when no active candidates are found in same city", async () => {
-      const mockVagaCompleta = {
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        cidade: "Cidade Sem Candidatos",
-        uf: "SP",
-        cargo: {
-          id: validCargoId,
-          titulo: "Desenvolvedor",
-          departamento: { id: "dept-1", nome: "TI" },
-        },
-      };
-
-      (db.query.vagas.findFirst as any).mockResolvedValueOnce(mockVagaCompleta);
-      (db.query.candidatos.findMany as any).mockResolvedValueOnce([]);
-
-      const fetchSpy = vi.spyOn(globalThis, "fetch");
-
-      await triggerOutboundClassifier({
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        posicoesDisponiveis: 1,
-        remuneracaoOferecida: null,
-        cidade: "Cidade Sem Candidatos",
-        uf: "SP",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        deletedAt: null,
-      });
-
-      expect(fetchSpy).not.toHaveBeenCalled();
-    });
-
-    it("handles webhook failure gracefully without throwing (fire-and-forget)", async () => {
-      const mockVagaCompleta = {
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        cidade: "São Paulo",
-        uf: "SP",
-        cargo: {
-          id: validCargoId,
-          titulo: "Desenvolvedor",
-          departamento: { id: "dept-1", nome: "TI" },
-        },
-      };
-
-      (db.query.vagas.findFirst as any).mockResolvedValueOnce(mockVagaCompleta);
-      (db.query.candidatos.findMany as any).mockResolvedValueOnce([{ id: "cand-1" }]);
-
-      vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("Connection refused"));
-
-      // Should not throw
-      await expect(
-        triggerOutboundClassifier({
-          id: "vaga-1",
-          cargoId: validCargoId,
-          status: "aberta",
-          posicoesDisponiveis: 1,
-          remuneracaoOferecida: null,
-          cidade: "São Paulo",
-          uf: "SP",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          deletedAt: null,
-        }),
-      ).resolves.toBeUndefined();
-    });
-
-    it("does nothing if CLASSIFICADOR_N8N_WEBHOOK_URL is not set", async () => {
-      mockEnv.CLASSIFICADOR_N8N_WEBHOOK_URL = undefined as any;
-
-      const fetchSpy = vi.spyOn(globalThis, "fetch");
-
-      await triggerOutboundClassifier({
-        id: "vaga-1",
-        cargoId: validCargoId,
-        status: "aberta",
-        posicoesDisponiveis: 1,
-        remuneracaoOferecida: null,
-        cidade: "São Paulo",
-        uf: "SP",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        deletedAt: null,
-      });
-
-      expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 });
