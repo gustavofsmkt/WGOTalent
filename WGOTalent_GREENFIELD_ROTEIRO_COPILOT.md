@@ -73,13 +73,13 @@ Uma referência visual pode orientar composição, hierarquia, densidade, respon
 - Zod v4, preferindo suporte Standard Schema nativo do TanStack Form.
 - Vitest para testes TypeScript.
 - StorageProvider local para currículos.
-- n8n externo: nunca escreve no PostgreSQL.
+- IA nativa: orquestração de IA executada internamente pela plataforma via motor de agentes (ver ADR-0007), sem dependência de n8n.
 
 ### Padrões obrigatórios
 
 - Reads internas: Server Components.
 - Writes internas: Server Actions.
-- Route Handlers: somente webhook externo (inbound `/api/webhooks/n8n/candidatos` e `/api/webhooks/n8n/triagem`) e streaming de arquivos.
+- Route Handlers: somente streaming de arquivos e rotas de integração necessárias (ver ADR-0007), sem webhooks legados n8n.
 - Acesso a dados: um repository por entidade em `src/server/db/repositories/<entidade>.ts` (nome singular), objeto nomeado `<entidade>Repository`, sem interface/DI — não é o Repository Pattern de Fowler, é só centralização de queries. Métodos que podem rodar dentro de uma transaction do chamador aceitam `dbOrTx = db` opcional; a "unit of work" é `db.transaction(async (tx) => {...})` direto, sem classe abstrata.
 - `src/server/db/schema.ts` é a implementação canônica do schema.
 - migrations: `drizzle-kit generate` -> revisar SQL -> `drizzle-kit migrate`.
@@ -92,74 +92,27 @@ Uma referência visual pode orientar composição, hierarquia, densidade, respon
 
 ## Fora de escopo
 
-Não adicionar: Prisma, Supabase, **tRPC**, Auth.js/NextAuth no MVP, React Hook Form, API REST interna de CRUD, backend separado, Redis, Kafka, Kubernetes, S3/Blob no MVP, escrita n8n->DB, múltiplos ORMs ou dois sistemas de formulário. O Create T3 App é apenas o scaffolder inicial.
+Não adicionar: Prisma, Supabase, **tRPC**, Auth.js/NextAuth no MVP, React Hook Form, API REST interna de CRUD, backend separado, Redis, Kafka, Kubernetes, S3/Blob no MVP, escrita externa direta no DB, múltiplos ORMs ou dois sistemas de formulário. O Create T3 App é apenas o scaffolder inicial.
 
 ---
 
-## Fluxos n8n e contratos de integração
+## Fluxos de IA e Motor de Agentes Nativo (ADR-0007)
 
-> Fonte: workflows `Cadastro_Candidato.json`, `Classificador.json` e `Triagem.json` analisados.
+> **Nota:** A arquitetura inicial baseada em workflows n8n externos (`Cadastro_Candidato.json`, `Classificador.json` e `Triagem.json`) foi descontinuada pelo **ADR-0007**. Toda a orquestração de IA (extração de currículo, classificação de aderência, avaliação e triagem) é executada internamente pela plataforma como motor de agentes nativo configurável via admin.
 
-### Fluxo 1 — Avaliação de candidato (gatilho: novo currículo)
+### Fluxos da Plataforma
 
-```
-Email/Webhook → n8n Cadastro_Candidato
-  → extrai texto (Mistral) + estrutura currículo (Gemini)
-  → POST /api/webhooks/n8n/candidatos (plataforma)
-  → plataforma cria/atualiza Candidato + filhos no DB
+#### Fluxo 1 — Avaliação de candidato (gatilho: novo currículo)
+- Ingestão via upload manual pelo recrutador ou recebimento por provedor de e-mail.
+- Arquivo original persistido via `StorageProvider`.
+- Agente `extracao_curriculo` processa multimodalmente (PDF, DOCX, PNG, JPEG) e cadastra/atualiza Candidato + dados agregados.
+- Disparo assíncrono (fire-and-forget) do agente `classificador_aderencia` consultando vagas abertas na mesma cidade.
+- Para pares aderentes (score > 65), execução do agente `triagem_avaliacao` gerando `Triagem` + `AvaliacaoIA` (`etapa = 'curriculo'` e `resultado = 'em_andamento'`).
 
-Plataforma (após registrar candidato)
-  → consulta vagas abertas na mesma cidade do candidato
-  → POST webhook n8n Classificador (CandidatoCompleto + [VagaCompleta])
-
-n8n Classificador
-  → calcula score de aderência por par candidato×vaga
-  → para cada par com score > 65: chama sub-workflow Triagem
-
-n8n Triagem
-  → avaliação detalhada candidato×vaga (Gemini)
-  → POST /api/webhooks/n8n/triagem (plataforma)
-  → plataforma persiste Triagem + AvaliacaoIA em transaction
-```
-
-### Fluxo 2 — Avaliação de vaga (gatilho: nova vaga cadastrada)
-
-```
-RH cadastra Vaga (Server Action)
-  → plataforma consulta candidatos ativos na mesma cidade da vaga
-  → POST webhook n8n Classificador (VagaCompleta + [CandidatoCompleto])
-
-n8n Classificador → n8n Triagem → POST /api/webhooks/n8n/triagem (plataforma)
-```
-
-### Contratos e discrepâncias mapeadas
-
-| Campo | n8n envia | Spec atual | Decisão |
-|---|---|---|---|
-| `disponibilidade_horarios` | `string` (ex: "horário comercial") | `boolean` | **CORRIGIR spec para TEXT** |
-| `texto_curriculo_extraido` | `string` completa | `string` marcado como dúvida | **MANTER** — n8n envia ativamente |
-| `json_completo_agente` | JSON completo da extração | ausente da spec | ADR necessário |
-| `pontos_fortes` etc. | `string[]` (array) | `TEXT` | **Transformar array→newline na borda do webhook** |
-| `area_interesse` | `"Administrativo"\|"Comercial"\|"RH"\|"Técnico/Operacional"` | `area_interesse_id` (FK) | Plataforma faz lookup `Departamento.nome` → `id` |
-| `fase` (n8n) → `etapa` (DB) | `"triagem_ia"` (enum próprio) | `"curriculo"` (enum próprio) | ADR de mapeamento necessário |
-| `recomendacao` (n8n) → `resultado` (DB) | `"Aprovar para Entrevista"\|"Banco de Talentos"\|"Reprovar"` | `"aprovado"\|"banco_talentos"\|"reprovado"` | Mapeamento no Route Handler |
-| `score_aderencia` | `integer 0–100` | `score_ia numeric(5,2)` | Compatível; converter tipo |
-
-### Três endpoints de integração (não dois)
-
-| Direção | Endpoint | Responsável |
-|---|---|---|
-| n8n → plataforma | `POST /api/webhooks/n8n/candidatos` | Recebe dados estruturados de `Cadastro_Candidato` e cria/atualiza Candidato |
-| n8n → plataforma | `POST /api/webhooks/n8n/triagem` | Recebe resultado de `Triagem` e persiste Triagem + AvaliacaoIA |
-| plataforma → n8n | `POST <CLASSIFICADOR_WEBHOOK_URL>` | Disparo outbound após candidato ou vaga cadastrada; URL em env |
-
-### Regras operacionais do n8n extraídas dos workflows
-
-- Score de corte do Classificador: **> 65** (If node `score > 65`).
-- A plataforma filtra candidatos/vagas **por cidade** antes de enviar ao Classificador.
-- `Candidato_Completo` e `Vaga_Completa` são os payloads que trafegam entre plataforma e n8n.
-- O campo `vaga_foi_inferida = true` quando o agente Triagem escolheu a vaga (sem declaração explícita do candidato).
-- `criterios_wgo_atendidos` (cnh_b, disponibilidade_viagem, nr10_nr35, candidato_mesma_cidade) são metadados de avaliação retornados pelo Triagem; armazenar em `alertas` TEXT ou em campo específico — ADR necessário.
+#### Fluxo 2 — Avaliação de vaga (gatilho: nova vaga aberta cadastrada)
+- RH cadastra nova Vaga com status `aberta` (Server Action).
+- Disparo assíncrono (fire-and-forget) do agente `classificador_aderencia` consultando candidatos ativos na mesma cidade.
+- Execução do agente `triagem_avaliacao` para os pares elegíveis gerando `Triagem` + `AvaliacaoIA`.
 
 ---
 
@@ -284,10 +237,10 @@ Classifique:
 
 Identifique obrigatoriamente:
 - `texto_curriculo_extraido` marcado como dúvida;
-- idempotência do webhook;
+- idempotência e conflitos de intake;
 - candidato soft-deleted recebido novamente;
 - semântica de delete de Departamento/Cargo/Vaga com dependências;
-- payload n8n;
+- contratos e payloads de integração / IA;
 - unique simples + soft delete;
 - partial unique de Triagem em andamento.
 
@@ -329,10 +282,10 @@ Create T3 App = scaffolder inicial apenas.
 Browser -> Next.js App Router -> Drizzle -> PostgreSQL.
 Reads -> Server Components.
 Writes internos -> Server Actions.
-n8n externo -> webhook Next -> Zod -> transaction Drizzle.
+Motor de IA nativo -> Server Actions / transactions Drizzle (ver ADR-0007).
 Arquivos -> StorageProvider -> Route Handler.
 AvaliacaoIA inline em Triagem.
-Postgres e n8n em Docker Compose (ver ADR-0006). App Next.js roda no host até a Fase 19.
+Postgres em Docker Compose (ver ADR-0006/ADR-0007). App Next.js roda no host até a Fase 19.
 
 Preserve a convenção `src/` do scaffold:
 - `src/app`;
@@ -383,7 +336,7 @@ Inclua:
 - proibir push;
 - notDeleted em leituras;
 - soft delete global e cascade de Candidato;
-- n8n nunca escreve DB;
+- sem escrita externa direta no DB;
 - TanStack Form + Zod + shadcn/Tailwind;
 - docs da versão instalada vencem exemplos antigos de skill;
 - uma tarefa por chat;
@@ -474,7 +427,7 @@ Faça commit `chore(harness): add ui design instructions`.
 ```text
 Crie `.github/instructions/integrations.instructions.md` para `src/app/api/webhooks/**`, `src/app/api/files/**`, `src/lib/storage/**` e documentação de integração.
 
-Regras: n8n externo, Next source of truth, shared secret, Zod boundary, idempotência, transaction, n8n sem DATABASE_URL, storage fora public, impedir path traversal, sem log de currículo/payload completo e cleanup do contrato/route substituído.
+Regras: IA nativa (ADR-0007), Next source of truth, Zod boundary, transaction, storage fora public, impedir path traversal, sem log de currículo/payload completo e cleanup do contrato/route substituído.
 Faça commit `chore(harness): add integration instructions`.
 ```
 
@@ -565,7 +518,7 @@ Faça commit `chore(harness): optimize copilot context`.
 ```text
 Audite instructions, agents, prompts, skills fornecidas, skills WGOTalent, docs e specs.
 
-Pesquise contradições: Prisma, Supabase, tRPC, Auth.js/NextAuth, n8n escrevendo DB, API CRUD interna, hard delete, React Hook Form, adapter Zod antigo obrigatório, drizzle push, instruções que tratem T3 como framework/runtime obrigatório.
+Pesquise contradições: Prisma, Supabase, tRPC, Auth.js/NextAuth, escrita externa direta no DB, API CRUD interna, hard delete, React Hook Form, adapter Zod antigo obrigatório, drizzle push, instruções que tratem T3 como framework/runtime obrigatório.
 Corrija somente harness/docs.
 Crie `docs/DEVLOG.md` e registre o marco.
 Execute `git diff --check`.
@@ -794,9 +747,7 @@ Use `src/env.js` gerado pelo Create T3 App como **única fonte de validação ti
 1. Não criar `lib/env.ts`, `src/lib/env.ts` ou segundo mecanismo de env.
 2. Preserve `DATABASE_URL` já configurado pelo scaffold Drizzle/PostgreSQL.
 3. Adicione apenas variáveis server-side necessárias ao WGOTalent neste estágio:
-   - `WEBHOOK_N8N_SECRET` — segredo compartilhado para validar inbound webhooks;
    - `STORAGE_ROOT` — caminho raiz do StorageProvider;
-   - `CLASSIFICADOR_N8N_WEBHOOK_URL` — URL do webhook n8n Classificador para disparo outbound;
    - outras somente se já houver requisito concreto.
 4. Atualize `.env.example` de forma coerente.
 5. Segredos nunca `NEXT_PUBLIC_*`.
@@ -829,15 +780,15 @@ Faça commit `docs(adr): initialize decision records`.
 ### Prompt para o Copilot Chat
 
 ```text
-Crie ADR para dois campos enviados pelo n8n Cadastro_Candidato:
+Crie ADR para dois campos de extração de currículo (ver emenda no ADR-0007):
 
-1. `texto_curriculo_extraido` (string com texto bruto do PDF):
-   - O workflow Cadastro_Candidato envia esse campo ativamente.
+1. `texto_curriculo_extraido` (string com texto bruto do documento):
+   - O fluxo de extração de currículo extrai esse campo.
    - Contexto: necessário para reprocessamento, debug da extração e auditoria de discrepâncias entre currículo e dados estruturados.
-   - Decisão recomendada: MANTER. É a evidência primária que o n8n extrai; removê-la força reprocessar o arquivo para qualquer auditoria. Documentar que é PII e não deve aparecer em logs ou respostas de API.
+   - Decisão recomendada: MANTER. É a evidência primária que a IA extrai; removê-la força reprocessar o arquivo para qualquer auditoria. Documentar que é PII e não deve aparecer em logs ou respostas de API.
 
-2. `json_completo_agente` (JSON completo da extração Gemini):
-   - O workflow Cadastro_Candidato também envia esse objeto; é maior e mais redundante que o texto.
+2. `json_completo_agente` (JSON completo da extração do modelo):
+   - O agente de extração também gera esse objeto; é maior e mais redundante que o texto.
    - Decisão recomendada: NÃO armazenar no banco relacional normalizado. Se necessário para debug, redirecionar para log estruturado ou arquivo temporário descartável.
 
 Se discordar, justifique baseado em custo operacional de storage, requisito de auditoria e acesso real.
@@ -845,22 +796,11 @@ Atualize `docs/specs/db_triagem_proposta.ts` conforme a decisão.
 Faça commit `docs(adr): decide resume text and agent json retention`.
 ```
 
-## TASK-029 — Decidir idempotência do webhook
+## TASK-029 — [Descartada/Supersedida pelo ADR-0007 — Idempotência de Webhook]
 
-**Modelo recomendado:** Gemini 3.1 Pro
+> **Nota:** Esta task e o ADR correspondente foram descartados no roteiro de correção (ver ADR-0007). O projeto não utiliza mais webhooks n8n; idempotência passa a ser tratada no worker de captação de e-mail / intake nativo.
 
-### Prompt para o Copilot Chat
-
-```text
-Crie ADR de idempotência do webhook.
-
-A solução deve distinguir retry do mesmo evento de uma nova candidatura futura. Preferência: `x-idempotency-key` obrigatório e persistência UNIQUE mínima no banco.
-Se isso exigir campo/tabela operacional ausente da spec, estenda a spec de forma explícita e justificada pelo ADR.
-Não implementar ainda.
-Faça commit `docs(adr): define n8n webhook idempotency`.
-```
-
-## TASK-030 — Decidir webhook para candidato soft-deleted
+## TASK-030 — Decidir conflito de candidato soft-deleted no intake
 
 **Modelo recomendado:** Gemini 3.1 Pro
 
@@ -870,9 +810,9 @@ Faça commit `docs(adr): define n8n webhook idempotency`.
 Crie ADR.
 
 Contexto: email é UNIQUE simples e soft delete não libera email.
-Decisão padrão segura: webhook não reativa silenciosamente; retorna conflito de domínio e uma reativação futura deve ser ação explícita do RH.
+Decisão padrão segura: o fluxo de intake não reativa silenciosamente; retorna conflito de domínio e uma reativação futura deve ser ação explícita do RH.
 Não criar novo candidato com mesmo email.
-Faça commit `docs(adr): define webhook behavior for deleted candidate`.
+Faça commit `docs(adr): define intake behavior for deleted candidate`.
 ```
 
 ## TASK-031 — Decidir soft delete com dependências organizacionais
@@ -903,7 +843,7 @@ Faça commit `docs(adr): define organizational soft delete semantics`.
 ```text
 Crie ADR para corrigir `Candidato.disponibilidade_horarios`.
 
-Contexto: o workflow n8n Cadastro_Candidato envia esse campo como string de texto livre (ex: "horário comercial", "manhã e tarde", "turnos"). A spec atual define como `boolean`, o que é incorreto e incompatível com o contrato real.
+Contexto: o fluxo de extração de currículo extrai esse campo como string de texto livre (ex: "horário comercial", "manhã e tarde", "turnos"). A spec original define como `boolean`, o que é incorreto e incompatível com o uso real.
 
 Decisão: alterar para `TEXT` nullable.
 - Null quando não informado.
@@ -912,36 +852,13 @@ Decisão: alterar para `TEXT` nullable.
 
 Na mesma TASK:
 - atualize `docs/specs/db_triagem_proposta.ts`: `disponibilidade_horarios: string | null`.
-- adicione nota de validação no contrato n8n quando documentado.
 
 Faça commit `docs(adr): correct disponibilidade_horarios to text`.
 ```
 
-## TASK-031c — ADR disparo outbound para o Classificador
+## TASK-031c — [Supersedida pelo ADR-0007 — Disparo do Classificador]
 
-**Modelo recomendado:** Gemini 3.1 Pro
-
-### Prompt para o Copilot Chat
-
-```text
-Crie ADR para o disparo outbound da plataforma ao n8n Classificador.
-
-Contexto: após registrar um candidato (via webhook inbound de Cadastro_Candidato) ou uma nova vaga (via Server Action do RH), a plataforma deve:
-1. Consultar entidades correspondentes na mesma cidade.
-2. Montar payloads CandidatoCompleto e VagaCompleta.
-3. Chamar o webhook do Classificador com HTTP POST.
-
-Decisões a documentar:
-- URL do Classificador fica em env (`CLASSIFICADOR_N8N_WEBHOOK_URL`); não hardcoded.
-- A chamada outbound deve ser fire-and-forget ou esperar resposta? Recomendado: fire-and-forget com timeout curto; o Classificador retorna resultados via webhook Triagem de forma assíncrona.
-- Falha no disparo outbound não deve reverter a transação de registro do candidato/vaga; apenas logar o erro.
-- Filtro por cidade: vagas com `status = 'aberta'` e `cidade = candidato.cidade`; candidatos ativos e mesma cidade da vaga.
-- Quantidade máxima de pares por disparo: definir limite (ex: 50 vagas por candidato) para não sobrecarregar o n8n.
-- Contexto de execução: usar `after()` do Next.js 15+ se disponível para rodar após a resposta do Server Action; caso contrário, chamar inline antes do return.
-
-Não implementar ainda.
-Adicione `CLASSIFICADOR_N8N_WEBHOOK_URL` a `docs/specs/` e planeje adicionar a `src/env.js`.
-Faça commit `docs(adr): define outbound classifier trigger`.
+> **Nota:** Supersedida pelo ADR-0007. O disparo para o Classificador deixa de ser um webhook HTTP externo (`CLASSIFICADOR_N8N_WEBHOOK_URL`) e passa a acionar o agente interno `classificador_aderencia` (fire-and-forget).
 ```
 
 # Fase 4 — PostgreSQL local
@@ -1196,18 +1113,9 @@ Não criar CRUD próprio.
 Faça commit `feat(db): define ai evaluation table`.
 ```
 
-## TASK-049 — Implementar persistência de idempotência
+## TASK-049 — [Descartada/Supersedida pelo ADR-0007 — Persistência de Idempotência]
 
-**Modelo recomendado:** Gemini 3.1 Pro
-
-### Prompt para o Copilot Chat
-
-```text
-Implemente no schema somente a solução aprovada pelo ADR-029 para idempotência. UNIQUE obrigatório, sem PII desnecessária.
-Se a spec precisar extensão, atualize-a de forma explícita com referência ao ADR.
-Lint/build.
-Faça commit `feat(db): implement webhook idempotency persistence`.
-```
+> **Nota:** Esta task foi descartada no roteiro de correção pois a persistência de idempotência era atrelada ao webhook n8n legado (ver ADR-0007).
 
 ## TASK-050 — Definir relations Drizzle
 
@@ -1819,16 +1727,14 @@ Faça commit `feat(jobs): add repository`.
 ```text
 Create/update/soft-delete Vaga. Valide Cargo ativo. Soft delete não apaga Triagens históricas. Zod, typed result, revalidatePath.
 
-DISPARO OUTBOUND (fluxo Avaliação de Vaga):
+DISPARO DO AGENTE CLASSIFICADOR (fluxo Avaliação de Vaga):
 Ao criar uma nova Vaga com status 'aberta':
 1. Após commit bem-sucedido, consultar candidatos ativos com `cidade = vaga.cidade`.
-2. Montar VagaCompleta + [CandidatoCompleto] e disparar POST para `CLASSIFICADOR_N8N_WEBHOOK_URL`.
+2. Disparar o agente classificador_aderencia de forma fire-and-forget (ver ADR-0007 e roteiro do motor de agentes).
 3. O disparo é fire-and-forget: falha não reverte o create da Vaga. Logar erro.
-4. Usar `after()` do Next.js se disponível; caso contrário chamar inline após o return.
-5. Não disparar em update nem em soft-delete.
+4. Não disparar em update nem em soft-delete.
 
-Adicione `CLASSIFICADOR_N8N_WEBHOOK_URL` a `src/env.js` se ainda não estiver.
-Testes das actions (exceto integração real com n8n).
+Testes das actions.
 Faça commit `feat(jobs): add job server actions with classifier trigger`.
 ```
 
@@ -1903,7 +1809,7 @@ Crie `src/server/db/repositories/candidato.ts` (`candidatoRepository`, mesmo pad
 - detail ativo;
 - detail completo com formacoes/experiencias/certificacoes/triagens;
 - options ativos de Cargo/Departamento;
-- lookup por email incluindo deleted para o webhook futuro.
+- lookup por email incluindo deleted para o fluxo de intake futuro (upload/email, ver ADR-0002 e ADR-0007).
 
 Evite N+1 e não carregue currículo/texto bruto em listas.
 Faça commit `feat(candidates): add repository`.
@@ -2433,7 +2339,7 @@ Faça commit `chore: add reproducible quality gates`.
 ### Prompt para o Copilot Chat
 
 ```text
-Reescreva README com produto, stack, requisitos, .env, Postgres Docker, npm install, migrate, seed, dev, webhook, storage, tests, harness/skills, estrutura e fora de escopo.
+Reescreva README com produto, stack, requisitos, .env, Postgres Docker, npm install, migrate, seed, dev, storage, motor de agentes IA, tests, harness/skills, estrutura e fora de escopo.
 Não duplicar DATA MODEL/spec.
 Teste comandos quando seguros.
 Faça commit `docs: add reproducible project readme`.
@@ -2446,7 +2352,7 @@ Faça commit `docs: add reproducible project readme`.
 ### Prompt para o Copilot Chat
 
 ```text
-Crie `docs/SECURITY.md` cobrindo webhook secret, PII, currículo, storage path, logs, env, ausência de auth no MVP, soft delete não é anonimização, dados fictícios e boundary n8n externo.
+Crie `docs/SECURITY.md` cobrindo credenciais e chaves de IA em repouso, PII, currículo, storage path, logs, env, ausência de auth no MVP, soft delete não é anonimização e dados fictícios.
 Pesquise segredos/dados reais no Git. Corrija exposição objetiva sem reescrever histórico automaticamente.
 Faça commit `docs: document security and privacy posture`.
 ```
@@ -2458,7 +2364,7 @@ Faça commit `docs: document security and privacy posture`.
 ### Prompt para o Copilot Chat
 
 ```text
-Crie material em português explicando por que o Create T3 App foi usado somente como scaffolder, App Router, Server Components, Server Actions, Drizzle/migrations, soft delete, TanStack Form, Zod, shadcn/Tailwind, StorageProvider, webhook n8n, idempotência, fluxo candidato->triagem->IA e harness/skills.
+Crie material em português explicando por que o Create T3 App foi usado somente como scaffolder, App Router, Server Components, Server Actions, Drizzle/migrations, soft delete, TanStack Form, Zod, shadcn/Tailwind, StorageProvider, motor de agentes nativo de IA (ADR-0007), fluxo candidato->triagem->IA e harness/skills.
 Inclua diagrama e não copie arquivos grandes.
 Faça commit `docs: add technical walkthrough`.
 ```
@@ -2499,7 +2405,7 @@ Execute:
 7. db:seed;
 8. check:integration;
 9. smoke das páginas;
-10. smoke webhook;
+10. smoke storage/intake;
 11. repository cleanliness;
 12. git diff --check;
 13. busca de segredos;
@@ -2518,7 +2424,7 @@ Faça commit `test: record final greenfield validation`.
 
 ```text
 Revise somente harness: instructions, agents, prompts, skills fornecidas, skills WGO, contexto e docs.
-Simule quatro tarefas: alterar schema, criar form, alterar UI, alterar webhook. Confirme skill/contexto corretos, paths `src/` coerentes e nenhuma instrução que tente introduzir tRPC/Auth/Prisma ou tratar T3 como framework obrigatório.
+Simule quatro tarefas: alterar schema, criar form, alterar UI, alterar actions/intake. Confirme skill/contexto corretos, paths `src/` coerentes e nenhuma instrução que tente introduzir tRPC/Auth/Prisma ou tratar T3 como framework obrigatório.
 Não alterar produto salvo referência documental incorreta.
 Faça commit `chore(harness): final harness consistency review` se houver mudança.
 ```
@@ -2534,7 +2440,7 @@ Feche o marco sem feature nova.
 
 1. Leia FINAL_VALIDATION.
 2. Confirme árvore limpa.
-3. Crie `docs/RELEASE_SUMMARY.md` com escopo, arquitetura, schema, forms, UI, webhook, testes, harness e limitações.
+3. Crie `docs/RELEASE_SUMMARY.md` com escopo, arquitetura, schema, forms, UI, storage/intake/IA, testes, harness e limitações.
 4. Atualize PROJECT_STATE para MVP v1.
 5. Rode `npm run check` final.
 6. Commit `docs: close wgo talent greenfield mvp`.
@@ -2771,7 +2677,7 @@ API routes CRUD internas
 src/app/avaliacoes/
 hard DELETE em app layer
 currículos em public/
-DATABASE_URL disponível ao n8n
+DATABASE_URL exposta externamente / serviço n8n
 componentes shadcn sem uso
 assets padrão do Next sem uso
 boilerplate de tutorial

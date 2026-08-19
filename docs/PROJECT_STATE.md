@@ -19,7 +19,7 @@
 A arquitetura é focada em convenções estritas do **Next.js App Router**:
 - **Leituras**: Apenas via **Server Components**. Cada página busca seus próprios dados diretamente da camada Drizzle. Sem client-side fetching e sem Route Handlers para dados internos. Todas as consultas trafegam obrigatoriamente por um utilitário central `notDeleted()`.
 - **Escritas**: Apenas via **Server Actions** (`use server`). Estas actions cuidam da validação (Zod), mutação e da revalidação do cache local (`revalidatePath`).
-- **Webhooks & Arquivos**: Route Handlers (`src/app/api/`) são usados estritamente para endpoints de integração (receber payload de IA via n8n) e para servir o streaming controlado dos currículos hospedados no disco.
+- **Rotas de Arquivos & API**: Route Handlers (`src/app/api/`) são usados estritamente para servir o streaming controlado dos currículos hospedados no disco e eventuais endpoints de integração.
 - **Integridade de Deleção (Soft Delete)**: O uso do `ON DELETE CASCADE` nativo do Postgres é proibido. Exclusões em cascata ocorrem integralmente via camada da aplicação rodando múltiplas atualizações em uma única transação no DB.
 - **Armazenamento**: O armazenamento abstrato (`StorageProvider`) lida com os arquivos em File System de forma a não encher os diretórios públicos (`public/`).
 

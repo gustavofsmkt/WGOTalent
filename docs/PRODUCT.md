@@ -1,7 +1,7 @@
 # Produto: Plataforma de RH (Triagem de Candidatos)
 
 ## O Problema
-A necessidade de gerenciar de forma estruturada vagas de emprego e o pipeline de candidatos (triagem) através de diferentes etapas. O sistema visa suportar a ingestão automatizada de currículos e avaliações geradas por Inteligência Artificial (via workflow externo no n8n) para agilizar o processo seletivo.
+A necessidade de gerenciar de forma estruturada vagas de emprego e o pipeline de candidatos (triagem) através de diferentes etapas. O sistema visa suportar a ingestão automatizada de currículos e avaliações geradas por Inteligência Artificial (via motor de agentes nativo, ver ADR-0007) para agilizar o processo seletivo.
 
 ## Usuários
 - Profissionais de Recursos Humanos e Recrutadores.
@@ -22,7 +22,7 @@ A necessidade de gerenciar de forma estruturada vagas de emprego e o pipeline de
 - **Gestão Organizacional**: CRUD completo de Departamentos, Cargos e Vagas.
 - **Gestão de Candidatos**: CRUD de perfis de candidatos, englobando suas experiências, formações e certificações.
 - **Pipeline de Triagem**: Visualização e progressão do funil de recrutamento, com controle estrito dos resultados e motivos nas etapas de seleção.
-- **Integração Externa (IA)**: Webhook seguro para recebimento assíncrono de dados processados pelo n8n (criação de candidato, triagem e avaliação de IA).
+- **Motor de IA Nativo**: Processamento de currículos e avaliações de IA executados internamente via motor de agentes configurável (criação de candidato, triagem e avaliação de IA, ver ADR-0007).
 - **Armazenamento de Arquivos**: Interface abstrata `StorageProvider` utilizando disco local para o armazenamento de currículos, blindados sob rotas isoladas.
 - **Soft Delete Universal**: Remoção lógica de dados em todas as entidades (via campo `deleted_at`), com operações de exclusão em cascata controladas na camada da aplicação (transações).
 
@@ -31,4 +31,4 @@ A necessidade de gerenciar de forma estruturada vagas de emprego e o pipeline de
 - Integração nativa com Storage em Nuvem (como AWS S3/Azure Blob).
 - UI complexa (como modais avançados, rotas interceptadas ou paralelas).
 - Deleções físicas (hard deletes) do banco de dados.
-- Escritas diretas do n8n no banco de dados (toda mutação ocorre estritamente pela aplicação via webhooks Next.js).
+- Escritas diretas de serviços externos no banco de dados (toda mutação ocorre estritamente pela aplicação via Server Actions / transações Drizzle).
