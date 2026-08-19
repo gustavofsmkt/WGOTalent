@@ -12,6 +12,7 @@ vi.mock("~/env", () => ({
 import { departamentoRepository } from "./departamento";
 import { departamentos, cargos } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -40,13 +41,14 @@ describe("departamentoRepository", () => {
 
   it("builds query with notDeleted and id condition for findById", () => {
     const testId = "11111111-1111-1111-1111-111111111111";
-    const qb = departamentoRepository.findById(testId, {
-      select: () => ({
-        from: (table: any) => notDeleted(mockDb.select().from(table), table),
-      }),
-    } as any);
-
-    expect(qb).toBeDefined();
+    const qb = notDeleted(
+      mockDb.select().from(departamentos),
+      departamentos,
+      eq(departamentos.id, testId),
+    );
+    const sql = qb.toSQL().sql;
+    expect(sql).toContain('"wgotalent_departamentos"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_departamentos"."id" =');
   });
 
   it("builds cargo check query with notDeleted, departamentoId, and ativo = true", () => {
