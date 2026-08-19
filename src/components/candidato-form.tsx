@@ -6,6 +6,10 @@ import { useForm, type ReactFormExtendedApi } from "@tanstack/react-form";
 import type { z } from "zod";
 import {
   candidatoSchema,
+  candidatoAgregadoSchema,
+  formacaoBaseSchema,
+  type FormacaoInput,
+  type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
 import type { Candidato } from "~/server/db/schema";
 import {
@@ -25,6 +29,8 @@ import {
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Checkbox } from "~/components/ui/checkbox";
+import { Button } from "~/components/ui/button";
+import { Plus, Trash2, GraduationCap } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -52,7 +58,13 @@ export interface CargoOption {
 }
 
 export interface CandidatoBaseFormProps {
-  candidato?: Partial<Candidato> | null;
+  candidato?:
+    | (Partial<Candidato> & {
+        formacoes?: FormacaoInput[];
+        experiencias?: any[];
+        certificacoes?: any[];
+      })
+    | null;
   departamentoOptions: DepartamentoOption[];
   cargoOptions: CargoOption[];
   onSuccess?: (candidato: Candidato) => void;
@@ -653,7 +665,7 @@ function DisponibilidadesSection({ form }: { form: any }) {
                 onBlur={field.handleBlur}
               />
               <div className="space-y-1 leading-none">
-                <FieldLabel htmlFor="candidato-ensino-medio">Ensino MÃ©dio ConcluÃdo</FieldLabel>
+                <FieldLabel htmlFor="candidato-ensino-medio">Ensino Médio Concluído</FieldLabel>
               </div>
             </Field>
           )}
@@ -663,8 +675,216 @@ function DisponibilidadesSection({ form }: { form: any }) {
   );
 }
 
+function FormacoesSection({ form }: { form: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Formação Acadêmica</h3>
+          <p className="text-sm text-muted-foreground">
+            Cursos de graduação, pós-graduação, ensino técnico ou outras formações.
+          </p>
+        </div>
+      </div>
+
+      <form.Field name="formacoes" mode="array">
+        {(field: any) => {
+          const items: FormacaoInput[] = field.state.value || [];
+
+          return (
+            <div className="space-y-4">
+              {items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  <GraduationCap className="mb-2 size-8 text-muted-foreground/60" />
+                  <p className="font-medium">Nenhuma formação acadêmica adicionada</p>
+                  <p className="text-xs">Clique no botão abaixo para adicionar.</p>
+                </div>
+              ) : (
+                items.map((_, index) => (
+                  <div
+                    key={index}
+                    className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between border-b pb-3">
+                      <span className="text-sm font-semibold text-foreground">
+                        Formação #{index + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => field.removeValue(index)}
+                        aria-label={`Remover formação ${index + 1}`}
+                      >
+                        <Trash2 className="mr-1 size-4" />
+                        Remover
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <form.Field
+                        name={`formacoes[${index}].titulo`}
+                        validators={{ onBlur: formacaoBaseSchema.shape.titulo }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`formacao-titulo-${index}`}>
+                                Curso / Título *
+                              </FieldLabel>
+                              <Input
+                                id={`formacao-titulo-${index}`}
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) => subField.handleChange(e.target.value)}
+                                aria-invalid={hasErrors}
+                                placeholder="Ex: Bacharelado em Ciência da Computação"
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+
+                      <form.Field
+                        name={`formacoes[${index}].areaFormacao`}
+                        validators={{ onBlur: formacaoBaseSchema.shape.areaFormacao }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`formacao-area-${index}`}>
+                                Área de Formação *
+                              </FieldLabel>
+                              <Input
+                                id={`formacao-area-${index}`}
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) => subField.handleChange(e.target.value)}
+                                aria-invalid={hasErrors}
+                                placeholder="Ex: Tecnologia da Informação"
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <form.Field
+                        name={`formacoes[${index}].instituicao`}
+                        validators={{ onBlur: formacaoBaseSchema.shape.instituicao }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`formacao-instituicao-${index}`}>
+                                Instituição
+                              </FieldLabel>
+                              <Input
+                                id={`formacao-instituicao-${index}`}
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(e.target.value ? e.target.value : null)
+                                }
+                                aria-invalid={hasErrors}
+                                placeholder="Ex: USP, FIAP, Senai"
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+
+                      <form.Field
+                        name={`formacoes[${index}].dataInicio`}
+                        validators={{ onBlur: formacaoBaseSchema.shape.dataInicio }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`formacao-data-inicio-${index}`}>
+                                Data de Início *
+                              </FieldLabel>
+                              <Input
+                                id={`formacao-data-inicio-${index}`}
+                                type="date"
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) => subField.handleChange(e.target.value)}
+                                aria-invalid={hasErrors}
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+
+                      <form.Field
+                        name={`formacoes[${index}].dataTermino`}
+                        validators={{ onBlur: formacaoBaseSchema.shape.dataTermino }}
+                      >
+                        {(subField: any) => {
+                          const hasErrors = subField.state.meta.errors.length > 0;
+                          return (
+                            <Field data-invalid={hasErrors}>
+                              <FieldLabel htmlFor={`formacao-data-termino-${index}`}>
+                                Data de Término
+                              </FieldLabel>
+                              <Input
+                                id={`formacao-data-termino-${index}`}
+                                type="date"
+                                value={subField.state.value || ""}
+                                onBlur={subField.handleBlur}
+                                onChange={(e) =>
+                                  subField.handleChange(e.target.value ? e.target.value : null)
+                                }
+                                aria-invalid={hasErrors}
+                              />
+                              <FieldError errors={subField.state.meta.errors} />
+                            </Field>
+                          );
+                        }}
+                      </form.Field>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  field.pushValue({
+                    titulo: "",
+                    instituicao: null,
+                    areaFormacao: "",
+                    dataInicio: "",
+                    dataTermino: null,
+                  })
+                }
+              >
+                <Plus className="mr-1.5 size-4" />
+                Adicionar Formação
+              </Button>
+            </div>
+          );
+        }}
+      </form.Field>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// FormulÃ¡rio Principal
+// Formulário Principal
 // ---------------------------------------------------------------------------
 
 export function CandidatoBaseForm({
@@ -712,9 +932,12 @@ export function CandidatoBaseForm({
       linkedin: candidato?.linkedin ?? null,
       portfolio: candidato?.portfolio ?? null,
       origem: candidato?.origem ?? "manual",
-    } as z.input<typeof candidatoSchema>,
+      formacoes: candidato?.formacoes ?? [],
+      experiencias: candidato?.experiencias ?? [],
+      certificacoes: candidato?.certificacoes ?? [],
+    } as CandidatoAgregadoInput,
     validators: {
-      onBlur: candidatoSchema,
+      onBlur: candidatoAgregadoSchema,
     },
     onSubmit: async ({ value }) => {
       setServerError(null);
@@ -755,8 +978,8 @@ export function CandidatoBaseForm({
         <CardTitle>{isEdit ? "Editar Candidato" : "Novo Candidato"}</CardTitle>
         <CardDescription>
           {isEdit
-            ? "Atualize as informaÃ§Ãµes de contato e perfil do candidato."
-            : "Cadastre as informaÃ§Ãµes bÃ¡sicas de um novo candidato."}
+            ? "Atualize as informações de contato e perfil do candidato."
+            : "Cadastre as informações básicas de um novo candidato."}
         </CardDescription>
       </CardHeader>
 
@@ -771,7 +994,7 @@ export function CandidatoBaseForm({
         <CardContent className="space-y-10">
           {serverError && (
             <ErrorCallout
-              title="NÃ£o foi possÃvel salvar o candidato"
+              title="Não foi possível salvar o candidato"
               message={serverError.message}
               errors={serverErrorList.length > 0 ? serverErrorList : undefined}
             />
@@ -783,6 +1006,7 @@ export function CandidatoBaseForm({
             <EnderecoSection form={form} />
             <InteressesSection form={form} cargoOptions={cargoOptions} departamentoOptions={departamentoOptions} />
             <DisponibilidadesSection form={form} />
+            <FormacoesSection form={form} />
           </FieldGroup>
         </CardContent>
 
@@ -806,7 +1030,7 @@ export function CandidatoBaseForm({
                 disabled={!canSubmit}
                 pending={isSubmitting}
               >
-                {isEdit ? "Salvar AlteraÃ§Ãµes" : "Cadastrar Candidato"}
+                {isEdit ? "Salvar Alterações" : "Cadastrar Candidato"}
               </FormSubmitButton>
             )}
           </form.Subscribe>

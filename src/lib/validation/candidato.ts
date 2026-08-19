@@ -32,93 +32,93 @@ const optionalUrlSchema = z.preprocess(
     .nullable()
 );
 
-export const formacaoSchema = z
-  .object({
-    id: uuidSchema.optional(),
-    titulo: nonEmptyString("O título da formação é obrigatório").max(
-      150,
-      "O título deve ter no máximo 150 caracteres"
-    ),
-    instituicao: trimmedString
-      .max(150, "A instituição deve ter no máximo 150 caracteres")
-      .optional()
-      .nullable(),
-    areaFormacao: nonEmptyString("A área de formação é obrigatória").max(
-      120,
-      "A área deve ter no máximo 120 caracteres"
-    ),
-    dataInicio: dateStringSchema,
-    dataTermino: dateStringSchema.optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      if (data.dataTermino) {
-        return new Date(data.dataInicio) <= new Date(data.dataTermino);
-      }
-      return true;
-    },
-    {
-      message: "A data de término deve ser posterior ou igual à data de início",
-      path: ["dataTermino"],
+export const formacaoBaseSchema = z.object({
+  id: uuidSchema.optional(),
+  titulo: nonEmptyString("O título da formação é obrigatório").max(
+    150,
+    "O título deve ter no máximo 150 caracteres"
+  ),
+  instituicao: trimmedString
+    .max(150, "A instituição deve ter no máximo 150 caracteres")
+    .optional()
+    .nullable(),
+  areaFormacao: nonEmptyString("A área de formação é obrigatória").max(
+    120,
+    "A área deve ter no máximo 120 caracteres"
+  ),
+  dataInicio: dateStringSchema,
+  dataTermino: dateStringSchema.optional().nullable(),
+});
+
+export const formacaoSchema = formacaoBaseSchema.refine(
+  (data) => {
+    if (data.dataTermino) {
+      return new Date(data.dataInicio) <= new Date(data.dataTermino);
     }
-  );
+    return true;
+  },
+  {
+    message: "A data de término deve ser posterior ou igual à data de início",
+    path: ["dataTermino"],
+  }
+);
 
 export type FormacaoInput = z.input<typeof formacaoSchema>;
 export type FormacaoOutput = z.output<typeof formacaoSchema>;
 
-export const experienciaSchema = z
-  .object({
-    id: uuidSchema.optional(),
-    empresa: trimmedString
-      .max(150, "O nome da empresa deve ter no máximo 150 caracteres")
-      .optional()
-      .nullable(),
-    cargoTitulo: nonEmptyString("O título do cargo é obrigatório").max(
-      150,
-      "O título do cargo deve ter no máximo 150 caracteres"
-    ),
-    descricao: trimmedString.optional().nullable(),
-    dataEntrada: dateStringSchema,
-    dataSaida: dateStringSchema.optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      if (data.dataSaida) {
-        return new Date(data.dataEntrada) <= new Date(data.dataSaida);
-      }
-      return true;
-    },
-    {
-      message: "A data de saída deve ser posterior ou igual à data de entrada",
-      path: ["dataSaida"],
+export const experienciaBaseSchema = z.object({
+  id: uuidSchema.optional(),
+  empresa: trimmedString
+    .max(150, "O nome da empresa deve ter no máximo 150 caracteres")
+    .optional()
+    .nullable(),
+  cargoTitulo: nonEmptyString("O título do cargo é obrigatório").max(
+    150,
+    "O título do cargo deve ter no máximo 150 caracteres"
+  ),
+  descricao: trimmedString.optional().nullable(),
+  dataEntrada: dateStringSchema,
+  dataSaida: dateStringSchema.optional().nullable(),
+});
+
+export const experienciaSchema = experienciaBaseSchema.refine(
+  (data) => {
+    if (data.dataSaida) {
+      return new Date(data.dataEntrada) <= new Date(data.dataSaida);
     }
-  );
+    return true;
+  },
+  {
+    message: "A data de saída deve ser posterior ou igual à data de entrada",
+    path: ["dataSaida"],
+  }
+);
 
 export type ExperienciaInput = z.input<typeof experienciaSchema>;
 export type ExperienciaOutput = z.output<typeof experienciaSchema>;
 
-export const certificacaoSchema = z
-  .object({
-    id: uuidSchema.optional(),
-    titulo: nonEmptyString("O título da certificação é obrigatório").max(
-      150,
-      "O título deve ter no máximo 150 caracteres"
-    ),
-    obtidaEm: dateStringSchema.optional().nullable(),
-    validade: dateStringSchema.optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      if (data.obtidaEm && data.validade) {
-        return new Date(data.obtidaEm) <= new Date(data.validade);
-      }
-      return true;
-    },
-    {
-      message: "A validade deve ser posterior ou igual à data de obtenção",
-      path: ["validade"],
+export const certificacaoBaseSchema = z.object({
+  id: uuidSchema.optional(),
+  titulo: nonEmptyString("O título da certificação é obrigatório").max(
+    150,
+    "O título deve ter no máximo 150 caracteres"
+  ),
+  obtidaEm: dateStringSchema.optional().nullable(),
+  validade: dateStringSchema.optional().nullable(),
+});
+
+export const certificacaoSchema = certificacaoBaseSchema.refine(
+  (data) => {
+    if (data.obtidaEm && data.validade) {
+      return new Date(data.obtidaEm) <= new Date(data.validade);
     }
-  );
+    return true;
+  },
+  {
+    message: "A validade deve ser posterior ou igual à data de obtenção",
+    path: ["validade"],
+  }
+);
 
 export type CertificacaoInput = z.input<typeof certificacaoSchema>;
 export type CertificacaoOutput = z.output<typeof certificacaoSchema>;
