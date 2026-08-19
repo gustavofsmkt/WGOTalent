@@ -220,7 +220,7 @@ export function CargoForm({
                         Departamento *
                       </FieldLabel>
                       <Select
-                        value={field.state.value || undefined}
+                        value={field.state.value || ""}
                         onValueChange={(val) => {
                           if (typeof val === "string") {
                             field.handleChange(val);
@@ -235,7 +235,13 @@ export function CargoForm({
                             hasErrors ? `${descId} ${errorId}` : descId
                           }
                         >
-                          <SelectValue placeholder="Selecione um departamento..." />
+                          <SelectValue placeholder="Selecione um departamento...">
+                            {(val: string | null) => {
+                              if (!val || val === "none") return "Selecione um departamento...";
+                              const dept = departamentoOptions.find((d) => d.id === val);
+                              return dept ? dept.nome : "Selecione um departamento...";
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {departamentoOptions.length === 0 ? (
