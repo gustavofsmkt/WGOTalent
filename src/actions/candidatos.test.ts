@@ -12,7 +12,7 @@ vi.mock("~/env", () => ({
   },
 }));
 
-import { createCandidato, updateCandidato } from "./candidatos";
+import { createCandidato, updateCandidato, deleteCandidato } from "./candidatos";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
@@ -203,6 +203,50 @@ describe("candidatos server actions", () => {
       expect(result.success).toBe(false);
       expect(result.message).toBe("O e-mail informado já está cadastrado no sistema.");
       expect(candidatoRepository.updateAggregate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteCandidato", () => {
+    it("successfully soft deletes a candidate", async () => {
+      const mockCandidato = {
+        id: "cand-1",
+        nome: "João Silva",
+      };
+
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "softDelete").mockResolvedValueOnce(undefined);
+
+      const result = await deleteCandidato("cand-1");
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Candidato excluído com sucesso.");
+      expect(candidatoRepository.softDelete).toHaveBeenCalledWith("cand-1");
+      expect(revalidatePath).toHaveBeenCalledWith("/candidatos");
+    });
+
+    it("returns error if candidate is not found", async () => {
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(null);
+
+      const result = await deleteCandidato("cand-1");
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe("Candidato não encontrado.");
+      expect(candidatoRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it("handles error during soft delete", async () => {
+      const mockCandidato = {
+        id: "cand-1",
+        nome: "João Silva",
+      };
+
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "softDelete").mockRejectedValueOnce(new Error("DB Error"));
+
+      const result = await deleteCandidato("cand-1");
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe("DB Error");
     });
   });
 });

@@ -1,4 +1,4 @@
-import { eq, desc, asc, and, isNull } from "drizzle-orm";
+import { eq, desc, asc, and, isNull, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   candidatos,
@@ -6,6 +6,7 @@ import {
   candidatoExperiencias,
   candidatoCertificacoes,
   triagens,
+  avaliacaoIA,
   cargos,
   departamentos,
   vagas,
@@ -357,6 +358,68 @@ export const candidatoRepository = {
 
       const res = await candidatoRepository.findByIdComplete(id, tx);
       return res;
+    });
+  },
+
+  softDelete: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
+    await dbOrTx.transaction(async (tx) => {
+      const deletedAt = new Date().toISOString();
+
+      // Check if already deleted (idempotent)
+      const candidato = await tx
+        .select({ deletedAt: candidatos.deletedAt })
+        .from(candidatos)
+        .where(eq(candidatos.id, id));
+
+      if (!candidato[0] || candidato[0].deletedAt) {
+        return; // Already deleted or not found
+      }
+
+      // Soft delete candidato
+      await tx
+        .update(candidatos)
+        .set({ deletedAt })
+        .where(eq(candidatos.id, id));
+
+      // Soft delete formacoes
+      await tx
+        .update(candidatoFormacoes)
+        .set({ deletedAt })
+        .where(eq(candidatoFormacoes.candidatoId, id));
+
+      // Soft delete experiencias
+      await tx
+        .update(candidatoExperiencias)
+        .set({ deletedAt })
+        .where(eq(candidatoExperiencias.candidatoId, id));
+
+      // Soft delete certificacoes
+      await tx
+        .update(candidatoCertificacoes)
+        .set({ deletedAt })
+        .where(eq(candidatoCertificacoes.candidatoId, id));
+
+      // Find triagens to soft delete avaliacaoIA
+      const triagensRows = await tx
+        .select({ id: triagens.id })
+        .from(triagens)
+        .where(eq(triagens.candidatoId, id));
+
+      if (triagensRows.length > 0) {
+        const triagemIds = triagensRows.map((t) => t.id);
+
+        // Soft delete avaliacaoIA
+        await tx
+          .update(avaliacaoIA)
+          .set({ deletedAt })
+          .where(inArray(avaliacaoIA.triagemId, triagemIds));
+          
+        // Soft delete triagens
+        await tx
+          .update(triagens)
+          .set({ deletedAt })
+          .where(eq(triagens.candidatoId, id));
+      }
     });
   },
 };

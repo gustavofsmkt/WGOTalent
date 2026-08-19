@@ -154,3 +154,33 @@ export async function updateCandidato(
     };
   }
 }
+
+export async function deleteCandidato(
+  id: string,
+): Promise<ActionState<void>> {
+  try {
+    const existingCandidato = await candidatoRepository.findById(id);
+    if (!existingCandidato) {
+      return { success: false, message: "Candidato não encontrado." };
+    }
+
+    await candidatoRepository.softDelete(id);
+
+    revalidatePath("/candidatos");
+    
+    return {
+      success: true,
+      message: "Candidato excluído com sucesso.",
+      data: undefined,
+    };
+  } catch (error) {
+    console.error("[deleteCandidato] Erro:", error);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro inesperado ao excluir o candidato.",
+    };
+  }
+}
