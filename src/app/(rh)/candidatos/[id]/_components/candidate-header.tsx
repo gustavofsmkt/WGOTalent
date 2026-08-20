@@ -15,6 +15,7 @@ import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
 import { DeleteCandidatoButton } from "~/app/(rh)/candidatos/_components/delete-candidato-button";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
+import { getWhatsAppUrl } from "~/lib/whatsapp";
 
 interface CandidateHeaderProps {
   candidato: CandidatoDetailCompleto;
@@ -99,7 +100,9 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
               <span className="flex items-center gap-1.5">
                 <Smartphone className="size-4 text-muted-foreground/70" />
                 <a
-                  href={`tel:${candidato.celular}`}
+                  href={getWhatsAppUrl(candidato.celular)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
                   {candidato.celular}

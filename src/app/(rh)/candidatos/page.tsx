@@ -17,6 +17,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
 import { CandidatosFilter } from "./_components/candidatos-filter";
+import { getWhatsAppUrl } from "~/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
 
@@ -261,7 +262,14 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                                 </span>
                                 <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                   <Phone className="size-3" />
-                                  {candidato.celular}
+                                  <a
+                                    href={getWhatsAppUrl(candidato.celular)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-primary transition-colors"
+                                  >
+                                    {candidato.celular}
+                                  </a>
                                 </span>
                               </div>
                             </div>
@@ -357,7 +365,14 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                         <div className="space-y-1.5 text-xs text-muted-foreground pt-1 border-t border-border/40">
                           <div className="flex items-center gap-1.5">
                             <Phone className="size-3.5 text-muted-foreground/70" />
-                            <span>{candidato.celular}</span>
+                            <a
+                              href={getWhatsAppUrl(candidato.celular)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-primary transition-colors"
+                            >
+                              {candidato.celular}
+                            </a>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <MapPin className="size-3.5 text-muted-foreground/70" />

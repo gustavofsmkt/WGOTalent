@@ -24,6 +24,7 @@ import { StatusBadge } from "~/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
+import { getWhatsAppUrl } from "~/lib/whatsapp";
 
 const ETAPAS = [
   { value: "curriculo", label: "Currículo", Icon: FileText },
@@ -184,10 +185,7 @@ export default async function TriagemDetailPage({
                   <Mail className="mr-2 h-4 w-4" /> Email
                 </a>
                 <a
-                  href={`https://wa.me/55${triagem.candidato.celular.replace(
-                    /\D/g,
-                    "",
-                  )}`}
+                  href={getWhatsAppUrl(triagem.candidato.celular)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={buttonVariants({ variant: "secondary", className: "flex-1" })}
