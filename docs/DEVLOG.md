@@ -94,3 +94,18 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Confirmada a ausência de CRUD independente para `AvaliacaoIA`.
 - Sucesso em todas as etapas de build, verificação de tipos (`typecheck`) e nos 293 testes do repositório (Vitest).
 
+## Marco: TASK-137 a TASK-153 — Motor de Agentes IA e Upload em Lote
+*Data: 2026-08-20*
+
+- Implementado o motor de agentes nativo (ADR-0007) com provedor Gemini via Google AI Studio (`@google/genai`): tabelas `llm_credenciais` e `agente_config` (3 slots fixos, seed idempotente), cifra de credenciais em repouso (AES-256-GCM), cliente Gemini com saída estruturada e resolvedor de template `{{variavel}}`.
+- Implementados os 3 agentes: `extracao_curriculo` (multimodal PDF/PNG/JPEG, conversão de texto via `mammoth` para DOCX), `classificador_aderencia` (fase 1, pontuação em lote com chunking de até 25 itens, direction-agnostic), `avaliador_triagem` (fase 2, grava `avaliacao_ia`).
+- Orquestração fechada: candidato novo → vagas abertas na mesma cidade; vaga nova → candidatos ativos na mesma cidade; aplica threshold configurável, evita duplicar `Triagem` para o mesmo par (índice único não é parcial, então soft-delete não libera o par), roda a fase 2 com concorrência limitada (`runWithLimit`, sem dependência nova).
+- Disparo real ligado em `createCandidato` e `createVaga` (fire-and-forget); placeholders `console.log`/`TODO` removidos.
+- Upload em lote de currículos (até 15 arquivos, `experimental.serverActions.bodySizeLimit` ajustado para 80mb) com extração real desde o início — tela em `/candidatos/upload-lote`.
+- Migration relaxando `dataNascimento`/`cep`/`bairro`/`logradouro` para nullable em `candidatos` (currículo raramente traz esses dados) e nova coluna `dados_pendentes`; o formulário manual continua exigindo esses campos (schema Zod inalterado nesse caminho).
+- Admin: `/admin/agentes` (config dos 3 slots) e `/admin/credenciais` (CRUD write-only da API key, nunca reexibida); sem autenticação, por decisão já registrada em `PRODUCT.md`.
+- Corrigido bug real encontrado ao rodar o app: `src/app/(admin)/` é route group do Next.js e não gera prefixo de URL — as páginas caíam em `/agentes`/`/credenciais` em vez de `/admin/agentes`/`/admin/credenciais`. Renomeado para `src/app/admin/` (pasta real).
+- Verificado com `npm run dev` real (não só testes): telas de admin testadas com escrita/leitura reais no banco, upload em lote renderizado, triagens com `avaliacao_ia` inline funcionando. Migration 0012 estava gerada mas não aplicada no banco de dev — corrigido com `npm run db:migrate`.
+- Sucesso em todas as etapas de build, verificação de tipos (`typecheck`) e nos 304 testes (Vitest).
+- Fora de escopo, deliberadamente: canal de e-mail (Zimbra/M365/Google Workspace) e autenticação/autorização.
+
