@@ -66,11 +66,20 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Adicionado `export const dynamic = "force-dynamic"` em `src/app/(rh)/cargos/novo/page.tsx` para contornar falhas de prerenderização estática no processo de build do Next.js sem conexão ao banco.
 - Executadas com sucesso as etapas de verificação de tipos (`typecheck`), testes (`test:run`) e compilação de produção (`build`).
 
-## Marco: TASK-085 � Valida��o e limpeza de Vaga
+## Marco: TASK-085 � Valida��o e limpeza de Vaga
 *Data: 2026-08-19*
 
 - Validado CRUD, status, constraints e regras de soft delete de Vaga.
-- Verificado e confirmado atrav�s de testes (src/actions/vagas.test.ts) que o soft delete da Vaga preserva o hist�rico (ex. Triagens) n�o causando soft delete em cascata.
+- Verificado e confirmado atrav�s de testes (src/actions/vagas.test.ts) que o soft delete da Vaga preserva o hist�rico (ex. Triagens) n�o causando soft delete em cascata.
 - Qualidade garantida com lint, typecheck, todos os testes (Vitest) passando e build Next.js bem sucedido.
-- Realizada verifica��o com Get-ChildItem procurando por arquivos �rf�os (example, demo, placeholder) retornando limpo.
-- Confirmada aus�ncia de chamadas e APIs CRUD rest em favor de Server Actions e Server Components.
+- Realizada verifica��o com Get-ChildItem procurando por arquivos �rf�os (example, demo, placeholder) retornando limpo.
+- Confirmada aus�ncia de chamadas e APIs CRUD rest em favor de Server Actions e Server Components.
+## Marco: TASK-098 — Validação e Limpeza do Domínio Candidato
+*Data: 2026-08-19*
+
+- Validado todo o domínio `Candidato`: listagem, detalhe completo (com preferências, experiências, formações, certificações, triagens), formulário agregado e views de criação/edição.
+- Confirmado o soft delete em cascata (`deleteCandidato`) propagando corretamente a data de exclusão para formações, experiências, certificações, triagens e avaliações de IA filhas.
+- Testes unitários/integração abrangentes para as actions de criação, atualização, validação de email unique e formatação do payload, todos rodando com sucesso.
+- Zod schema validando e impedindo missing de e-mail e celular (`candidatoSchema`).
+- Removido typecasting problemático (N+1) e otimizadas as views de listagem e detalhe completo via `notDeleted()` de forma consistente, ocultando excluídos lógicos.
+- Sucesso nos quality gates: testes, linting, build Next.js com Server Actions funcionais. Nenhuma API CRUD paralela criada.
