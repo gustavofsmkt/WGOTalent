@@ -39,6 +39,11 @@ export interface CandidatoSummary {
 export interface CandidatoDetailCompleto extends CandidatoCompleto {
   triagens: (Triagem & { 
     vaga: { id: string; cargo: { titulo: string } };
+    avaliacaoIA?: {
+      id: string;
+      scoreIa: string;
+      parecerIa: string;
+    } | null;
   })[];
   cargoInteresse: { id: string; titulo: string } | null;
   areaInteresse: { id: string; nome: string } | null;
@@ -153,10 +158,20 @@ export const candidatoRepository = {
             triagem: triagens,
             vagaId: vagas.id,
             cargoTitulo: cargos.titulo,
+            avaliacaoIaId: avaliacaoIA.id,
+            avaliacaoIaScore: avaliacaoIA.scoreIa,
+            avaliacaoIaParecer: avaliacaoIA.parecerIa,
           })
           .from(triagens)
           .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
-          .innerJoin(cargos, eq(vagas.cargoId, cargos.id)),
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .leftJoin(
+            avaliacaoIA,
+            and(
+              eq(avaliacaoIA.triagemId, triagens.id),
+              isNull(avaliacaoIA.deletedAt),
+            ),
+          ),
         triagens,
         eq(triagens.candidatoId, id)
       ).orderBy(desc(triagens.createdAt))
@@ -178,7 +193,14 @@ export const candidatoRepository = {
         vaga: {
           id: r.vagaId,
           cargo: { titulo: r.cargoTitulo },
-        }
+        },
+        avaliacaoIA: r.avaliacaoIaId
+          ? {
+              id: r.avaliacaoIaId,
+              scoreIa: r.avaliacaoIaScore!,
+              parecerIa: r.avaliacaoIaParecer!,
+            }
+          : null,
       })),
     };
   },
