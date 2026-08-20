@@ -80,4 +80,58 @@ describe("GET /api/files/[...path]", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("application/octet-stream");
   });
+
+  it("should support custom filename and attachment disposition with download=true", async () => {
+    const mockBuffer = Buffer.from("fake-pdf-content");
+    vi.mocked(storage.read).mockResolvedValueOnce(mockBuffer);
+    
+    const requestWithDownload = {
+      url: "http://localhost:3000/api/files/resumes/uuid-123.pdf?filename=Marina%20Costa.pdf&download=true",
+    } as NextRequest;
+
+    const response = await GET(requestWithDownload, {
+      params: Promise.resolve({ path: ["resumes", "uuid-123.pdf"] }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe(
+      `attachment; filename="Marina Costa.pdf"; filename*=UTF-8''Marina%20Costa.pdf`
+    );
+  });
+
+  it("should append file extension if custom filename does not have it", async () => {
+    const mockBuffer = Buffer.from("fake-pdf-content");
+    vi.mocked(storage.read).mockResolvedValueOnce(mockBuffer);
+    
+    const requestWithoutExt = {
+      url: "http://localhost:3000/api/files/resumes/uuid-123.pdf?filename=Lucas%20Albuquerque",
+    } as NextRequest;
+
+    const response = await GET(requestWithoutExt, {
+      params: Promise.resolve({ path: ["resumes", "uuid-123.pdf"] }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe(
+      `inline; filename="Lucas Albuquerque.pdf"; filename*=UTF-8''Lucas%20Albuquerque.pdf`
+    );
+  });
+
+  it("should handle UTF-8 accented characters in custom filename", async () => {
+    const mockBuffer = Buffer.from("fake-pdf-content");
+    vi.mocked(storage.read).mockResolvedValueOnce(mockBuffer);
+    
+    const requestWithAccents = {
+      url: "http://localhost:3000/api/files/resumes/uuid-123.pdf?filename=João%20Araújo.pdf&download=true",
+    } as NextRequest;
+
+    const response = await GET(requestWithAccents, {
+      params: Promise.resolve({ path: ["resumes", "uuid-123.pdf"] }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe(
+      `attachment; filename="Jo_o Ara_jo.pdf"; filename*=UTF-8''Jo%C3%A3o%20Ara%C3%BAjo.pdf`
+    );
+  });
 });

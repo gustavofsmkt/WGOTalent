@@ -15,6 +15,34 @@ function getMimeType(key: string): string {
   }
 }
 
+function buildContentDisposition(
+  defaultFilename: string,
+  customFilename: string | null,
+  isDownload: boolean,
+  key: string
+): string {
+  const dispositionType = isDownload ? "attachment" : "inline";
+
+  if (!customFilename) {
+    return `${dispositionType}; filename="${defaultFilename}"`;
+  }
+
+  const ext = key.includes(".") ? `.${key.split(".").pop()}` : "";
+  let finalFilename = customFilename.trim();
+  if (ext && !finalFilename.toLowerCase().endsWith(ext.toLowerCase())) {
+    finalFilename = `${finalFilename}${ext}`;
+  }
+
+  const asciiFallback = finalFilename
+    .replace(/["\r\n\/\\]/g, "")
+    .replace(/[^\x20-\x7E]/g, "_")
+    .trim() || defaultFilename;
+
+  const encodedFilename = encodeURIComponent(finalFilename);
+
+  return `${dispositionType}; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -33,12 +61,28 @@ export async function GET(
     // Read from storage provider
     const buffer = await storage.read(key);
     
+    let customFilename: string | null = null;
+    let isDownload = false;
+
+    if (request?.url) {
+      try {
+        const url = new URL(request.url);
+        customFilename = url.searchParams.get("filename") || url.searchParams.get("name");
+        isDownload = url.searchParams.get("download") === "true" || url.searchParams.has("download");
+      } catch {
+        // Ignore invalid URL
+      }
+    }
+
+    const defaultFilename = path[path.length - 1] ?? "file";
+    const contentDisposition = buildContentDisposition(defaultFilename, customFilename, isDownload, key);
+
     // Stream response with secure headers
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": getMimeType(key),
-        "Content-Disposition": `inline; filename="${path[path.length - 1]}"`,
+        "Content-Disposition": contentDisposition,
         "Cache-Control": "private, max-age=3600",
         "X-Content-Type-Options": "nosniff"
       }

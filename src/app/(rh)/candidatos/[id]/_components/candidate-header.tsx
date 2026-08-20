@@ -149,21 +149,30 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
 
         {/* Actions cluster */}
         <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto shrink-0">
-          {candidato.curriculoArquivoKey && (
-            <a
-              href={`/api/files/${candidato.curriculoArquivoKey}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({
-                variant: "outline",
-                size: "default",
-                className: "flex items-center gap-2",
-              })}
-            >
-              <FileText className="size-4" />
-              <span>Ver Currículo</span>
-            </a>
-          )}
+          {candidato.curriculoArquivoKey && (() => {
+            const ext = candidato.curriculoArquivoKey.includes(".")
+              ? `.${candidato.curriculoArquivoKey.split(".").pop()}`
+              : "";
+            const fileName = `${candidato.nome}${ext}`;
+            const downloadUrl = `/api/files/${candidato.curriculoArquivoKey}?filename=${encodeURIComponent(fileName)}&download=true`;
+
+            return (
+              <a
+                href={downloadUrl}
+                download={fileName}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "default",
+                  className: "flex items-center gap-2",
+                })}
+              >
+                <FileText className="size-4" />
+                <span>Ver Currículo</span>
+              </a>
+            );
+          })()}
 
           <Link
             href={`/candidatos/${candidato.id}/editar`}
