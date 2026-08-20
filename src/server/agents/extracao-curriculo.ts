@@ -74,7 +74,11 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
       enum: ["nao_informado", "solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],
     },
     pcd: nullableStringSchema(),
-    email: stringSchema(254),
+    // Nem todo currículo traz e-mail — deixar nullable evita que o modelo
+    // "invente" um valor só pra satisfazer um campo obrigatório (ex: a string
+    // "nao informado", que não é um e-mail válido). O placeholder único é
+    // gerado em código quando isso acontece — ver processarArquivoLote.
+    email: nullableStringSchema(254),
     celular: stringSchema(20),
     cep: nullableStringSchema(9),
     uf: { type: "string", enum: [...BRAZILIAN_UFS] },
@@ -101,7 +105,6 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
   },
   required: [
     "nome",
-    "email",
     "celular",
     "uf",
     "cidade",

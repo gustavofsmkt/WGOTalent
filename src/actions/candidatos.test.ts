@@ -477,5 +477,43 @@ describe("candidatos server actions", () => {
       expect(restoreAggregateSpy).toHaveBeenCalledWith("existing-deleted", expect.anything());
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
+
+    it("generates a unique placeholder email instead of trusting one invented by the agent", async () => {
+      const findByEmailSpy = vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted");
+      const createAggregateSpy = vi
+        .spyOn(candidatoRepository, "createAggregate")
+        .mockResolvedValueOnce({ id: "cand-sem-email" } as any);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce({
+        ...extraido,
+        email: null,
+      } as any);
+
+      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "cand-sem-email" });
+      }
+      // Nunca consulta duplicidade com um e-mail nulo/inventado pelo agente.
+      expect(findByEmailSpy).not.toHaveBeenCalled();
+      const dadosCandidato = createAggregateSpy.mock.calls[0]?.[0];
+      expect(dadosCandidato?.email).toMatch(/^sememail\+.+@wgotalent\.local$/);
+      expect(dadosCandidato?.dadosPendentes).toContain("E-mail");
+    });
+
+    it("normalizes an omitted (undefined) nullish field to null before hitting the repository", async () => {
+      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
+      const createAggregateSpy = vi
+        .spyOn(candidatoRepository, "createAggregate")
+        .mockResolvedValueOnce({ id: "cand-sem-nascimento" } as any);
+      // Reprodução do caso real: o agente omite a chave em vez de mandar null.
+      const { dataNascimento: _dn, ...extraidoSemNascimento } = extraido;
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraidoSemNascimento as any);
+
+      await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+
+      const dadosCandidato = createAggregateSpy.mock.calls[0]?.[0];
+      expect(dadosCandidato?.dataNascimento).toBeNull();
+    });
   });
 });

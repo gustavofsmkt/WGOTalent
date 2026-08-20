@@ -323,11 +323,33 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
   try {
     const extraido = await executarExtracaoCurriculo(fileKey);
 
-    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
-    // mescla dados novos/diferentes (se ativo) — ver ADR 0008.
-    const existing = await candidatoRepository.findByEmailIncludingDeleted(extraido.email);
+    // Currículo sem e-mail: em vez de deixar o agente inventar um valor (não
+    // confiável — pode não ser um e-mail válido, ou colidir com o de outra
+    // pessoa e disparar uma mesclagem indevida), geramos um placeholder
+    // único aqui. "E-mail" entra em dadosPendentes para o RH completar.
     const dadosPendentes = calcularDadosPendentes(extraido);
-    const dadosCandidato = { ...extraido, curriculoArquivoKey: fileKey, dadosPendentes };
+    const email = extraido.email ?? `sememail+${crypto.randomUUID()}@wgotalent.local`;
+    // O schema de extração aceita chave ausente (undefined) além de null
+    // nesses campos — normaliza pra null aqui, que é o que o repositório
+    // (CandidatoAgregadoInsercao) espera.
+    const dadosCandidato = {
+      ...extraido,
+      email,
+      dataNascimento: extraido.dataNascimento ?? null,
+      cep: extraido.cep ?? null,
+      bairro: extraido.bairro ?? null,
+      logradouro: extraido.logradouro ?? null,
+      curriculoArquivoKey: fileKey,
+      dadosPendentes,
+    };
+
+    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
+    // mescla dados novos/diferentes (se ativo) — ver ADR 0008. Pulado quando
+    // o currículo não tinha e-mail: o placeholder acima é sempre único, então
+    // nunca haveria correspondência real.
+    const existing = extraido.email
+      ? await candidatoRepository.findByEmailIncludingDeleted(extraido.email)
+      : null;
 
     let candidato: Awaited<ReturnType<typeof candidatoRepository.createAggregate>>;
     let message = "Candidato criado com sucesso.";

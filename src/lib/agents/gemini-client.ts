@@ -91,11 +91,18 @@ export async function gerarRespostaEstruturada<T>(
   try {
     parsed = JSON.parse(responseText);
   } catch (error) {
+    console.error("[gerarRespostaEstruturada] JSON inválido na resposta do agente:", responseText);
     throw new AgenteRespostaInvalidaError(error);
   }
 
   const result = input.responseZodSchema.safeParse(parsed);
   if (!result.success) {
+    console.error(
+      "[gerarRespostaEstruturada] Resposta do agente não corresponde ao schema esperado:",
+      JSON.stringify(result.error.issues, null, 2),
+      "\nResposta recebida:",
+      JSON.stringify(parsed, null, 2),
+    );
     throw new AgenteRespostaInvalidaError(result.error);
   }
 

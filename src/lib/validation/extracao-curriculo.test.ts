@@ -28,7 +28,7 @@ describe("extracaoCurriculoOutputSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("still requires cidade/uf/email", () => {
+  it("still requires cidade/uf", () => {
     const { cidade: _cidade, ...withoutCidade } = base;
     const result = extracaoCurriculoOutputSchema.safeParse({
       ...withoutCidade,
@@ -38,6 +38,30 @@ describe("extracaoCurriculoOutputSchema", () => {
       logradouro: null,
     });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts email as null when the résumé has none", () => {
+    const result = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      email: null,
+      dataNascimento: null,
+      cep: null,
+      bairro: null,
+      logradouro: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a missing key (undefined), not just an explicit null, for the nullish fields", () => {
+    // Reprodução de um caso real: o Gemini às vezes omite a chave em vez de
+    // mandar null quando o campo não é obrigatório no JSON Schema.
+    const result = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      email: undefined,
+      dataNascimento: undefined,
+      cep: undefined,
+    });
+    expect(result.success).toBe(true);
   });
 });
 
@@ -49,6 +73,7 @@ describe("calcularDadosPendentes", () => {
         cep: "74000-000",
         bairro: "Centro",
         logradouro: "Rua A",
+        email: "maria@example.com",
       }),
     ).toBeNull();
   });
@@ -60,7 +85,20 @@ describe("calcularDadosPendentes", () => {
         cep: null,
         bairro: "Centro",
         logradouro: "Rua A",
+        email: "maria@example.com",
       }),
     ).toBe("Data de nascimento, CEP");
+  });
+
+  it("flags a missing email as pending too", () => {
+    expect(
+      calcularDadosPendentes({
+        dataNascimento: "1990-01-01",
+        cep: "74000-000",
+        bairro: "Centro",
+        logradouro: "Rua A",
+        email: null,
+      }),
+    ).toBe("E-mail");
   });
 });
