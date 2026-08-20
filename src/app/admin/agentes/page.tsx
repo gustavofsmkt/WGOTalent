@@ -3,6 +3,7 @@ import { PageHeader } from "~/components/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { buttonVariants } from "~/components/ui/button";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
+import { getProviderLabel, getModelsForProvider } from "~/lib/agents/provider-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +28,10 @@ export default async function AgentesPage() {
               <div>
                 <div className="font-medium">{agente.slot}</div>
                 <div className="text-sm text-muted-foreground">
-                  {agente.provider} · {agente.model} ·{" "}
-                  {agente.ativo ? "ativo" : "inativo"}
+                  {getProviderLabel(agente.provider)} ·{" "}
+                  {getModelsForProvider(agente.provider).find((m) => m.value === agente.model)
+                    ?.label ?? agente.model}{" "}
+                  · {agente.ativo ? "ativo" : "inativo"}
                 </div>
               </div>
               <Link

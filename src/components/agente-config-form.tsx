@@ -28,8 +28,16 @@ import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { FormSubmitButton } from "~/components/form-submit-button";
 import { ErrorCallout } from "~/components/error-callout";
+import { LLM_PROVIDERS, getModelsForProvider } from "~/lib/agents/provider-catalog";
 
 const CATALOGO_VARIAVEIS: Record<AgenteConfig["slot"], string> = {
   extracao_curriculo:
@@ -118,33 +126,81 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               {(field) => (
                 <Field data-invalid={field.state.meta.errors.length > 0}>
                   <FieldLabel htmlFor="agente-provider">Provedor</FieldLabel>
-                  <Input
-                    id="agente-provider"
-                    name={field.name}
+                  <Select
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
+                    onValueChange={(val) => {
+                      if (typeof val !== "string") return;
+                      field.handleChange(val);
+                      // Provedor mudou: o modelo atual pode não existir no novo
+                      // catálogo — reseta para o primeiro modelo disponível.
+                      const primeiroModelo = getModelsForProvider(val)[0]?.value ?? "";
+                      form.setFieldValue("model", primeiroModelo);
+                    }}
+                  >
+                    <SelectTrigger id="agente-provider" className="w-full" aria-invalid={field.state.meta.errors.length > 0}>
+                      <SelectValue placeholder="Selecione um provedor...">
+                        {(val: string | null) =>
+                          LLM_PROVIDERS.find((p) => p.value === val)?.label ??
+                          "Selecione um provedor..."
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LLM_PROVIDERS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FieldError errors={field.state.meta.errors} />
                 </Field>
               )}
             </form.Field>
 
-            <form.Field name="model">
-              {(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="agente-model">Modelo</FieldLabel>
-                  <Input
-                    id="agente-model"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
+            <form.Subscribe selector={(state) => state.values.provider}>
+              {(provider) => {
+                const modelos = getModelsForProvider(provider);
+                return (
+                  <form.Field name="model">
+                    {(field) => (
+                      <Field data-invalid={field.state.meta.errors.length > 0}>
+                        <FieldLabel htmlFor="agente-model">Modelo</FieldLabel>
+                        <Select value={field.state.value} onValueChange={(val) => {
+                          if (typeof val === "string") field.handleChange(val);
+                        }}>
+                          <SelectTrigger id="agente-model" className="w-full" aria-invalid={field.state.meta.errors.length > 0}>
+                            <SelectValue placeholder="Selecione um modelo...">
+                              {(val: string | null) =>
+                                modelos.find((m) => m.value === val)?.label ??
+                                "Selecione um modelo..."
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {modelos.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                Nenhum modelo disponível para este provedor
+                              </SelectItem>
+                            ) : (
+                              modelos.map((m) => (
+                                <SelectItem key={m.value} value={m.value}>
+                                  {m.label}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FieldDescription>
+                          Modelos disponíveis para o provedor selecionado acima.
+                        </FieldDescription>
+                        <FieldError errors={field.state.meta.errors} />
+                      </Field>
+                    )}
+                  </form.Field>
+                );
+              }}
+            </form.Subscribe>
 
             <form.Field name="systemPrompt">
               {(field) => (

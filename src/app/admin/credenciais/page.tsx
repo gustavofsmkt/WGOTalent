@@ -1,6 +1,7 @@
 import { PageHeader } from "~/components/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
+import { getProviderLabel } from "~/lib/agents/provider-catalog";
 import { CreateCredencialForm } from "./_components/create-credencial-form";
 import { DeactivateCredencialButton } from "./_components/deactivate-credencial-button";
 
@@ -28,7 +29,7 @@ export default async function CredenciaisPage() {
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div>
-                  <div className="font-medium">{c.provider}</div>
+                  <div className="font-medium">{getProviderLabel(c.provider)}</div>
                   <div className="text-sm text-muted-foreground">
                     {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
                     {new Date(c.createdAt).toLocaleDateString("pt-BR")}

@@ -24,8 +24,16 @@ import {
   FieldError,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { FormSubmitButton } from "~/components/form-submit-button";
 import { ErrorCallout } from "~/components/error-callout";
+import { LLM_PROVIDERS } from "~/lib/agents/provider-catalog";
 
 export function CreateCredencialForm() {
   const router = useRouter();
@@ -35,7 +43,10 @@ export function CreateCredencialForm() {
   } | null>(null);
 
   const form = useForm({
-    defaultValues: { provider: "google_ai_studio", apiKey: "" } as CredencialCreateInput,
+    defaultValues: {
+      provider: LLM_PROVIDERS[0]?.value ?? "",
+      apiKey: "",
+    } as CredencialCreateInput,
     validators: { onBlur: credencialCreateSchema },
     onSubmit: async ({ value }) => {
       setServerError(null);
@@ -90,14 +101,32 @@ export function CreateCredencialForm() {
               {(field) => (
                 <Field data-invalid={field.state.meta.errors.length > 0}>
                   <FieldLabel htmlFor="credencial-provider">Provedor</FieldLabel>
-                  <Input
-                    id="credencial-provider"
-                    name={field.name}
+                  <Select
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                  <FieldDescription>Ex: google_ai_studio</FieldDescription>
+                    onValueChange={(val) => {
+                      if (typeof val === "string") field.handleChange(val);
+                    }}
+                  >
+                    <SelectTrigger id="credencial-provider" className="w-full" aria-invalid={field.state.meta.errors.length > 0}>
+                      <SelectValue placeholder="Selecione um provedor...">
+                        {(val: string | null) =>
+                          LLM_PROVIDERS.find((p) => p.value === val)?.label ??
+                          "Selecione um provedor..."
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LLM_PROVIDERS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    A credencial cadastrada aqui é a usada por todos os agentes configurados
+                    para este provedor.
+                  </FieldDescription>
                   <FieldError errors={field.state.meta.errors} />
                 </Field>
               )}
