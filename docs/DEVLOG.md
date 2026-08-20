@@ -126,3 +126,19 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
   - `getDashboardSummary`: orquestrador de consulta paralela de todas as métricas do dashboard via `Promise.all`.
 - Cobertura de testes unitários e estruturais em `src/server/db/repositories/dashboard.test.ts`. Todos os 45 arquivos de teste e 355 testes do Vitest passando com sucesso.
 
+## Marco: TASK-116 — Dashboard WGOTalent
+*Data: 2026-08-20*
+
+- Implementada a interface do Dashboard como Server Component em `src/app/(rh)/dashboard/page.tsx`, consumindo `dashboardRepository.getDashboardSummary()`.
+- Substituído o placeholder anterior pela visão geral completa aderente a `docs/DESIGN.md` e referências mapeadas em `docs/UI_REFERENCE_MAP.md`.
+- Componentes e seções integrados:
+  - **Header & CTAs**: `PageHeader` com atalhos rápidos para "Upload em Lote", "Nova Vaga" e "Novo Candidato".
+  - **KPIs Principais**: Cards de métricas com ícones e links rápidos para Vagas Abertas, Candidatos Ativos, Triagens em Andamento (com total histórico) e Score Médio de IA (com barra de progresso e total de avaliações computadas).
+  - **Funil de Triagens**: Visualização de barras em CSS puro para distribuição de candidatos por etapa (`curriculo`, `testes`, `entrevista_rh`, `entrevista_gestor`, `finalizado`), calculando percentuais dinâmicos.
+  - **Desfecho das Triagens**: Breakdown visual de resultados (`em_andamento`, `aprovado`, `reprovado`, `desistente`, `banco_talentos`) com indicadores de cor e percentual.
+  - **Vagas com Mais Candidatos**: Tabela com posições ativas, localização, badges de vagas e candidatos vinculados, com links diretos para cada vaga.
+  - **Atividade Recente**: Feed das últimas movimentações no funil de seleção com avatar por iniciais, etapa e resultado via `StatusBadge`, badge de Score de IA com ícone de faísca e timestamps formatados.
+- Tratamento de estados vazios com `DataEmptyState` para todas as seções quando não houver dados cadastrados.
+- Design totalmente responsivo (mobile, tablet e desktop), acessível e sem dependência de bibliotecas adicionais de gráficos.
+- Cobertura de testes unitários e de agregação em `src/app/(rh)/dashboard/page.test.ts`.
+- Validados todos os 46 arquivos de teste e 359 testes no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e build de produção Next.js executado com sucesso.
