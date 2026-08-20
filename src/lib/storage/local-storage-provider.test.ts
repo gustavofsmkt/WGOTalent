@@ -67,8 +67,19 @@ describe("LocalStorageProvider", () => {
 
   it("should prevent path traversal attacks in save", async () => {
     await expect(provider.save("../traversal.txt", "data")).rejects.toThrow("Invalid storage key");
-    await expect(provider.save("folder/file.txt", "data")).rejects.toThrow("Invalid storage key");
+    await expect(provider.save("curriculos/../../traversal.txt", "data")).rejects.toThrow("Invalid storage key");
     await expect(provider.save("folder\\file.txt", "data")).rejects.toThrow("Invalid storage key");
+    await expect(provider.save("/etc/passwd", "data")).rejects.toThrow("Invalid storage key");
+  });
+
+  it("should save and read a file namespaced in a subdirectory", async () => {
+    const key = "curriculos/candidato.pdf";
+    const content = "resume bytes";
+
+    await provider.save(key, content);
+
+    const readBack = await provider.read(key);
+    expect(readBack.toString()).toBe(content);
   });
 
   it("should return a valid access reference", async () => {

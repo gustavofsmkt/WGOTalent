@@ -61,6 +61,31 @@ export interface CargoOption {
   };
 }
 
+const ESTADO_CIVIL_LABELS: Record<string, string> = {
+  nao_informado: "Não Informado",
+  solteiro: "Solteiro(a)",
+  casado: "Casado(a)",
+  divorciado: "Divorciado(a)",
+  viuvo: "Viúvo(a)",
+  uniao_estavel: "União Estável",
+};
+
+const ORIGEM_LABELS: Record<string, string> = {
+  email: "E-mail",
+  manual: "Cadastro Manual",
+  indicacao: "Indicação",
+};
+
+const CNH_LABELS: Record<string, string> = {
+  none: "Não informada",
+  a: "A (Moto)",
+  b: "B (Carro)",
+  ab: "AB (Moto e Carro)",
+  c: "C (Caminhão)",
+  d: "D (Ônibus)",
+  e: "E (Carreta)",
+};
+
 export interface CandidatoBaseFormProps {
   candidato?:
     | (Partial<Candidato> & {
@@ -217,7 +242,9 @@ function DadosPessoaisSection({ form }: { form: any }) {
                   onValueChange={(val: any) => field.handleChange(val)}
                 >
                   <SelectTrigger id="candidato-estado-civil" aria-invalid={hasErrors}>
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder="Selecione...">
+                      {(val: string | null) => ESTADO_CIVIL_LABELS[val ?? ""] ?? "Selecione..."}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="nao_informado">Não Informado</SelectItem>
@@ -506,7 +533,13 @@ function InteressesSection({
                   onValueChange={(val) => field.handleChange(val === "none" ? null : val)}
                 >
                   <SelectTrigger id="candidato-cargo-interesse" aria-invalid={hasErrors}>
-                    <SelectValue placeholder="Selecione um cargo..." />
+                    <SelectValue placeholder="Selecione um cargo...">
+                      {(val: string | null) => {
+                        if (!val || val === "none") return "Nenhum específico";
+                        const cargo = cargoOptions.find((c) => c.id === val);
+                        return cargo ? `${cargo.titulo} (${cargo.departamento.nome})` : "Selecione um cargo...";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum específico</SelectItem>
@@ -532,7 +565,13 @@ function InteressesSection({
                   onValueChange={(val) => field.handleChange(val === "none" ? null : val)}
                 >
                   <SelectTrigger id="candidato-area-interesse" aria-invalid={hasErrors}>
-                    <SelectValue placeholder="Selecione uma área..." />
+                    <SelectValue placeholder="Selecione uma área...">
+                      {(val: string | null) => {
+                        if (!val || val === "none") return "Nenhuma específica";
+                        const dept = departamentoOptions.find((d) => d.id === val);
+                        return dept ? dept.nome : "Selecione uma área...";
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma específica</SelectItem>
@@ -559,7 +598,9 @@ function InteressesSection({
                 onValueChange={(val: any) => field.handleChange(val)}
               >
                 <SelectTrigger id="candidato-origem" aria-invalid={hasErrors}>
-                  <SelectValue placeholder="Selecione a origem" />
+                  <SelectValue placeholder="Selecione a origem">
+                    {(val: string | null) => ORIGEM_LABELS[val ?? ""] ?? "Selecione a origem"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="email">E-mail</SelectItem>
@@ -593,7 +634,9 @@ function DisponibilidadesSection({ form }: { form: any }) {
                   onValueChange={(val: any) => field.handleChange(val === "none" ? null : val)}
                 >
                   <SelectTrigger id="candidato-cnh" aria-invalid={hasErrors}>
-                    <SelectValue placeholder="Não possui ou não informada" />
+                    <SelectValue placeholder="Não possui ou não informada">
+                      {(val: string | null) => CNH_LABELS[val ?? ""] ?? "Não informada"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Não informada</SelectItem>

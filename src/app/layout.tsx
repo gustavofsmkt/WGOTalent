@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
 });
 
 export default function RootLayout({

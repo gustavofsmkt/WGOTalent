@@ -15,10 +15,12 @@ export class LocalStorageProvider implements StorageProvider {
 
   /**
    * Safely resolves a key to a full path, preventing path traversal attacks.
+   * Keys may use "/" to namespace files into subdirectories (e.g. "curriculos/foo.pdf").
    */
   private getFilePath(key: string): string {
-    // Basic validation to prevent obvious traversal patterns in key
-    if (key.includes("..") || key.includes("/") || key.includes("\\")) {
+    // Reject traversal segments, backslashes (Windows separator injection) and
+    // absolute-path-like keys; "/" itself is allowed as a subdirectory separator.
+    if (key.includes("..") || key.includes("\\") || key.startsWith("/")) {
       throw new Error("Invalid storage key");
     }
 
@@ -33,11 +35,11 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   /**
-   * Ensures the root directory exists.
+   * Ensures the parent directory of a resolved file path exists.
    */
-  private async ensureDir(): Promise<void> {
+  private async ensureDir(filePath: string): Promise<void> {
     try {
-      await fs.mkdir(this.rootDir, { recursive: true });
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
     } catch (error) {
       throw new Error(
         `Failed to create storage directory: ${error instanceof Error ? error.message : String(error)}`
@@ -51,7 +53,7 @@ export class LocalStorageProvider implements StorageProvider {
     _contentType?: string
   ): Promise<void> {
     const filePath = this.getFilePath(key);
-    await this.ensureDir();
+    await this.ensureDir(filePath);
 
     try {
       await fs.writeFile(filePath, data);
