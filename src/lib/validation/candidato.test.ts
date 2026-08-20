@@ -119,6 +119,24 @@ describe("Validação de Candidato", () => {
         expect(result.data.linkedin).toBeNull();
       }
     });
+
+    it("deve assumir https:// quando o linkedin vem sem esquema", () => {
+      const data = { ...validCandidato, linkedin: "www.linkedin.com/in/fulano" };
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.linkedin).toBe("https://www.linkedin.com/in/fulano");
+      }
+    });
+
+    it("não deve duplicar o esquema quando o portfolio já vem com http(s)://", () => {
+      const data = { ...validCandidato, portfolio: "http://meusite.com" };
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.portfolio).toBe("http://meusite.com");
+      }
+    });
   });
 
   describe("candidatoAgregadoSchema", () => {

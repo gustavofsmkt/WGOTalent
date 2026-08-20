@@ -4,20 +4,36 @@ import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
 import { gerarRespostaEstruturada } from "~/lib/agents/gemini-client";
+import { BRAZILIAN_UFS } from "~/lib/validation/common";
 import {
   extracaoCurriculoOutputSchema,
   type ExtracaoCurriculoOutput,
 } from "~/lib/validation/extracao-curriculo";
 
-const nullableString = { anyOf: [{ type: "string" }, { type: "null" }] };
+/**
+ * `maxLength` abaixo espelha os `.max()` do Zod em candidato.ts — sem esse
+ * hint o modelo não tem como saber o limite e o texto extraído (ex: um cargo
+ * com nome longo) pode estourar a validação e derrubar o cadastro inteiro.
+ */
+function stringSchema(maxLength?: number) {
+  return maxLength ? { type: "string", maxLength } : { type: "string" };
+}
+
+function nullableStringSchema(maxLength?: number) {
+  return { anyOf: [stringSchema(maxLength), { type: "null" }] };
+}
+
 const nullableDateString = { anyOf: [{ type: "string", format: "date" }, { type: "null" }] };
+
+/** LinkedIn/portfólio: normalização de esquema ausente é tratada em candidato.ts (optionalUrlSchema). */
+const nullableUrlString = { anyOf: [{ type: "string", format: "uri", maxLength: 255 }, { type: "null" }] };
 
 const itemFormacao = {
   type: "object",
   properties: {
-    titulo: { type: "string" },
-    instituicao: nullableString,
-    areaFormacao: { type: "string" },
+    titulo: stringSchema(150),
+    instituicao: nullableStringSchema(150),
+    areaFormacao: stringSchema(120),
     dataInicio: { type: "string", format: "date" },
     dataTermino: nullableDateString,
   },
@@ -27,9 +43,9 @@ const itemFormacao = {
 const itemExperiencia = {
   type: "object",
   properties: {
-    empresa: nullableString,
-    cargoTitulo: { type: "string" },
-    descricao: nullableString,
+    empresa: nullableStringSchema(150),
+    cargoTitulo: stringSchema(150),
+    descricao: nullableStringSchema(),
     dataEntrada: { type: "string", format: "date" },
     dataSaida: nullableDateString,
   },
@@ -39,7 +55,7 @@ const itemExperiencia = {
 const itemCertificacao = {
   type: "object",
   properties: {
-    titulo: { type: "string" },
+    titulo: stringSchema(150),
     obtidaEm: nullableDateString,
     validade: nullableDateString,
   },
@@ -49,32 +65,32 @@ const itemCertificacao = {
 const EXTRACAO_CURRICULO_JSON_SCHEMA = {
   type: "object",
   properties: {
-    nome: { type: "string" },
-    nomeSocial: nullableString,
-    nacionalidade: { type: "string" },
+    nome: stringSchema(150),
+    nomeSocial: nullableStringSchema(150),
+    nacionalidade: stringSchema(60),
     dataNascimento: nullableDateString,
     estadoCivil: {
       type: "string",
       enum: ["nao_informado", "solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],
     },
-    pcd: nullableString,
-    email: { type: "string" },
-    celular: { type: "string" },
-    cep: nullableString,
-    uf: { type: "string" },
-    cidade: { type: "string" },
-    bairro: nullableString,
-    logradouro: nullableString,
-    resumoProfissional: { type: "string" },
+    pcd: nullableStringSchema(),
+    email: stringSchema(254),
+    celular: stringSchema(20),
+    cep: nullableStringSchema(9),
+    uf: { type: "string", enum: [...BRAZILIAN_UFS] },
+    cidade: stringSchema(100),
+    bairro: nullableStringSchema(100),
+    logradouro: nullableStringSchema(200),
+    resumoProfissional: stringSchema(),
     cnh: { anyOf: [{ type: "string", enum: ["a", "b", "ab", "c", "d", "e"] }, { type: "null" }] },
     possuiVeiculo: { type: "boolean" },
     ensinoMedioConcluido: { type: "boolean" },
     disponivelViagens: { type: "boolean" },
     disponivelMudanca: { type: "boolean" },
-    disponibilidadeHorarios: nullableString,
+    disponibilidadeHorarios: nullableStringSchema(),
     inicioImediato: { type: "boolean" },
-    linkedin: nullableString,
-    portfolio: nullableString,
+    linkedin: nullableUrlString,
+    portfolio: nullableUrlString,
     textoCurriculoExtraido: {
       type: "string",
       description: "Transcrição do texto do currículo feita pelo próprio modelo (ADR-0001, emenda ADR-0007).",

@@ -21,8 +21,21 @@ export const origemSchema = z.enum(["email", "manual", "indicacao"], {
   required_error: "Origem é obrigatória",
 });
 
+const ABSOLUTE_URL_SCHEME_REGEX = /^https?:\/\//i;
+
+/**
+ * Currículos e cadastros manuais costumam trazer LinkedIn/portfólio sem o
+ * esquema (ex: "linkedin.com/in/fulano"), que `.url()` rejeita por não ser
+ * uma URL absoluta. Assume-se "https://" quando o esquema está ausente, em
+ * vez de rejeitar — normalização, não validação de conteúdo.
+ */
 const optionalUrlSchema = z.preprocess(
-  (val) => (val === "" ? null : val),
+  (val) => {
+    if (typeof val !== "string") return val;
+    const trimmed = val.trim();
+    if (trimmed === "") return null;
+    return ABSOLUTE_URL_SCHEME_REGEX.test(trimmed) ? trimmed : `https://${trimmed}`;
+  },
   z
     .string()
     .trim()
