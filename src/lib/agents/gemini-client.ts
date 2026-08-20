@@ -32,6 +32,22 @@ export class AgenteChamadaError extends Error {
   }
 }
 
+export class AgenteQuotaExcedidaError extends Error {
+  constructor(cause: unknown) {
+    super("Limite de requisições do provedor de IA atingido. Tente novamente em instantes.");
+    this.cause = cause;
+  }
+}
+
+/** Detecta erro de limite de requisições (HTTP 429 / RESOURCE_EXHAUSTED) retornado pelo provedor. */
+function isErroDeQuota(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const status = (error as { status?: unknown }).status;
+  if (status === 429 || status === "429") return true;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" && /RESOURCE_EXHAUSTED|"code":\s*429/.test(message);
+}
+
 export async function gerarRespostaEstruturada<T>(
   input: GerarRespostaEstruturadaInput<T>,
 ): Promise<T> {
@@ -61,6 +77,9 @@ export async function gerarRespostaEstruturada<T>(
     });
     responseText = response.text;
   } catch (error) {
+    if (isErroDeQuota(error)) {
+      throw new AgenteQuotaExcedidaError(error);
+    }
     throw new AgenteChamadaError(error);
   }
 

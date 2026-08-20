@@ -29,6 +29,7 @@ import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
+import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
 
 describe("candidatos server actions", () => {
   beforeEach(() => {
@@ -343,6 +344,19 @@ describe("candidatos server actions", () => {
         expect(bom).toMatchObject({ success: true, candidatoId: "cand-2" });
       }
       expect(storage.delete).toHaveBeenCalled();
+    });
+
+    it("tags the failure with errorType 'quota' when the provider quota is exhausted", async () => {
+      vi.mocked(executarExtracaoCurriculo).mockRejectedValueOnce(
+        new AgenteQuotaExcedidaError(new Error("429")),
+      );
+
+      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data[0]).toMatchObject({ success: false, errorType: "quota" });
+      }
     });
 
     it("reports a duplicate email as a failure without creating a candidato", async () => {

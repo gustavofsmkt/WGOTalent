@@ -11,6 +11,7 @@ vi.mock("@google/genai", () => ({
 
 import {
   AgenteChamadaError,
+  AgenteQuotaExcedidaError,
   AgenteRespostaInvalidaError,
   gerarRespostaEstruturada,
 } from "./gemini-client";
@@ -72,6 +73,40 @@ describe("gerarRespostaEstruturada", () => {
         responseZodSchema: schema,
       }),
     ).rejects.toBeInstanceOf(AgenteChamadaError);
+  });
+
+  it("throws AgenteQuotaExcedidaError when the provider returns a 429 status", async () => {
+    generateContentMock.mockRejectedValueOnce(
+      Object.assign(new Error('{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}'), { status: 429 }),
+    );
+
+    await expect(
+      gerarRespostaEstruturada({
+        apiKey: "fake-key",
+        model: "gemini-3.5-flash",
+        systemPrompt: "system",
+        userPrompt: "user",
+        responseJsonSchema: jsonSchema,
+        responseZodSchema: schema,
+      }),
+    ).rejects.toBeInstanceOf(AgenteQuotaExcedidaError);
+  });
+
+  it("throws AgenteQuotaExcedidaError when only the message mentions RESOURCE_EXHAUSTED", async () => {
+    generateContentMock.mockRejectedValueOnce(
+      new Error('{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}'),
+    );
+
+    await expect(
+      gerarRespostaEstruturada({
+        apiKey: "fake-key",
+        model: "gemini-3.5-flash",
+        systemPrompt: "system",
+        userPrompt: "user",
+        responseJsonSchema: jsonSchema,
+        responseZodSchema: schema,
+      }),
+    ).rejects.toBeInstanceOf(AgenteQuotaExcedidaError);
   });
 
   it("throws AgenteRespostaInvalidaError when the response fails schema validation", async () => {

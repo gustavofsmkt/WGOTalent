@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, XCircle, Loader2, UploadCloud } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, UploadCloud, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "~/components/ui/card";
 import { Field, FieldLabel, FieldDescription, FieldError } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
@@ -28,6 +28,8 @@ export function UploadLoteForm() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [resultados, setResultados] = React.useState<UploadLoteResultado[] | null>(null);
   const [isPending, startTransition] = React.useTransition();
+
+  const quotaExcedida = resultados?.some((r) => r.errorType === "quota") ?? false;
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? []);
@@ -71,6 +73,7 @@ export function UploadLoteForm() {
 
       if (!result.success) {
         setServerError(result.message ?? "Erro ao processar o lote.");
+        console.log("Erro ao processar o lote:", result);
         return;
       }
 
@@ -117,6 +120,16 @@ export function UploadLoteForm() {
             <p className="text-sm text-muted-foreground">
               {files.length} arquivo(s) selecionado(s).
             </p>
+          )}
+
+          {quotaExcedida && (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertDescription>
+                Limite de requisições do provedor de IA foi atingido durante o processamento do lote.
+                Aguarde cerca de 1 minuto e reenvie os arquivos que falharam.
+              </AlertDescription>
+            </Alert>
           )}
 
           {resultados && (

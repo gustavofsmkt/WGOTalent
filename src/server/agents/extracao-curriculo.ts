@@ -10,6 +10,7 @@ import {
 } from "~/lib/validation/extracao-curriculo";
 
 const nullableString = { anyOf: [{ type: "string" }, { type: "null" }] };
+const nullableDateString = { anyOf: [{ type: "string", format: "date" }, { type: "null" }] };
 
 const itemFormacao = {
   type: "object",
@@ -18,7 +19,7 @@ const itemFormacao = {
     instituicao: nullableString,
     areaFormacao: { type: "string" },
     dataInicio: { type: "string", format: "date" },
-    dataTermino: nullableString,
+    dataTermino: nullableDateString,
   },
   required: ["titulo", "areaFormacao", "dataInicio"],
 };
@@ -30,7 +31,7 @@ const itemExperiencia = {
     cargoTitulo: { type: "string" },
     descricao: nullableString,
     dataEntrada: { type: "string", format: "date" },
-    dataSaida: nullableString,
+    dataSaida: nullableDateString,
   },
   required: ["cargoTitulo", "dataEntrada"],
 };
@@ -39,8 +40,8 @@ const itemCertificacao = {
   type: "object",
   properties: {
     titulo: { type: "string" },
-    obtidaEm: nullableString,
-    validade: nullableString,
+    obtidaEm: nullableDateString,
+    validade: nullableDateString,
   },
   required: ["titulo"],
 };
@@ -51,7 +52,7 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     nome: { type: "string" },
     nomeSocial: nullableString,
     nacionalidade: { type: "string" },
-    dataNascimento: nullableString,
+    dataNascimento: nullableDateString,
     estadoCivil: {
       type: "string",
       enum: ["nao_informado", "solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],

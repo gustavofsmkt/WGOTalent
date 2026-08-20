@@ -12,6 +12,7 @@ import {
 import { storage } from "~/lib/storage";
 import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
+import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
 import { calcularDadosPendentes } from "~/lib/validation/extracao-curriculo";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import crypto from "crypto";
@@ -284,6 +285,7 @@ export interface UploadLoteResultado {
   success: boolean;
   message?: string;
   candidatoId?: string;
+  errorType?: "quota";
 }
 
 async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
@@ -332,6 +334,7 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
       fileName: file.name,
       success: false,
       message: e.message || "Erro ao processar extração do currículo.",
+      errorType: e instanceof AgenteQuotaExcedidaError ? "quota" : undefined,
     };
   }
 }
