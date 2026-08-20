@@ -69,3 +69,28 @@ export async function deactivateCredencial(id: string): Promise<ActionState<void
     };
   }
 }
+
+export async function deleteCredencial(id: string): Promise<ActionState<void>> {
+  try {
+    const credencial = await llmCredencialRepository.findById(id);
+    if (!credencial) {
+      return { success: false, message: "Credencial não encontrada." };
+    }
+    if (credencial.ativo) {
+      return {
+        success: false,
+        message: "Desative a credencial antes de excluí-la.",
+      };
+    }
+
+    await llmCredencialRepository.softDelete(id);
+    revalidatePath("/admin/credenciais");
+    return { success: true, data: undefined, message: "Credencial excluída." };
+  } catch (error) {
+    console.error("[deleteCredencial] Erro:", error);
+    return {
+      success: false,
+      message: "Ocorreu um erro inesperado ao excluir a credencial.",
+    };
+  }
+}

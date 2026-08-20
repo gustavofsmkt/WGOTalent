@@ -54,4 +54,28 @@ export const llmCredencialRepository = {
       .returning();
     return rows[0] ?? null;
   },
+
+  findById: async (
+    id: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<LlmCredencial | null> => {
+    const rows = await notDeleted(
+      dbOrTx.select().from(llmCredenciais),
+      llmCredenciais,
+      eq(llmCredenciais.id, id),
+    );
+    return rows[0] ?? null;
+  },
+
+  softDelete: async (
+    id: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<LlmCredencial | null> => {
+    const rows = await dbOrTx
+      .update(llmCredenciais)
+      .set({ deletedAt: sql`now()` })
+      .where(eq(llmCredenciais.id, id))
+      .returning();
+    return rows[0] ?? null;
+  },
 };

@@ -4,6 +4,7 @@ import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial
 import { getProviderLabel } from "~/lib/agents/provider-catalog";
 import { CreateCredencialForm } from "./_components/create-credencial-form";
 import { DeactivateCredencialButton } from "./_components/deactivate-credencial-button";
+import { DeleteCredencialButton } from "./_components/delete-credencial-button";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,11 @@ export default async function CredenciaisPage() {
                     {new Date(c.createdAt).toLocaleDateString("pt-BR")}
                   </div>
                 </div>
-                {c.ativo && <DeactivateCredencialButton credencialId={c.id} />}
+                {c.ativo ? (
+                  <DeactivateCredencialButton credencialId={c.id} />
+                ) : (
+                  <DeleteCredencialButton credencialId={c.id} />
+                )}
               </CardContent>
             </Card>
           ))
