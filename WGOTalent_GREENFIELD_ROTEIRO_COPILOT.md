@@ -2165,6 +2165,299 @@ Confirme ausência de CRUD AvaliacaoIA separado.
 Registre DEVLOG. Commit só se houver correção.
 ```
 
+# Fase 14 — Motor de Agentes IA e Upload em Lote
+
+> **Nota:** Numeração `TASK-137`–`TASK-153`, fora de sequência com a posição física desta fase no documento (entre Fase 13 e Fase 15). Motivo: as primeiras 5 tasks desta fase (upload em lote) já tinham sido escritas como `TASK-106`–`110`; ao crescer para incluir o motor de agentes completo, coube renumerar apenas o que foi escrito nesta sessão em vez de deslocar as ~20 tasks já existentes das Fases 15–19. Mesmo espírito do gap deixado pela Fase 14 antiga (webhook n8n), que foi apagada sem reaproveitar a numeração.
+>
+> Escopo: motor de agentes nativo (ADR-0007) — 3 slots fixos (`extracao_curriculo`, `classificador_aderencia`, `avaliador_triagem`), credenciais e prompts configuráveis via admin — mais o intake em lote de currículos que já dependia dele. **Fora de escopo, deliberadamente:** canal de e-mail (Zimbra/M365/Google Workspace) e qualquer autenticação/autorização (`PRODUCT.md` já decidiu o sistema operar aberto no MVP).
+>
+> **Provedor decidido nesta sessão:** Gemini via Google AI Studio (API key simples, não Vertex/GCP — evita a complexidade de service account/ADC). SDK oficial `@google/genai` (pacote único, aprovado explicitamente pelo usuário — ver AGENTS.md sobre dependências novas). Modelos padrão do seed: `gemini-3.5-flash-lite` para `classificador_aderencia` (fase 1, é só pontuação em lote, não precisa do modelo mais caro) e `gemini-3.5-flash` para `extracao_curriculo`/`avaliador_triagem` — todos editáveis via admin depois, isso é só o valor inicial.
+
+## TASK-137 — Schema de credenciais de provedor LLM
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `layer-db`, `drizzle-orm-patterns`, `drizzle-migration-check`
+
+### Prompt para o Copilot Chat
+
+```text
+Leia a skill layer-db antes de editar.
+Adicione em src/server/db/schema.ts a tabela `llm_credenciais` (prefixo wgotalent_ via createTable): id uuid PK, provider varchar (por ora só o valor "google_ai_studio" é usado, mas não crie pgEnum fechado — use varchar simples para não exigir migration ao adicionar provedor novo), apiKeyCifrada text NOT NULL (a chave já cifrada, nunca em texto puro), ativo boolean default true, ...timestamps (incluindo deletedAt).
+Gere a migration com drizzle-kit generate, rode drizzle-migration-check.
+Nunca exponha apiKeyCifrada fora da camada de repository/lib de cifra — não crie um type exportado que a inclua em respostas de action.
+Faça commit `feat(db): add llm credentials table`.
+```
+
+## TASK-138 — Schema de configuração dos agentes
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `layer-db`, `drizzle-orm-patterns`, `drizzle-migration-check`
+
+### Prompt para o Copilot Chat
+
+```text
+Leia a skill layer-db antes de editar.
+Adicione em src/server/db/schema.ts:
+- pgEnum `agente_slot` com exatamente 3 valores: "extracao_curriculo", "classificador_aderencia", "avaliador_triagem".
+- Tabela `agente_config`: id uuid PK, slot agente_slot NOT NULL UNIQUE (um registro fixo por slot, não é uma lista livre), provider varchar NOT NULL, model varchar NOT NULL, systemPrompt text NOT NULL, userPrompt text NOT NULL, params jsonb (temperature etc., pode ser null), thresholdScore numeric (só relevante para o slot classificador_aderencia; null nos outros dois, não crie tabela separada só por isso), ativo boolean default true, ...timestamps.
+Gere a migration com drizzle-kit generate, rode drizzle-migration-check.
+Adicione um seed (src/server/db/seed.ts) que garanta a existência dos 3 registros fixos caso não existam (idempotente — não duplique se já existir), com valores iniciais: extracao_curriculo e avaliador_triagem usando provider "google_ai_studio" / model "gemini-3.5-flash"; classificador_aderencia usando provider "google_ai_studio" / model "gemini-3.5-flash-lite" e thresholdScore 65. Prompts iniciais podem ser um texto simples placeholder documentando o papel do slot — refinamento fino de prompt é responsabilidade do admin depois, não desta task.
+Faça commit `feat(db): add agent slot configuration table`.
+```
+
+## TASK-139 — Cifra de credenciais em repouso
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Adicione o env var server-side obrigatório `AGENT_CREDENTIALS_ENCRYPTION_KEY` em src/env.js (zod, string, comprimento mínimo compatível com uma chave AES-256 em base64) e em .env.example com um comentário explicando que deve ser gerada uma vez e nunca rotacionada sem plano de re-cifragem dos dados existentes.
+Crie src/lib/agents/crypto.ts com `encryptCredential(plainText: string): string` e `decryptCredential(cipherText: string): string`, usando o módulo `crypto` nativo do Node (AES-256-GCM), sem nenhuma dependência nova. A chave vem de env.AGENT_CREDENTIALS_ENCRYPTION_KEY.
+Teste unitário: encrypt seguido de decrypt retorna o texto original; decrypt de um texto corrompido/adulterado lança erro (a tag de autenticação do GCM deve ser validada, não ignorada).
+Nunca logue o valor plaintext em nenhum caminho de código, incluindo mensagens de erro.
+Faça commit `feat(lib): add credential encryption utility`.
+```
+
+## TASK-140 — Cliente Gemini e resolvedor de template de prompt
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+AGENTS.md exige aprovação explícita para dependência nova — `@google/genai` (SDK oficial do Gemini API / Google AI Studio) já foi aprovado, pode instalar. Não instale `@google/generativeai` (pacote antigo, descontinuado) nem nenhum SDK de outro provedor.
+Antes de escrever a chamada, verifique a API real exportada pelo pacote instalado (tipos do próprio `@google/genai`, não invente assinatura de memória) para: (a) uma chamada de geração que aceite um schema de saída estruturada (JSON) e valide a resposta contra ele, (b) entrada multimodal (arquivo PDF/imagem) combinada com texto no mesmo request.
+Crie src/lib/agents/gemini-client.ts com uma função que recebe { apiKey, model, systemPrompt, userPrompt, responseSchema, arquivo?: { mimeType, data: Buffer } } e retorna a resposta já parseada e validada contra responseSchema (zod) — erros de schema ou de chamada devem ser erros tipados, não exceptions genéricas.
+Crie src/lib/agents/template.ts com `resolveTemplate(template: string, variaveis: Record<string, unknown>): string`, substituindo ocorrências de `{{chave}}` pelo valor de `variaveis.chave` (serializado como JSON quando o valor não for string), lançando erro claro se uma variável referenciada no template não existir no catálogo passado.
+Testes unitários para ambos (mock da chamada HTTP do SDK — não bata na API real nos testes).
+Faça commit `feat(lib): add gemini client and prompt template resolver`.
+```
+
+## TASK-141 — Agente extracao_curriculo
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `layer-storage`, `zod-validation-utilities`
+
+### Prompt para o Copilot Chat
+
+```text
+Leia docs/decisions/0001-resume-text-and-agent-json-retention.md (Emenda ADR-0007) antes de definir o schema de saída: o agente deve retornar `texto_curriculo_extraido` como parte da resposta estruturada (transcrição feita pelo próprio modelo, não OCR local) — este projeto não usa parsing de PDF local para isso.
+Crie src/server/agents/extracao-curriculo.ts com uma função `executarExtracaoCurriculo(fileKey: string): Promise<CandidatoAgregadoOutput>` que: lê o arquivo via storage.read(fileKey) (interface StorageProvider, nunca fs direto), busca a config ativa do slot extracao_curriculo em agente_config e a credencial ativa correspondente em llm_credenciais (decifrando via crypto.ts), monta o schema de saída estruturado cobrindo os campos de CandidatoAgregadoOutput (candidato + formacoes + experiencias + certificacoes, ver src/lib/validation/candidato.ts) mais texto_curriculo_extraido, resolve o user prompt via resolveTemplate com o catálogo de variáveis fixo deste slot (documente esse catálogo em comentário — ex: nenhuma variável de entrada além do arquivo em si, já que a extração não depende de contexto externo), chama gemini-client.ts com entrada multimodal, e retorna o resultado já validado contra o schema Zod de CandidatoAgregadoOutput.
+Não insira Candidato aqui — esta função só faz a chamada ao agente e retorna dados estruturados; quem decide inserir é a orquestração (TASK-144) ou o wiring (TASK-145).
+Teste com provider mockado: schema de saída bate com CandidatoAgregadoOutput, erro do provider vira erro tipado, arquivo inexistente no storage lança erro claro.
+Faça commit `feat(agents): implement extracao_curriculo agent`.
+```
+
+## TASK-142 — Agente classificador_aderencia (fase 1)
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Implemente conforme o desenho já fechado (ver docs/decisions/0007-encerramento-integracao-n8n.md e PROJECT_STATE.md para contexto arquitetural geral — o desenho fino desta fase específica não está em nenhum doc, siga exatamente as regras abaixo):
+Crie src/server/agents/classificador-aderencia.ts com `executarClassificadorAderencia(itemPrincipal: { id: string; resumo: string }, itensComparacao: { id: string; resumo: string }[], tipoPrincipal: string, tipoComparacao: string): Promise<{ id: string; score: number }[]>`.
+Regras:
+- Direction-agnostic: os nomes de variável do template são genéricos (`{{tipo_principal}}`, `{{tipo_comparacao}}`, `{{item_principal}}`, `{{itens_comparacao}}`), nunca "candidato_resumo"/"vagas_resumo" fixos — o mesmo system prompt serve para as duas direções (candidato→vagas e vaga→candidatos), só quem chama sabe a direção.
+- Se itensComparacao tiver mais de 25 itens, divida em chunks de até 25 e faça uma chamada por chunk, concatenando os resultados (não é uma chamada única com tudo).
+- Schema de saída é minimalista: só `{ id, score }` por item — sem motivo/rationale nesta fase (isso é da fase 2).
+- Valide que todo id retornado pelo modelo pertence ao batch enviado naquele chunk — descarte/logue como erro qualquer id que o modelo inventar, não propague id desconhecido para quem chamou.
+- O score é output puro do modelo; esta função não aplica threshold nem decide aprovação — isso é responsabilidade de quem chama (TASK-144).
+Teste com provider mockado: chunking correto acima de 25 itens, id inventado pelo modelo é descartado, batch pequeno funciona sem chunking.
+Faça commit `feat(agents): implement classificador_aderencia agent`.
+```
+
+## TASK-143 — Agente avaliador_triagem (fase 2)
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Crie src/server/agents/avaliador-triagem.ts com `executarAvaliadorTriagem(triagemId: string): Promise<NovaAvaliacaoIA>`.
+Busca CandidatoCompleto e VagaCompleta via os repositories já existentes (candidatoRepository, vagaRepository — não faça query Drizzle direta aqui, é violação de layer-agents chamando fora do repository), monta o schema de saída cobrindo exatamente os campos de avaliacao_ia (vagaFoiInferida, pontosFortes, requisitosFaltantes, eliminatoriosFalhos, alertas, scoreIa 0–100, parecerIa — ver schema.ts), resolve o prompt do slot avaliador_triagem com esses dados como variáveis, chama o agente e retorna o resultado validado.
+Esta função não insere em avaliacao_ia nem em triagens — só retorna os dados prontos; a gravação é responsabilidade de quem chama (TASK-144), que já teria a triagemId de uma linha triagens existente.
+Teste com provider mockado: score fora de 0–100 retornado pelo modelo é rejeitado antes de chegar no caller (o check constraint do banco é a última linha de defesa, não a única).
+Faça commit `feat(agents): implement avaliador_triagem agent`.
+```
+
+## TASK-144 — Orquestração do fluxo cadastro → triagem → avaliação
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+Crie src/server/agents/orquestracao.ts implementando o fluxo fechado:
+1. Recebe um candidatoId novo (direção candidato→vagas) ou vagaId novo (direção vaga→candidatos).
+2. Busca o estoque oposto já existente (vagas abertas para um candidato novo; candidatos ativos para uma vaga nova).
+3. Chama classificador-aderencia.ts (TASK-142) com esse estoque como itensComparacao.
+4. Filtra os resultados pelo thresholdScore configurado em agente_config para o slot classificador_aderencia (busque o valor da config, não hardcode).
+5. Para cada id aprovado, verifique se já existe uma triagem com esse par candidatoId+vagaId (índice único triagens_candidato_vaga_idx) antes de inserir — não duplique, não deixe o insert falhar por violação de unique sem tratar.
+6. Para cada triagem nova (não as que já existiam), chama avaliador-triagem.ts (TASK-143) e grava o resultado em avaliacao_ia via triagemRepository/repository correspondente (nunca insert Drizzle direto fora do repository).
+7. Use runWithLimit (src/lib/concurrency/run-with-limit.ts, já existe) com concorrência 3 tanto na fase 1 em chunks quanto na fase 2 por triagem — não dispare tudo de uma vez.
+Exporte duas funções de entrada: `orquestrarParaCandidatoNovo(candidatoId: string)` e `orquestrarParaVagaNova(vagaId: string)` — ambas fire-and-forget do ponto de vista de quem chama (não bloqueiam a resposta da action que as invoca), mas internamente aguardam sua própria cadeia com o limite de concorrência.
+Teste de integração com provider mockado cobrindo: threshold filtra corretamente, triagem já existente não é duplicada, falha em uma avaliação de par não derruba as demais.
+Faça commit `feat(agents): implement candidate-job matching orchestration`.
+```
+
+## TASK-145 — Ligar candidatos, vagas e upload em lote aos agentes reais
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `layer-actions`
+
+### Prompt para o Copilot Chat
+
+```text
+Substitua os placeholders de disparo de agente por chamadas reais, removendo os comentários TODO associados (não deixe anotação de "antes era placeholder" — apenas o código final):
+- src/actions/candidatos.ts: createCandidato e updateCandidato, ao terminar de salvar um arquivo de currículo, chamam orquestrarParaCandidatoNovo (ou o equivalente que dispara extracao_curriculo primeiro, já que aqui o candidato já existe com dados manuais — decida com base no fluxo real: neste caso o Candidato já foi inserido pelo formulário manual, então não é o mesmo caminho de "extração primeiro" do upload em lote; extracao_curriculo aqui serve para preencher/validar texto_curriculo_extraido, não para criar o registro).
+- src/actions/candidatos.ts: a action uploadCurriculosEmLote (TASK-151) troca o placeholder por: chamar extracao-curriculo.ts (TASK-141) por arquivo dentro do runWithLimit já existente, validar unicidade de e-mail (candidatoRepository.findByEmailIncludingDeleted) usando o e-mail retornado pela extração, inserir o Candidato via createAggregate quando não houver duplicata, e então chamar orquestrarParaCandidatoNovo (TASK-144) para o candidato recém-criado. Atualize UploadLoteResultado para refletir o resultado real por arquivo (criado / duplicado / erro de extração), não mais "recebido".
+- src/actions/vagas.ts: criarVaga chama orquestrarParaVagaNova após o insert.
+Todas as chamadas são fire-and-forget do ponto de vista da resposta da action (não aguarde a orquestração completa antes de retornar sucesso ao usuário) — a orquestração já gerencia sua própria concorrência internamente.
+Atualize a UI de upload em lote (TASK-152) se o contrato de UploadLoteResultado mudou de forma visível ao usuário.
+Faça commit `feat(candidates,jobs): wire real agent dispatch, remove placeholders`.
+```
+
+## TASK-146 — Admin: configuração dos agentes
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+**Skills:** `shadcn`, `nextjs-app-router-patterns`, `building-components`, `tanstack-form`
+
+### Prompt para o Copilot Chat
+
+```text
+PRODUCT.md já decidiu o sistema operar aberto no MVP (sem autenticação) — não adicione login nem middleware de acesso aqui, isso é decisão tomada, não pendência desta task.
+Crie um novo grupo de rotas src/app/(admin)/agentes/page.tsx (Server Component, lista os 3 registros fixos de agente_config) e src/app/(admin)/agentes/[slot]/page.tsx (form de edição: model, systemPrompt, userPrompt, params, thresholdScore quando aplicável, ativo) usando TanStack Form + Server Action de update, seguindo o mesmo padrão de formulário já usado nas demais entidades (não crie um padrão de form novo).
+Não permita editar o campo slot nem criar/excluir registros — são 3 linhas fixas, só edição.
+Documente no próprio form, de forma visível, o catálogo de variáveis disponíveis para o template de cada slot (ex.: extracao_curriculo não tem variáveis de contexto; classificador_aderencia tem tipo_principal/tipo_comparacao/item_principal/itens_comparacao; avaliador_triagem tem os dados de CandidatoCompleto/VagaCompleta) para o admin não escrever `{{variavel}}` que não existe.
+Faça commit `feat(admin): add agent configuration screens`.
+```
+
+## TASK-147 — Admin: credenciais de provedor LLM
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+**Skills:** `shadcn`, `nextjs-app-router-patterns`, `layer-actions`
+
+### Prompt para o Copilot Chat
+
+```text
+Crie src/app/(admin)/credenciais/page.tsx (lista providers cadastrados, mostrando só provider/ativo/data — nunca o valor da chave) e a Server Action correspondente em um novo src/actions/credenciais.ts (entidade própria, não misture com candidatos.ts) para criar/desativar uma credencial.
+O form de criação tem um campo de texto para colar a API key; ao salvar, cifra via encryptCredential (TASK-139) antes de gravar — o valor plaintext nunca deve aparecer em nenhum log, nem trafegar de volta ao cliente depois de salvo.
+Edição de uma credencial existente permite apenas trocar a key (reemitir) ou desativar — nunca exibe a key atual, nem mascarada.
+Faça commit `feat(admin): add llm credential management`.
+```
+
+## TASK-148 — Validar motor de agentes completo e atualizar documentação
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `task-closeout`, `repository-cleanliness-check`, `soft-delete-check`
+
+### Prompt para o Copilot Chat
+
+```text
+Rode lint/build/testes de TASK-137 a TASK-147 de ponta a ponta, com provider mockado (não bata na API real do Gemini nos testes automatizados).
+Atualize docs/ARCHITECTURE.md e docs/PROJECT_STATE.md substituindo as menções de "detalhamento completo vem com o roteiro da nova Fase 14" pelo desenho real implementado (3 slots, tabelas llm_credenciais/agente_config, fluxo de orquestração, provedor Gemini/Google AI Studio).
+Confirme que nenhum comentário ou código neste bloco referencia n8n ou fluxos descontinuados.
+Confirme ausência de código morto e de duplicação entre os 3 agentes (lógica repetida entre extracao-curriculo.ts/classificador-aderencia.ts/avaliador-triagem.ts deveria estar em gemini-client.ts/template.ts, não copiada).
+repository-cleanliness-check e soft-delete-check.
+Registre DEVLOG. Commit só se houver correção.
+```
+
+## TASK-149 — Ajustar limite de payload do Next.js para upload de currículos
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+### Prompt para o Copilot Chat
+
+```text
+Verifique docs/specs/environment.md e src/actions/candidatos.ts (MAX_FILE_SIZE).
+Configure explicitamente `experimental.serverActions.bodySizeLimit` em `next.config.js` (hoje sem configuração, cai no default de 1MB do Next 15, o que já é insuficiente para um único currículo de 5MB). Defina 80mb, calculado para suportar um lote de até 15 arquivos de 5MB com margem.
+Documente o valor e o motivo em comentário curto no próprio next.config.js.
+Confirme que o upload de um único currículo de ~5MB (fluxo já existente em createCandidato) segue funcionando após a mudança — adicione/ajuste teste se ainda não houver cobertura para esse tamanho.
+Faça commit `build(config): raise server actions body size limit for bulk uploads`.
+```
+
+## TASK-150 — Criar limitador de concorrência leve (sem nova dependência)
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+### Prompt para o Copilot Chat
+
+```text
+AGENTS.md proíbe instalar dependências sem aprovação explícita — não adicione p-limit nem equivalente.
+Crie `src/lib/concurrency/run-with-limit.ts` com uma função `runWithLimit<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]>` que processa `items` respeitando no máximo `limit` execuções simultâneas de `worker`, preservando a ordem dos resultados no array retornado, sem depender de fs/DB/Next (utilitário puro, sem I/O próprio).
+Cubra com teste unitário: respeita o limite de concorrência, preserva ordem dos resultados, e um item que rejeita (`worker` lança) não derruba os demais (resultado desse item deve ser reportável como erro isolado — decida a forma, ex: `Promise.allSettled`-like, e documente no próprio tipo de retorno).
+Faça commit `feat(lib): add lightweight concurrency limiter`.
+```
+
+## TASK-151 — Criar Server Action de upload em lote de currículos
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `layer-actions`, `layer-storage`, `zod-validation-utilities`
+
+### Prompt para o Copilot Chat
+
+```text
+Leia a skill layer-actions antes de editar: toda mutação de Candidato vive em src/actions/candidatos.ts (não crie um novo arquivo de actions para isso).
+Adicione `uploadCurriculosEmLote(payload: FormData): Promise<ActionState<UploadLoteResultado[]>>` em src/actions/candidatos.ts, reutilizando `handleFileUpload`, `MAX_FILE_SIZE` e `ALLOWED_MIME_TYPES` já existentes no arquivo (não duplique validação de tipo/tamanho).
+FormData carrega N arquivos sob a mesma chave (ex.: `files`); sem campos manuais de candidato (este fluxo é extração-primeiro, diferente de createCandidato).
+Regras:
+- Rejeite o lote inteiro se vier mais de 15 arquivos, com mensagem clara (`ActionState` de erro, sem tentar salvar nada).
+- Para cada arquivo dentro do limite, valide tipo/tamanho individualmente (arquivo inválido não derruba os demais — erro isolado por item).
+- Salve cada arquivo válido via `storage.save` (mesma key pattern `resumes/{uuid}{ext}` de handleFileUpload).
+- Nesta task, o disparo do agente extracao_curriculo por arquivo salvo é um placeholder (`console.log` + comentário TODO apontando para TASK-145) usando `runWithLimit` (TASK-150) com limite de concorrência 3 — TASK-145 troca isso pela chamada real e pelo contrato final de UploadLoteResultado.
+- Não chame revalidatePath aqui: sem Candidato criado ainda, não há o que revalidar nesta task.
+Defina o tipo `UploadLoteResultado = { fileName: string; success: boolean; message?: string }` e retorne um item por arquivo enviado (incluindo os rejeitados por tipo/tamanho).
+Teste: lote dentro do limite, lote acima do limite (15+1), arquivo com mime inválido misturado com válidos, arquivo acima de 5MB misturado com válidos, concorrência respeitada (mock do disparo do agente).
+Faça commit `feat(candidates): add bulk resume upload action`.
+```
+
+## TASK-152 — Criar UI de upload em lote de currículos
+
+**Modelo recomendado:** Gemini 3.6 Flash
+
+**Skills:** `shadcn`, `nextjs-app-router-patterns`, `building-components`, `impeccable`
+
+### Prompt para o Copilot Chat
+
+```text
+Antes de implementar a superfície:
+1. leia `docs/DESIGN.md` e `docs/UI_REFERENCE_MAP.md`;
+2. localize a entrada correspondente à superfície atual; se não houver referência específica para upload em lote, siga DESIGN.md;
+3. referências orientam layout/aparência, mas não podem adicionar campos ou comportamento fora das specs/ADRs;
+4. reutilize padrões/componentes já implementados antes de criar novos (inclusive o componente de upload já usado no form de candidato, se existir e for reaproveitável).
+
+Adicione um ponto de entrada para upload em lote na área de Candidatos (ex.: ação na página de listagem de src/app/(rh)/candidatos/page.tsx, TASK-095), levando a um formulário com input de múltiplos arquivos (até 15, valide no cliente antes de enviar — mesmo limite do TASK-151) chamando `uploadCurriculosEmLote`.
+Exiba resultado por arquivo após o envio (nome do arquivo + status, com o motivo do erro quando houver) — o texto exato do status depende do contrato de UploadLoteResultado no momento em que esta task rodar (pode já ser "candidato criado"/"duplicado"/"erro" se TASK-145 já tiver rodado, ou "recebido"/"erro" se ainda não — não hardcode um texto sem checar o tipo atual).
+Sem client data fetching fora da chamada da action; sem novo endpoint REST.
+Faça commit `feat(candidates): add bulk resume upload ui`.
+```
+
+## TASK-153 — Validar e limpar fluxo de upload em lote
+
+**Modelo recomendado:** Gemini 3.1 Pro
+
+**Skills:** `task-closeout`, `repository-cleanliness-check`
+
+### Prompt para o Copilot Chat
+
+```text
+Rode lint/build/testes do fluxo de upload em lote (TASK-149 a TASK-152) de ponta a ponta.
+Confirme que nenhum comentário ou trecho de código deste fluxo faz referência ao n8n ou a fluxos descontinuados, nem a "placeholder"/"antes disparava só um log" caso TASK-145 já tenha rodado — código final não carrega anotação de como era antes.
+Confirme ausência de TODOs soltos, código morto, e duplicação da validação de tipo/tamanho de arquivo já existente em handleFileUpload.
+repository-cleanliness-check.
+Registre DEVLOG. Commit só se houver correção.
+```
+
 # Fase 15 — Dashboard
 
 ## TASK-115 — Criar queries Dashboard
