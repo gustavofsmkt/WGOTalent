@@ -198,10 +198,10 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemCompleta }) {
                       }
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="end" className="min-w-[260px]">
                     {motivoOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                        {opt.label}
+                        <span className="whitespace-normal break-words">{opt.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>

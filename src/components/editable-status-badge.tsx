@@ -58,10 +58,10 @@ export function EditableStatusBadge<T extends string>({
       >
         <SelectValue>{() => label}</SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent align="start" className="min-w-[200px]">
         {options.map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
-            {opt.label}
+            <span className="whitespace-normal break-words">{opt.label}</span>
           </SelectItem>
         ))}
       </SelectContent>
