@@ -109,3 +109,20 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Sucesso em todas as etapas de build, verificação de tipos (`typecheck`) e nos 304 testes (Vitest).
 - Fora de escopo, deliberadamente: canal de e-mail (Zimbra/M365/Google Workspace) e autenticação/autorização.
 
+## Marco: TASK-115 — Queries do Dashboard
+*Data: 2026-08-20*
+
+- Criado `dashboardRepository` em `src/server/db/repositories/dashboard.ts` com queries sumarizadas para as métricas do Dashboard.
+- Métricas semânticas implementadas com proteção de soft delete (`notDeleted()` / `isNull(deletedAt)`):
+  - `countVagasAbertas`: contagem de vagas com status `aberta` e não deletadas.
+  - `countCandidatosAtivos`: contagem de candidatos cadastrados e ativos no banco de talentos.
+  - `countTriagensEmAndamento`: contagem de triagens em andamento (`resultado = 'em_andamento'`).
+  - `countTriagensTotais`: contagem total de triagens históricas não deletadas.
+  - `getTriagensPorEtapa`: distribuição agregada por etapa do funil (`curriculo`, `testes`, `entrevista_rh`, `entrevista_gestor`, `finalizado`).
+  - `getTriagensPorResultado`: distribuição agregada por resultado (`em_andamento`, `aprovado`, `reprovado`, `desistente`, `banco_talentos`).
+  - `getMediaScoreIa`: média aritmética do `score_ia` das avaliações de IA não deletadas vinculadas a triagens ativas.
+  - `getVagasComMaisCandidatos`: ranking de vagas com maior volume de candidatos associados com projeção enxuta para evitar overfetch.
+  - `getAtividadeRecente`: feed das atividades de triagem mais recentes com projeção mínima.
+  - `getDashboardSummary`: orquestrador de consulta paralela de todas as métricas do dashboard via `Promise.all`.
+- Cobertura de testes unitários e estruturais em `src/server/db/repositories/dashboard.test.ts`. Todos os 45 arquivos de teste e 355 testes do Vitest passando com sucesso.
+
