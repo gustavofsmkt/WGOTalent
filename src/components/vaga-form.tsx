@@ -104,6 +104,8 @@ export function VagaForm({
     } as z.input<typeof vagaSchema>,
     validators: {
       onBlur: vagaSchema,
+      onChange: vagaSchema,
+
     },
     onSubmit: async ({ value }) => {
       setServerError(null);
@@ -407,6 +409,7 @@ export function VagaForm({
                   name="cidade"
                   validators={{
                     onBlur: vagaSchema.shape.cidade,
+                    onChange: vagaSchema.shape.cidade,
                   }}
                 >
                   {(field) => {
@@ -450,6 +453,7 @@ export function VagaForm({
                   name="uf"
                   validators={{
                     onBlur: vagaSchema.shape.uf,
+                    onChange: vagaSchema.shape.uf,
                   }}
                 >
                   {(field) => {
@@ -466,6 +470,7 @@ export function VagaForm({
                           onValueChange={(val) => {
                             if (typeof val === "string") {
                               field.handleChange(val as any);
+                              field.handleBlur();
                             }
                           }}
                         >
