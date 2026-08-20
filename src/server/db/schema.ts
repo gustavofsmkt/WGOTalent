@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql, eq } from "drizzle-orm";
 import {
   pgTableCreator,
   pgEnum,
@@ -273,7 +273,8 @@ export const triagens = createTable(
     index("triagens_vaga_id_idx").on(table.vagaId),
     index("triagens_candidato_id_idx").on(table.candidatoId),
     uniqueIndex("triagens_candidato_vaga_idx")
-      .on(table.candidatoId, table.vagaId),
+      .on(table.candidatoId, table.vagaId)
+      .where(eq(table.resultado, "em_andamento")),
   ],
 );
 

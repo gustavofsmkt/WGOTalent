@@ -215,4 +215,46 @@ export const triagemRepository = {
 
     return rows;
   },
+
+  checkActiveEmAndamento: async (
+    candidatoId: string,
+    vagaId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    // Retorna true se houver uma triagem 'em_andamento' para este candidato nesta vaga
+    const rows = await notDeleted(
+      dbOrTx
+        .select({ id: triagens.id })
+        .from(triagens),
+      triagens,
+      eq(triagens.candidatoId, candidatoId),
+      eq(triagens.vagaId, vagaId),
+      eq(triagens.resultado, "em_andamento"),
+    );
+    return rows.length > 0;
+  },
+
+  create: async (data: any, dbOrTx: DbOrTx = db): Promise<any> => {
+    const rows = await dbOrTx.insert(triagens).values(data).returning();
+    return rows[0];
+  },
+
+  update: async (id: string, data: any, dbOrTx: DbOrTx = db): Promise<any> => {
+    const rows = await dbOrTx
+      .update(triagens)
+      .set({ ...data, updatedAt: new Date().toISOString() })
+      .where(eq(triagens.id, id))
+      .returning();
+    return rows[0];
+  },
+
+  softDelete: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
+    await dbOrTx
+      .update(triagens)
+      .set({
+        deletedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(triagens.id, id));
+  },
 };
