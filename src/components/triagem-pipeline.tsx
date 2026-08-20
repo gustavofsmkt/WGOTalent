@@ -52,7 +52,7 @@ export function TriagemPipelineBoard({ items }: { items: TriagemListItem[] }) {
 
 function PipelineCard({ item }: { item: TriagemListItem }) {
   return (
-    <Card className="shadow-xs hover:shadow-md transition-all duration-200 border-border/80 bg-card group">
+    <Card className="shrink-0 shadow-xs hover:shadow-md transition-all duration-200 border-border/80 bg-card group">
       <CardContent className="p-3.5 space-y-3">
         {/* Candidate Header */}
         <div className="flex items-start justify-between gap-2">
