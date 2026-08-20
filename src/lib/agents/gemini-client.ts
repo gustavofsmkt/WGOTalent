@@ -48,7 +48,44 @@ function isErroDeQuota(error: unknown): boolean {
   return typeof message === "string" && /RESOURCE_EXHAUSTED|"code":\s*429/.test(message);
 }
 
+const MAX_TENTATIVAS = 3;
+const BACKOFF_BASE_MS = 500;
+
+function calcularDelayBackoff(tentativa: number): number {
+  return BACKOFF_BASE_MS * 2 ** (tentativa - 1);
+}
+
+function aguardar(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * As 3 etapas de agente (extração de currículo, classificador de aderência,
+ * avaliador de triagem) chamam todas esta função — um único retry aqui cobre
+ * as 3. Backoff exponencial (500ms, 1s) porque a falha mais comum é rate
+ * limit do provedor (429); reaplicado também a resposta malformada, já que a
+ * geração é não-determinística e uma nova tentativa pode vir válida.
+ */
 export async function gerarRespostaEstruturada<T>(
+  input: GerarRespostaEstruturadaInput<T>,
+): Promise<T> {
+  let ultimoErro: unknown;
+
+  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+    try {
+      return await tentarGerarResposta(input);
+    } catch (error) {
+      ultimoErro = error;
+      if (tentativa < MAX_TENTATIVAS) {
+        await aguardar(calcularDelayBackoff(tentativa));
+      }
+    }
+  }
+
+  throw ultimoErro;
+}
+
+async function tentarGerarResposta<T>(
   input: GerarRespostaEstruturadaInput<T>,
 ): Promise<T> {
   const ai = new GoogleGenAI({ apiKey: input.apiKey });
