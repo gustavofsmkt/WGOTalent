@@ -537,7 +537,7 @@ function InteressesSection({
                   <SelectContent>
                     <SelectItem value="none">Nenhuma específica</SelectItem>
                     {departamentoOptions.map((d) => (
-                      <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                      <SelectItem key={d.id} value={d.id}>{d.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1366,7 +1366,6 @@ export function CandidatoBaseForm({
         formData.append("file", resumeFile);
       }
 
-      // TODO: Replace with aggregated create/update actions when arrays are added
       const result =
         isEdit && candidato?.id
           ? await updateCandidato(candidato.id, formData)

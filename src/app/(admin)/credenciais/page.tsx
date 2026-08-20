@@ -4,6 +4,8 @@ import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial
 import { CreateCredencialForm } from "./_components/create-credencial-form";
 import { DeactivateCredencialButton } from "./_components/deactivate-credencial-button";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Credenciais LLM | Admin | WGOTalent",
 };

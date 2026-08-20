@@ -4,6 +4,8 @@ import { Card, CardContent } from "~/components/ui/card";
 import { buttonVariants } from "~/components/ui/button";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Agentes IA | Admin | WGOTalent",
 };

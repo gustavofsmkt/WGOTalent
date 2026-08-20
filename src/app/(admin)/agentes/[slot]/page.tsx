@@ -4,6 +4,8 @@ import { AgenteConfigForm } from "~/components/agente-config-form";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import type { AgenteConfig } from "~/server/db/schema";
 
+export const dynamic = "force-dynamic";
+
 const SLOTS_VALIDOS: AgenteConfig["slot"][] = [
   "extracao_curriculo",
   "classificador_aderencia",
