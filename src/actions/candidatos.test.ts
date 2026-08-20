@@ -26,6 +26,7 @@ import { createCandidato, updateCandidato, deleteCandidato, uploadCurriculosEmLo
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
+import { triagemRepository } from "~/server/db/repositories/triagem";
 import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
@@ -94,12 +95,17 @@ describe("candidatos server actions", () => {
       expect(revalidatePath).toHaveBeenCalledWith("/candidatos");
     });
 
-    it("returns error when email is already registered", async () => {
+    it("merges data into the existing candidato when the email matches an active one without new info", async () => {
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "cand-2",
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
+        deletedAt: null,
       } as any);
+      const mergeAggregateSpy = vi
+        .spyOn(candidatoRepository, "mergeAggregate")
+        .mockResolvedValueOnce({ candidato: { id: "cand-2" } as any, houveMudanca: false });
+      const findEmCurriculoSpy = vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato");
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -118,8 +124,79 @@ describe("candidatos server actions", () => {
         certificacoes: [],
       });
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe("O e-mail informado já está cadastrado no sistema.");
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Candidato já cadastrado — informações atualizadas.");
+      expect(mergeAggregateSpy).toHaveBeenCalledWith("cand-2", expect.anything());
+      expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
+      expect(findEmCurriculoSpy).not.toHaveBeenCalled();
+    });
+
+    it("resets triagens still in the Currículo stage when the merge brings new info", async () => {
+      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+        id: "cand-2",
+        nome: "Maria Sousa",
+        email: "joao.silva@example.com",
+        deletedAt: null,
+      } as any);
+      vi.spyOn(candidatoRepository, "mergeAggregate").mockResolvedValueOnce({
+        candidato: { id: "cand-2" } as any,
+        houveMudanca: true,
+      });
+      vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato").mockResolvedValueOnce(["triagem-1"]);
+      const softDeleteSpy = vi.spyOn(triagemRepository, "softDelete").mockResolvedValueOnce(undefined);
+
+      const result = await createCandidato({
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor",
+        origem: "manual",
+        dataNascimento: "1990-01-01",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(softDeleteSpy).toHaveBeenCalledWith("triagem-1");
+    });
+
+    it("restores the candidato when the email matches a soft-deleted one", async () => {
+      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+        id: "cand-3",
+        nome: "Maria Sousa",
+        email: "joao.silva@example.com",
+        deletedAt: new Date().toISOString(),
+      } as any);
+      const restoreAggregateSpy = vi
+        .spyOn(candidatoRepository, "restoreAggregate")
+        .mockResolvedValueOnce({ id: "cand-3" } as any);
+
+      const result = await createCandidato({
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor",
+        origem: "manual",
+        dataNascimento: "1990-01-01",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Candidato restaurado com sucesso.");
+      expect(restoreAggregateSpy).toHaveBeenCalledWith("cand-3", expect.anything());
       expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
     });
   });
@@ -359,20 +436,45 @@ describe("candidatos server actions", () => {
       }
     });
 
-    it("reports a duplicate email as a failure without creating a candidato", async () => {
+    it("merges into the existing active candidato instead of creating a duplicate", async () => {
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "existing",
+        deletedAt: null,
       } as any);
       const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
+      const mergeAggregateSpy = vi
+        .spyOn(candidatoRepository, "mergeAggregate")
+        .mockResolvedValueOnce({ candidato: { id: "existing" } as any, houveMudanca: false });
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
 
       const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data[0]).toMatchObject({ success: false });
-        expect(result.data[0]?.message).toMatch(/já cadastrado/);
+        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "existing" });
       }
+      expect(mergeAggregateSpy).toHaveBeenCalledWith("existing", expect.anything());
+      expect(createAggregateSpy).not.toHaveBeenCalled();
+    });
+
+    it("restores a soft-deleted candidato instead of creating a duplicate", async () => {
+      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+        id: "existing-deleted",
+        deletedAt: new Date().toISOString(),
+      } as any);
+      const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
+      const restoreAggregateSpy = vi
+        .spyOn(candidatoRepository, "restoreAggregate")
+        .mockResolvedValueOnce({ id: "existing-deleted" } as any);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
+
+      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "existing-deleted" });
+      }
+      expect(restoreAggregateSpy).toHaveBeenCalledWith("existing-deleted", expect.anything());
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
   });

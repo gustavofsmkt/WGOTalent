@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, type SQL } from "drizzle-orm";
+import { eq, desc, asc, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   triagens,
@@ -261,23 +261,46 @@ export const triagemRepository = {
   },
 
   /**
-   * O índice único triagens_candidato_vaga_idx (schema.ts) não é parcial —
-   * vale mesmo para linhas soft-deleted. Por isso este check NÃO usa
-   * notDeleted(): se ele filtrasse, o motor de agentes tentaria reinserir um
-   * par cuja triagem já existe (só que soft-deleted) e bateria em violação
-   * de unique constraint no INSERT.
+   * O índice único triagens_candidato_vaga_idx (schema.ts) agora é parcial
+   * por resultado='em_andamento' E deleted_at IS NULL, então uma triagem
+   * soft-deleted não ocupa mais a vaga no índice — este check usa
+   * notDeleted() para não bloquear a recriação de um par cuja única
+   * triagem anterior já foi excluída (ex.: candidato restaurado, ou
+   * mesclado com novo dado e reenviado pelo fluxo de triagem).
    */
   existsForPar: async (
     candidatoId: string,
     vagaId: string,
     dbOrTx: DbOrTx = db,
   ): Promise<boolean> => {
-    const rows = await dbOrTx
-      .select({ id: triagens.id })
-      .from(triagens)
-      .where(and(eq(triagens.candidatoId, candidatoId), eq(triagens.vagaId, vagaId)))
-      .limit(1);
+    const rows = await notDeleted(
+      dbOrTx.select({ id: triagens.id }).from(triagens),
+      triagens,
+      eq(triagens.candidatoId, candidatoId),
+      eq(triagens.vagaId, vagaId),
+    ).limit(1);
     return rows.length > 0;
+  },
+
+  /**
+   * Triagens ainda na etapa inicial "Currículo" e em andamento — usadas
+   * pelo fluxo de mesclagem de candidato duplicado para decidir se deve
+   * excluir e reenviar pelo motor de matching quando o cadastro muda.
+   * Etapas posteriores (testes, entrevistas, finalizado) já avançaram no
+   * processo e não são tocadas.
+   */
+  findEmCurriculoPorCandidato: async (
+    candidatoId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<string[]> => {
+    const rows = await notDeleted(
+      dbOrTx.select({ id: triagens.id }).from(triagens),
+      triagens,
+      eq(triagens.candidatoId, candidatoId),
+      eq(triagens.etapa, "curriculo"),
+      eq(triagens.resultado, "em_andamento"),
+    );
+    return rows.map((r) => r.id);
   },
 
   /** AvaliacaoIA não tem CRUD próprio (1:1 de Triagem, sempre inline) — a escrita mora aqui. */

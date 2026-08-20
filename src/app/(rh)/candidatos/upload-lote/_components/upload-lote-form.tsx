@@ -148,7 +148,7 @@ export function UploadLoteForm() {
                   <div className="min-w-0">
                     <p className="font-medium text-foreground truncate">{r.fileName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {r.success ? "Candidato criado com sucesso." : r.message}
+                      {r.success ? r.message ?? "Candidato criado com sucesso." : r.message}
                     </p>
                   </div>
                 </div>

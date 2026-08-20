@@ -2,7 +2,9 @@
 
 ## Status
 
-Aceita
+Obsoleta
+
+* **Superseded-by:** [0008](./0008-candidato-duplicado-restaurar-e-mesclar.md)
 
 ## Contexto
 

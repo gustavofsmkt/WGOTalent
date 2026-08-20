@@ -1,0 +1,2 @@
+DROP INDEX "triagens_candidato_vaga_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "triagens_candidato_vaga_idx" ON "wgotalent_triagens" USING btree ("candidato_id","vaga_id") WHERE ("wgotalent_triagens"."resultado" = $1 and "wgotalent_triagens"."deleted_at" is null);

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { candidatoRepository, type CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
+import { triagemRepository } from "~/server/db/repositories/triagem";
 import { type Candidato } from "~/server/db/schema";
 import {
   candidatoAgregadoSchema,
@@ -72,6 +73,17 @@ function parsePayload(payload: unknown): { data: unknown; file: File | null; err
   return { data: payload, file: null };
 }
 
+/**
+ * Exclui as triagens do candidato ainda na etapa inicial "Currículo" (em
+ * andamento) para que a orquestração, disparada logo em seguida pela
+ * action, possa reavaliá-las do zero em cima do perfil atualizado. Etapas
+ * mais avançadas (testes, entrevistas, finalizado) não são tocadas.
+ */
+async function resetTriagensEmCurriculo(candidatoId: string): Promise<void> {
+  const ids = await triagemRepository.findEmCurriculoPorCandidato(candidatoId);
+  await Promise.all(ids.map((id) => triagemRepository.softDelete(id)));
+}
+
 export async function createCandidato(
   payload: unknown,
 ): Promise<ActionState<Candidato>> {
@@ -94,14 +106,9 @@ export async function createCandidato(
   try {
     const { cargoInteresseId, areaInteresseId, email } = parsed.data;
 
-    // Validar unicidade de email
-    const emailExists = await candidatoRepository.findByEmailIncludingDeleted(email);
-    if (emailExists) {
-      return {
-        success: false,
-        message: "O e-mail informado já está cadastrado no sistema.",
-      };
-    }
+    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
+    // mescla dados novos/diferentes (se ativo) — ver ADR 0008.
+    const existing = await candidatoRepository.findByEmailIncludingDeleted(email);
 
     // Validar referências
     if (cargoInteresseId) {
@@ -129,8 +136,21 @@ export async function createCandidato(
     }
 
     let result: Candidato | undefined | null;
+    let message: string | undefined;
     try {
-      result = await candidatoRepository.createAggregate(parsed.data);
+      if (existing?.deletedAt) {
+        result = await candidatoRepository.restoreAggregate(existing.id, parsed.data);
+        message = "Candidato restaurado com sucesso.";
+      } else if (existing) {
+        const merged = await candidatoRepository.mergeAggregate(existing.id, parsed.data);
+        result = merged.candidato;
+        if (merged.houveMudanca) {
+          await resetTriagensEmCurriculo(existing.id);
+        }
+        message = "Candidato já cadastrado — informações atualizadas.";
+      } else {
+        result = await candidatoRepository.createAggregate(parsed.data);
+      }
     } catch (dbError) {
       // Cleanup if DB fails
       if (fileKey) {
@@ -142,7 +162,7 @@ export async function createCandidato(
     if (!result) {
       throw new Error("Falha ao retornar o candidato criado.");
     }
-    
+
     // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade). Fire-and-forget:
     // não bloqueia a resposta desta action, e o próprio orquestrador limita concorrência internamente.
     orquestrarParaCandidatoNovo(result.id).catch((err) =>
@@ -154,6 +174,7 @@ export async function createCandidato(
     return {
       success: true,
       data: result,
+      message,
     };
   } catch (error: any) {
     console.error("[createCandidato] Error:", error);
@@ -302,22 +323,27 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
   try {
     const extraido = await executarExtracaoCurriculo(fileKey);
 
-    const emailExists = await candidatoRepository.findByEmailIncludingDeleted(extraido.email);
-    if (emailExists) {
-      await storage.delete(fileKey).catch(console.error);
-      return {
-        fileName: file.name,
-        success: false,
-        message: `E-mail ${extraido.email} já cadastrado no sistema.`,
-      };
-    }
-
+    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
+    // mescla dados novos/diferentes (se ativo) — ver ADR 0008.
+    const existing = await candidatoRepository.findByEmailIncludingDeleted(extraido.email);
     const dadosPendentes = calcularDadosPendentes(extraido);
-    const candidato = await candidatoRepository.createAggregate({
-      ...extraido,
-      curriculoArquivoKey: fileKey,
-      dadosPendentes,
-    });
+    const dadosCandidato = { ...extraido, curriculoArquivoKey: fileKey, dadosPendentes };
+
+    let candidato: Awaited<ReturnType<typeof candidatoRepository.createAggregate>>;
+    let message = "Candidato criado com sucesso.";
+    if (existing?.deletedAt) {
+      candidato = await candidatoRepository.restoreAggregate(existing.id, dadosCandidato);
+      message = "Candidato restaurado com sucesso.";
+    } else if (existing) {
+      const merged = await candidatoRepository.mergeAggregate(existing.id, dadosCandidato);
+      candidato = merged.candidato;
+      if (merged.houveMudanca) {
+        await resetTriagensEmCurriculo(existing.id);
+      }
+      message = "Candidato já cadastrado — informações atualizadas.";
+    } else {
+      candidato = await candidatoRepository.createAggregate(dadosCandidato);
+    }
 
     if (!candidato) {
       throw new Error("Falha ao criar candidato a partir da extração.");
@@ -327,7 +353,7 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
       console.error("[uploadCurriculosEmLote] Falha na orquestração de matching:", err),
     );
 
-    return { fileName: file.name, success: true, candidatoId: candidato.id };
+    return { fileName: file.name, success: true, candidatoId: candidato.id, message };
   } catch (e: any) {
     await storage.delete(fileKey).catch(console.error);
     return {
