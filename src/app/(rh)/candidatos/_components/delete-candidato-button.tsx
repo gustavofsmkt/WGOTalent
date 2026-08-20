@@ -46,35 +46,47 @@ export function DeleteCandidatoButton({
 
   if (isConfirming) {
     return (
-      <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
-        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
-          <AlertTriangle className="size-3 text-destructive" />
-          Confirmar?
-        </span>
+      <div className="relative inline-flex">
         <Button
           type="button"
-          variant="destructive"
-          size="sm"
-          disabled={isPending}
-          onClick={handleDelete}
-          className="h-8 px-2 text-xs"
+          variant={variant === "button" ? "outline" : "ghost"}
+          size={variant === "button" ? "sm" : "icon-xs"}
+          className="invisible"
+          tabIndex={-1}
+          aria-hidden="true"
         >
-          {isPending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            "Sim, excluir"
-          )}
+          <Trash2 className={variant === "button" ? "size-4" : "size-3.5"} />
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => setIsConfirming(false)}
-          className="h-8 px-2 text-xs"
-        >
-          Cancelar
-        </Button>
+        <div className="absolute right-0 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+          <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+            <AlertTriangle className="size-3 text-destructive" />
+            Confirmar?
+          </span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={isPending}
+            onClick={handleDelete}
+            className="h-8 px-2 text-xs"
+          >
+            {isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              "Sim, excluir"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={() => setIsConfirming(false)}
+            className="h-8 px-2 text-xs"
+          >
+            Cancelar
+          </Button>
+        </div>
       </div>
     );
   }
