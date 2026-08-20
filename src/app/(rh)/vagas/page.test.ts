@@ -28,6 +28,9 @@ describe("VagasPage - Server Component Logic", () => {
         id: "cargo-1",
         titulo: "Desenvolvedor Frontend",
         ativo: true,
+        requisitos: "",
+        requisitosDesejaveis: "",
+        criteriosEliminatorios: "",
         departamento: {
           id: "dep-1",
           nome: "Tecnologia",
@@ -49,6 +52,9 @@ describe("VagasPage - Server Component Logic", () => {
         id: "cargo-2",
         titulo: "Analista de RH",
         ativo: true,
+        requisitos: "",
+        requisitosDesejaveis: "",
+        criteriosEliminatorios: "",
         departamento: {
           id: "dep-2",
           nome: "Recursos Humanos",
@@ -70,6 +76,9 @@ describe("VagasPage - Server Component Logic", () => {
         id: "cargo-3",
         titulo: "Engenheiro DevOps",
         ativo: true,
+        requisitos: "",
+        requisitosDesejaveis: "",
+        criteriosEliminatorios: "",
         departamento: {
           id: "dep-1",
           nome: "Tecnologia",

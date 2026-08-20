@@ -23,6 +23,22 @@ import { type CandidatoAgregadoOutput } from "~/lib/validation/candidato";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
 
+/**
+ * O form manual exige dataNascimento/cep/bairro/logradouro (CandidatoAgregadoOutput).
+ * A extração via IA nem sempre consegue essas informações a partir do currículo —
+ * o banco permite null nessas colunas para esse caso (ver migration 0012 e
+ * dadosPendentes). createAggregate aceita ambos os formatos de origem.
+ */
+export type CandidatoAgregadoInsercao = Omit<
+  CandidatoAgregadoOutput,
+  "dataNascimento" | "cep" | "bairro" | "logradouro"
+> & {
+  dataNascimento: string | null;
+  cep: string | null;
+  bairro: string | null;
+  logradouro: string | null;
+};
+
 // Return types
 export interface CandidatoSummary {
   id: string;
@@ -247,6 +263,20 @@ export const candidatoRepository = {
     return rows;
   },
 
+  /** Espelha vagaRepository.findOpenByCidade — estoque para a fase 1 do classificador_aderencia. */
+  findActiveByCidade: async (
+    cidade: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<{ id: string; resumoProfissional: string }[]> => {
+    return notDeleted(
+      dbOrTx
+        .select({ id: candidatos.id, resumoProfissional: candidatos.resumoProfissional })
+        .from(candidatos),
+      candidatos,
+      eq(candidatos.cidade, cidade),
+    );
+  },
+
   findByEmailIncludingDeleted: async (
     email: string,
     dbOrTx: DbOrTx = db,
@@ -260,7 +290,7 @@ export const candidatoRepository = {
   },
 
   createAggregate: async (
-    data: CandidatoAgregadoOutput,
+    data: CandidatoAgregadoInsercao,
     dbOrTx: DbOrTx = db,
   ): Promise<CandidatoDetailCompleto | null> => {
     return dbOrTx.transaction(async (tx) => {

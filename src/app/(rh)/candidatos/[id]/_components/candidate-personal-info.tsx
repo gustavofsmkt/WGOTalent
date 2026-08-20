@@ -9,7 +9,8 @@ interface CandidatePersonalInfoProps {
 }
 
 export function CandidatePersonalInfo({ candidato }: CandidatePersonalInfoProps) {
-  const calculateAge = (birthDateStr: string) => {
+  const calculateAge = (birthDateStr: string | null) => {
+    if (!birthDateStr) return null;
     try {
       const birth = new Date(birthDateStr);
       if (isNaN(birth.getTime())) return null;

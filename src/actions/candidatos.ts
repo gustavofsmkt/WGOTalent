@@ -10,14 +10,16 @@ import {
   type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
 import { storage } from "~/lib/storage";
+import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
+import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
+import { calcularDadosPendentes } from "~/lib/validation/extracao-curriculo";
+import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import crypto from "crypto";
 import path from "path";
 
 export type ActionState<T> =
   | { success: true; data: T; message?: string }
   | { success: false; message?: string; errors?: Record<string, string[]> };
-
-// TODO: Motor de agentes nativo (classificador_aderencia) ainda não implementado — ver ADR-0007. Fluxo alvo: comparar resumo x resumo em lote (batch de até 25), aplicar threshold configurável, e só então criar a triagem para avaliação completa.
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = [
@@ -140,11 +142,11 @@ export async function createCandidato(
       throw new Error("Falha ao retornar o candidato criado.");
     }
     
-    // Disparar o agente extracao_curriculo de forma assíncrona (fire-and-forget)
-    if (fileKey) {
-      console.log(`[Agent Trigger] Disparando extracao_curriculo para o arquivo ${fileKey}`);
-      // TODO: Implementar chamada real do agente
-    }
+    // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade). Fire-and-forget:
+    // não bloqueia a resposta desta action, e o próprio orquestrador limita concorrência internamente.
+    orquestrarParaCandidatoNovo(result.id).catch((err) =>
+      console.error("[createCandidato] Falha na orquestração de matching:", err),
+    );
 
     revalidatePath("/candidatos");
 
@@ -254,12 +256,6 @@ export async function updateCandidato(
       throw new Error("Falha ao retornar o candidato atualizado.");
     }
     
-    // Disparar o agente extracao_curriculo de forma assíncrona (fire-and-forget)
-    if (newFileKey) {
-      console.log(`[Agent Trigger] Disparando extracao_curriculo para o novo arquivo ${newFileKey}`);
-      // TODO: Implementar chamada real do agente
-    }
-
     revalidatePath("/candidatos");
     revalidatePath(`/candidatos/${id}`);
 
@@ -278,6 +274,94 @@ export async function updateCandidato(
           : "Ocorreu um erro inesperado ao atualizar o candidato.",
     };
   }
+}
+
+const MAX_LOTE_ARQUIVOS = 15;
+const CONCORRENCIA_LOTE = 3;
+
+export interface UploadLoteResultado {
+  fileName: string;
+  success: boolean;
+  message?: string;
+  candidatoId?: string;
+}
+
+async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
+  let fileKey: string | null = null;
+  try {
+    fileKey = await handleFileUpload(file);
+  } catch (e: any) {
+    return { fileName: file.name, success: false, message: e.message || "Erro ao salvar arquivo." };
+  }
+  if (!fileKey) {
+    return { fileName: file.name, success: false, message: "Falha ao salvar arquivo." };
+  }
+
+  try {
+    const extraido = await executarExtracaoCurriculo(fileKey);
+
+    const emailExists = await candidatoRepository.findByEmailIncludingDeleted(extraido.email);
+    if (emailExists) {
+      await storage.delete(fileKey).catch(console.error);
+      return {
+        fileName: file.name,
+        success: false,
+        message: `E-mail ${extraido.email} já cadastrado no sistema.`,
+      };
+    }
+
+    const dadosPendentes = calcularDadosPendentes(extraido);
+    const candidato = await candidatoRepository.createAggregate({
+      ...extraido,
+      curriculoArquivoKey: fileKey,
+      dadosPendentes,
+    });
+
+    if (!candidato) {
+      throw new Error("Falha ao criar candidato a partir da extração.");
+    }
+
+    orquestrarParaCandidatoNovo(candidato.id).catch((err) =>
+      console.error("[uploadCurriculosEmLote] Falha na orquestração de matching:", err),
+    );
+
+    return { fileName: file.name, success: true, candidatoId: candidato.id };
+  } catch (e: any) {
+    await storage.delete(fileKey).catch(console.error);
+    return {
+      fileName: file.name,
+      success: false,
+      message: e.message || "Erro ao processar extração do currículo.",
+    };
+  }
+}
+
+export async function uploadCurriculosEmLote(
+  payload: FormData,
+): Promise<ActionState<UploadLoteResultado[]>> {
+  const files = payload.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+
+  if (files.length === 0) {
+    return { success: false, message: "Nenhum arquivo enviado." };
+  }
+  if (files.length > MAX_LOTE_ARQUIVOS) {
+    return {
+      success: false,
+      message: `Lote excede o limite de ${MAX_LOTE_ARQUIVOS} arquivos (enviados: ${files.length}).`,
+    };
+  }
+
+  const resultados = await runWithLimit(files, CONCORRENCIA_LOTE, processarArquivoLote);
+
+  const data = resultados.map((r) =>
+    r.ok ? r.value : { fileName: "desconhecido", success: false, message: "Erro inesperado no processamento." },
+  );
+
+  if (data.some((r) => r.success)) {
+    revalidatePath("/candidatos");
+  }
+
+  return { success: true, data };
 }
 
 export async function deleteCandidato(

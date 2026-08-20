@@ -1,4 +1,4 @@
-import { eq, desc, asc, type SQL } from "drizzle-orm";
+import { eq, and, desc, asc, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   triagens,
@@ -8,6 +8,8 @@ import {
   departamentos,
   avaliacaoIA,
   type TriagemCompleta,
+  type AvaliacaoIA,
+  type NovaAvaliacaoIA,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 
@@ -256,5 +258,38 @@ export const triagemRepository = {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(triagens.id, id));
+  },
+
+  /**
+   * O índice único triagens_candidato_vaga_idx (schema.ts) não é parcial —
+   * vale mesmo para linhas soft-deleted. Por isso este check NÃO usa
+   * notDeleted(): se ele filtrasse, o motor de agentes tentaria reinserir um
+   * par cuja triagem já existe (só que soft-deleted) e bateria em violação
+   * de unique constraint no INSERT.
+   */
+  existsForPar: async (
+    candidatoId: string,
+    vagaId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    const rows = await dbOrTx
+      .select({ id: triagens.id })
+      .from(triagens)
+      .where(and(eq(triagens.candidatoId, candidatoId), eq(triagens.vagaId, vagaId)))
+      .limit(1);
+    return rows.length > 0;
+  },
+
+  /** AvaliacaoIA não tem CRUD próprio (1:1 de Triagem, sempre inline) — a escrita mora aqui. */
+  gravarAvaliacaoIA: async (
+    data: NovaAvaliacaoIA,
+    dbOrTx: DbOrTx = db,
+  ): Promise<AvaliacaoIA> => {
+    const rows = await dbOrTx.insert(avaliacaoIA).values(data).returning();
+    const created = rows[0];
+    if (!created) {
+      throw new Error("Falha ao gravar avaliação de IA.");
+    }
+    return created;
   },
 };

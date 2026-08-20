@@ -45,6 +45,7 @@ describe("CandidatoDetailPage - Server Logic", () => {
     origem: "manual",
     curriculoArquivoKey: "resumes/marina_cv.pdf",
     textoCurriculoExtraido: null,
+    dadosPendentes: null,
     createdAt: "2023-08-01T10:00:00.000Z",
     updatedAt: "2023-08-01T10:00:00.000Z",
     deletedAt: null,

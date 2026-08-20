@@ -80,6 +80,7 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       origem: "manual",
       curriculoArquivoKey: null,
       textoCurriculoExtraido: null,
+      dadosPendentes: null,
       createdAt: "2023-01-01T00:00:00.000Z",
       updatedAt: "2023-01-01T00:00:00.000Z",
       deletedAt: null,

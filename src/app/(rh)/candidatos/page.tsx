@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Users, UserCheck, Mail, Eye, MapPin, Phone, Briefcase } from "lucide-react";
+import { Plus, Users, UserCheck, Mail, Eye, MapPin, Phone, Briefcase, UploadCloud } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
@@ -88,13 +88,22 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         title="Candidatos"
         description="Gerencie os profissionais cadastrados, histórico de triagens e talentos da organização."
         actions={
-          <Link
-            href="/candidatos/novo"
-            className={buttonVariants({ variant: "default" })}
-          >
-            <Plus className="size-4 mr-2" aria-hidden="true" />
-            Novo Candidato
-          </Link>
+          <>
+            <Link
+              href="/candidatos/upload-lote"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <UploadCloud className="size-4 mr-2" aria-hidden="true" />
+              Upload em Lote
+            </Link>
+            <Link
+              href="/candidatos/novo"
+              className={buttonVariants({ variant: "default" })}
+            >
+              <Plus className="size-4 mr-2" aria-hidden="true" />
+              Novo Candidato
+            </Link>
+          </>
         }
       />
 

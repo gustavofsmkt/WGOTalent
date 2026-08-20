@@ -176,6 +176,7 @@ export const candidatoSchema = z.object({
   origem: origemSchema.default("manual"),
   curriculoArquivoKey: trimmedString.optional().nullable(),
   textoCurriculoExtraido: trimmedString.optional().nullable(),
+  dadosPendentes: trimmedString.optional().nullable(),
 });
 
 export type CandidatoInput = z.input<typeof candidatoSchema>;

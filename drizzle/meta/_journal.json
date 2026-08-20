@@ -85,6 +85,13 @@
       "when": 1787193431760,
       "tag": "0011_sour_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787198057927,
+      "tag": "0012_relax_candidato_extraction_fields",
+      "breakpoints": true
     }
   ]
 }

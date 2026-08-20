@@ -151,16 +151,21 @@ export const candidatos = createTable(
     nome: varchar("nome", { length: 150 }).notNull(),
     nomeSocial: varchar("nome_social", { length: 150 }),
     nacionalidade: varchar("nacionalidade", { length: 60 }).default("brasileira").notNull(),
-    dataNascimento: date("data_nascimento", { mode: "string" }).notNull(),
+    // dataNascimento/cep/bairro/logradouro são nullable: um currículo raramente
+    // traz endereço postal completo ou data de nascimento. Decisão de produto
+    // (2026-08-19): o Candidato segue no fluxo normal de triagem mesmo assim;
+    // dadosPendentes lista o que falta para o RH completar depois.
+    dataNascimento: date("data_nascimento", { mode: "string" }),
     estadoCivil: estadoCivilEnum("estado_civil").default("nao_informado").notNull(),
     pcd: text("pcd"),
     email: varchar("email", { length: 254 }).notNull().unique(),
     celular: varchar("celular", { length: 20 }).notNull(),
-    cep: varchar("cep", { length: 9 }).notNull(),
+    cep: varchar("cep", { length: 9 }),
     uf: char("uf", { length: 2 }).notNull(),
     cidade: varchar("cidade", { length: 100 }).notNull(),
-    bairro: varchar("bairro", { length: 100 }).notNull(),
-    logradouro: varchar("logradouro", { length: 200 }).notNull(),
+    bairro: varchar("bairro", { length: 100 }),
+    logradouro: varchar("logradouro", { length: 200 }),
+    dadosPendentes: text("dados_pendentes"),
     resumoProfissional: text("resumo_profissional").notNull(),
     cnh: cnhEnum("cnh"),
     possuiVeiculo: boolean("possui_veiculo").default(false).notNull(),

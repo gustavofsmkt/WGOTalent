@@ -9,8 +9,7 @@ import {
   updateVagaSchema,
 } from "~/lib/validation/vaga";
 import type { Vaga } from "~/server/db/schema";
-
-// TODO: Motor de agentes nativo (classificador_aderencia) ainda não implementado — ver ADR-0007. Fluxo alvo: comparar resumo x resumo em lote (batch de até 25), aplicar threshold configurável, e só então criar a triagem para avaliação completa.
+import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
 
 export async function createVaga(
   data: unknown,
@@ -35,6 +34,12 @@ export async function createVaga(
     }
 
     const vaga = await vagaRepository.create(parsed.data);
+
+    // Dispara a fase 1 de matching (vaga -> candidatos ativos na mesma cidade). Fire-and-forget.
+    orquestrarParaVagaNova(vaga.id).catch((err) =>
+      console.error("[createVaga] Falha na orquestração de matching:", err),
+    );
+
     revalidatePath("/vagas");
 
     return {
