@@ -44,11 +44,18 @@ export const motivosDesistencia = [
   "motivos_pessoais",
 ] as const;
 
-const baseObject = z.object({
+export const triagemBaseSchema = z.object({
+  vagaId: uuidSchema,
+  candidatoId: uuidSchema,
   etapa: triagemEtapaEnum,
   resultado: triagemResultadoEnum,
   motivo: triagemMotivoEnum.nullable().optional(),
   parecerRh: z.string().nullable().optional(),
+});
+
+export const updateTriagemBaseSchema = triagemBaseSchema.omit({
+  candidatoId: true,
+  vagaId: true,
 });
 
 const validateMotivo = (data: any, ctx: z.RefinementCtx) => {
@@ -91,14 +98,12 @@ const validateMotivo = (data: any, ctx: z.RefinementCtx) => {
   }
 };
 
-export const triagemSchema = z
-  .object({
-    vagaId: uuidSchema,
-    candidatoId: uuidSchema,
-  })
-  .merge(baseObject)
-  .superRefine(validateMotivo);
-
-export const updateTriagemSchema = baseObject.superRefine(validateMotivo);
+export const triagemSchema = triagemBaseSchema.superRefine(validateMotivo);
+export const updateTriagemSchema = updateTriagemBaseSchema.superRefine(validateMotivo);
 
 export type TriagemSchema = z.infer<typeof triagemSchema>;
+export type CreateTriagemInput = z.infer<typeof triagemSchema>;
+export type UpdateTriagemInput = z.infer<typeof updateTriagemSchema>;
+export type TriagemEtapa = z.infer<typeof triagemEtapaEnum>;
+export type TriagemResultado = z.infer<typeof triagemResultadoEnum>;
+export type TriagemMotivo = z.infer<typeof triagemMotivoEnum>;
