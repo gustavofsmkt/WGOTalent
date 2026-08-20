@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { CheckCircle2, XCircle, Loader2, AlertTriangle, X, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -9,24 +8,17 @@ import { useUploadProgress } from "./upload-progress-store";
 import { temItemEmAndamento, temErroPendente } from "./upload-progress-status";
 
 export function UploadProgressPopup() {
-  const { items, isOpen, clearErrors, dismiss } = useUploadProgress();
+  const { items, isOpen, limparFinalizados, dismiss } = useUploadProgress();
+
+  if (!isOpen || items.length === 0) {
+    return null;
+  }
 
   const hasErrors = temErroPendente(items);
   const isProcessing = temItemEmAndamento(items);
   const successCount = items.filter((i) => i.status === "sucesso").length;
   const errorCount = items.filter((i) => i.status === "erro").length;
-
-  // Auto-dismiss após 4s SOMENTE se tudo terminou com sucesso e não houver erro.
-  React.useEffect(() => {
-    if (items.length > 0 && !isProcessing && !hasErrors && isOpen) {
-      const timer = setTimeout(() => dismiss(), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [items.length, isProcessing, hasErrors, isOpen, dismiss]);
-
-  if (!isOpen || items.length === 0) {
-    return null;
-  }
+  const temFinalizados = successCount + errorCount > 0;
 
   return (
     <div
@@ -52,17 +44,15 @@ export function UploadProgressPopup() {
                   : `Upload concluído (${successCount}/${items.length})`}
             </CardTitle>
           </div>
-          {!isProcessing && !hasErrors && (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={dismiss}
-              aria-label="Fechar popup"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3.5" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={dismiss}
+            aria-label="Fechar popup"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </Button>
         </CardHeader>
 
         <CardContent className="p-3 space-y-2 max-h-56 overflow-y-auto">
@@ -104,19 +94,18 @@ export function UploadProgressPopup() {
           </div>
         </CardContent>
 
-        {hasErrors && (
-          <CardFooter className="p-2.5 pt-0 flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void clearErrors()}
-              className="text-xs h-7 gap-1"
-            >
-              <Trash2 className="size-3" />
-              Limpar
-            </Button>
-          </CardFooter>
-        )}
+        <CardFooter className="p-2.5 pt-0 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void limparFinalizados()}
+            disabled={!temFinalizados}
+            className="text-xs h-7 gap-1"
+          >
+            <Trash2 className="size-3" />
+            Limpar
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

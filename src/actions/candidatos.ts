@@ -449,8 +449,8 @@ export async function getUploadLoteAtivo(): Promise<UploadLoteItem[]> {
   return uploadLoteItemRepository.findAtivos();
 }
 
-export async function limparUploadLoteErros(): Promise<void> {
-  await uploadLoteItemRepository.softDeleteErros();
+export async function limparUploadLoteFinalizados(): Promise<void> {
+  await uploadLoteItemRepository.softDeleteFinalizados();
 }
 
 export async function deleteCandidato(

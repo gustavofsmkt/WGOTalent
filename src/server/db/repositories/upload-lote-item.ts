@@ -1,4 +1,4 @@
-import { eq, sql, asc } from "drizzle-orm";
+import { eq, sql, asc, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   uploadLoteItens,
@@ -49,10 +49,11 @@ export const uploadLoteItemRepository = {
     );
   },
 
-  softDeleteErros: async (dbOrTx: DbOrTx = db): Promise<void> => {
+  /** Limpa itens já finalizados (sucesso ou erro) — nunca os que ainda estão em andamento. */
+  softDeleteFinalizados: async (dbOrTx: DbOrTx = db): Promise<void> => {
     await dbOrTx
       .update(uploadLoteItens)
       .set({ deletedAt: sql`now()` })
-      .where(eq(uploadLoteItens.status, "erro"));
+      .where(inArray(uploadLoteItens.status, ["sucesso", "erro"]));
   },
 };

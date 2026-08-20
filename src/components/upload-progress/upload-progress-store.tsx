@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { getUploadLoteAtivo, limparUploadLoteErros } from "~/actions/candidatos";
+import { getUploadLoteAtivo, limparUploadLoteFinalizados } from "~/actions/candidatos";
 import type { UploadLoteItem } from "~/server/db/schema";
 import { temItemEmAndamento, temErroPendente } from "./upload-progress-status";
 
@@ -12,7 +12,9 @@ export interface UploadProgressContextValue {
   isOpen: boolean;
   /** Adiciona itens já criados no servidor (retorno de `iniciarUploadLote`) para pintura instantânea, sem esperar o próximo poll. */
   seedItems: (items: UploadLoteItem[]) => void;
-  clearErrors: () => Promise<void>;
+  /** Remove da lista os itens já finalizados (sucesso ou erro); os em andamento permanecem. */
+  limparFinalizados: () => Promise<void>;
+  /** Apenas esconde o popup — não mexe no banco. Reabre sozinho se surgir um erro novo. */
   dismiss: () => void;
 }
 
@@ -49,8 +51,8 @@ export function UploadProgressProvider({ children }: { children: React.ReactNode
     setIsOpen(true);
   }, []);
 
-  const clearErrors = React.useCallback(async () => {
-    await limparUploadLoteErros();
+  const limparFinalizados = React.useCallback(async () => {
+    await limparUploadLoteFinalizados();
     await refresh();
   }, [refresh]);
 
@@ -59,8 +61,8 @@ export function UploadProgressProvider({ children }: { children: React.ReactNode
   }, []);
 
   const value = React.useMemo<UploadProgressContextValue>(
-    () => ({ items, isOpen, seedItems, clearErrors, dismiss }),
-    [items, isOpen, seedItems, clearErrors, dismiss],
+    () => ({ items, isOpen, seedItems, limparFinalizados, dismiss }),
+    [items, isOpen, seedItems, limparFinalizados, dismiss],
   );
 
   return React.createElement(UploadProgressContext.Provider, { value }, children);

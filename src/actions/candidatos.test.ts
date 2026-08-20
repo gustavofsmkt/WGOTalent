@@ -29,7 +29,7 @@ import {
   processarItemLote,
   iniciarUploadLote,
   getUploadLoteAtivo,
-  limparUploadLoteErros,
+  limparUploadLoteFinalizados,
 } from "./candidatos";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
@@ -605,13 +605,13 @@ describe("candidatos server actions", () => {
     });
   });
 
-  describe("limparUploadLoteErros", () => {
-    it("delegates to uploadLoteItemRepository.softDeleteErros", async () => {
+  describe("limparUploadLoteFinalizados", () => {
+    it("delegates to uploadLoteItemRepository.softDeleteFinalizados", async () => {
       const softDeleteSpy = vi
-        .spyOn(uploadLoteItemRepository, "softDeleteErros")
+        .spyOn(uploadLoteItemRepository, "softDeleteFinalizados")
         .mockResolvedValueOnce(undefined);
 
-      await limparUploadLoteErros();
+      await limparUploadLoteFinalizados();
 
       expect(softDeleteSpy).toHaveBeenCalled();
     });
