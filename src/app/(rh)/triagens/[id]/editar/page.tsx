@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { TriagemForm } from "~/components/triagem-form";
 import { triagemRepository } from "~/server/db/repositories/triagem";
+import { uuidSchema } from "~/lib/validation/common";
 import { buttonVariants } from "~/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,10 @@ interface EditarTriagemPageProps {
 
 export default async function EditarTriagemPage(props: EditarTriagemPageProps) {
   const params = await props.params;
+  if (!uuidSchema.safeParse(params.id).success) {
+    notFound();
+  }
+
   const triagem = await triagemRepository.findByIdWithJoins(params.id);
 
   if (!triagem) {

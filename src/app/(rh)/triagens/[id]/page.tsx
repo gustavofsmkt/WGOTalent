@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { triagemRepository } from "~/server/db/repositories/triagem";
+import { uuidSchema } from "~/lib/validation/common";
 import { PageHeader } from "~/components/page-header";
 import { StatusBadge } from "~/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -40,6 +41,10 @@ export default async function TriagemDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!uuidSchema.safeParse(id).success) {
+    notFound();
+  }
+
   const triagem = await triagemRepository.findByIdWithJoins(id);
 
   if (!triagem) {
