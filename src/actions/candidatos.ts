@@ -5,7 +5,8 @@ import { candidatoRepository, type CandidatoDetailCompleto } from "~/server/db/r
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { triagemRepository } from "~/server/db/repositories/triagem";
-import { type Candidato } from "~/server/db/schema";
+import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-item";
+import { type Candidato, type UploadLoteItem } from "~/server/db/schema";
 import {
   candidatoAgregadoSchema,
   type CandidatoAgregadoInput,
@@ -301,23 +302,31 @@ export async function updateCandidato(
 const MAX_LOTE_ARQUIVOS = 15;
 const CONCORRENCIA_LOTE = 3;
 
-export interface UploadLoteResultado {
-  fileName: string;
-  success: boolean;
-  message?: string;
-  candidatoId?: string;
-  errorType?: "quota";
-}
+/**
+ * Processa um item do lote e persiste o resultado na própria linha (nunca
+ * lança) — chamada fora do await da action que a dispara, para que o
+ * processamento sobreviva a reload/fechamento da aba do cliente (mesmo
+ * padrão fire-and-forget de `orquestrarParaCandidatoNovo` acima).
+ */
+export async function processarItemLote(itemId: string, file: File): Promise<void> {
+  await uploadLoteItemRepository.updateStatus(itemId, { status: "processando" });
 
-async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
   let fileKey: string | null = null;
   try {
     fileKey = await handleFileUpload(file);
   } catch (e: any) {
-    return { fileName: file.name, success: false, message: e.message || "Erro ao salvar arquivo." };
+    await uploadLoteItemRepository.updateStatus(itemId, {
+      status: "erro",
+      mensagem: e.message || "Erro ao salvar arquivo.",
+    });
+    return;
   }
   if (!fileKey) {
-    return { fileName: file.name, success: false, message: "Falha ao salvar arquivo." };
+    await uploadLoteItemRepository.updateStatus(itemId, {
+      status: "erro",
+      mensagem: "Falha ao salvar arquivo.",
+    });
+    return;
   }
 
   try {
@@ -352,17 +361,17 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
       : null;
 
     let candidato: Awaited<ReturnType<typeof candidatoRepository.createAggregate>>;
-    let message = "Candidato criado com sucesso.";
+    let mensagem = "Candidato criado com sucesso.";
     if (existing?.deletedAt) {
       candidato = await candidatoRepository.restoreAggregate(existing.id, dadosCandidato);
-      message = "Candidato restaurado com sucesso.";
+      mensagem = "Candidato restaurado com sucesso.";
     } else if (existing) {
       const merged = await candidatoRepository.mergeAggregate(existing.id, dadosCandidato);
       candidato = merged.candidato;
       if (merged.houveMudanca) {
         await resetTriagensEmCurriculo(existing.id);
       }
-      message = "Candidato já cadastrado — informações atualizadas.";
+      mensagem = "Candidato já cadastrado — informações atualizadas.";
     } else {
       candidato = await candidatoRepository.createAggregate(dadosCandidato);
     }
@@ -372,25 +381,41 @@ async function processarArquivoLote(file: File): Promise<UploadLoteResultado> {
     }
 
     orquestrarParaCandidatoNovo(candidato.id).catch((err) =>
-      console.error("[uploadCurriculosEmLote] Falha na orquestração de matching:", err),
+      console.error("[processarItemLote] Falha na orquestração de matching:", err),
     );
 
-    return { fileName: file.name, success: true, candidatoId: candidato.id, message };
+    await uploadLoteItemRepository.updateStatus(itemId, {
+      status: "sucesso",
+      mensagem,
+      candidatoId: candidato.id,
+    });
+    // Sem revalidatePath aqui: essa chamada só é válida dentro do escopo
+    // síncrono de uma Server Action/Route Handler. Como este processamento
+    // roda destacado (fire-and-forget, depois que iniciarUploadLote já
+    // retornou ao cliente), chamá-la aqui derruba o processamento — e como
+    // isso acontecia DEPOIS do candidato já criado, o catch abaixo apagava o
+    // arquivo do storage e deixava o registro com uma referência morta. A
+    // página /candidatos já é `force-dynamic` (busca dados frescos a cada
+    // navegação), então a revalidação nem é necessária neste caminho.
   } catch (e: any) {
     await storage.delete(fileKey).catch(console.error);
-    return {
-      fileName: file.name,
-      success: false,
-      message: e.message || "Erro ao processar extração do currículo.",
-      errorType: e instanceof AgenteQuotaExcedidaError ? "quota" : undefined,
-    };
+    await uploadLoteItemRepository.updateStatus(itemId, {
+      status: "erro",
+      mensagem: e.message || "Erro ao processar extração do currículo.",
+      errorType: e instanceof AgenteQuotaExcedidaError ? "quota" : null,
+    });
   }
 }
 
-export async function uploadCurriculosEmLote(
-  payload: FormData,
-): Promise<ActionState<UploadLoteResultado[]>> {
-  const files = payload.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+/**
+ * Cria os registros do lote e retorna imediatamente — o processamento roda
+ * solto no processo Node (sem await), então nem um F5 nem a navegação do
+ * usuário para outra tela interrompem os currículos que já entraram na fila.
+ */
+export async function iniciarUploadLote(
+  formData: FormData,
+): Promise<ActionState<UploadLoteItem[]>> {
+  const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
 
   if (files.length === 0) {
     return { success: false, message: "Nenhum arquivo enviado." };
@@ -402,17 +427,30 @@ export async function uploadCurriculosEmLote(
     };
   }
 
-  const resultados = await runWithLimit(files, CONCORRENCIA_LOTE, processarArquivoLote);
-
-  const data = resultados.map((r) =>
-    r.ok ? r.value : { fileName: "desconhecido", success: false, message: "Erro inesperado no processamento." },
+  const itens = await Promise.all(
+    files.map((file) =>
+      uploadLoteItemRepository.create({ fileName: file.name, status: "pendente" }),
+    ),
   );
 
-  if (data.some((r) => r.success)) {
-    revalidatePath("/candidatos");
-  }
+  runWithLimit(
+    itens.map((item, i) => ({ item, file: files[i]! })),
+    CONCORRENCIA_LOTE,
+    ({ item, file }) => processarItemLote(item.id, file),
+  ).catch((err) =>
+    console.error("[iniciarUploadLote] Falha inesperada no processamento do lote:", err),
+  );
 
-  return { success: true, data };
+  return { success: true, data: itens };
+}
+
+/** Itens de lote não limpos (inclui em andamento e erros) — usado pelo popup para rehidratar a UI ao montar/reabrir a tela. */
+export async function getUploadLoteAtivo(): Promise<UploadLoteItem[]> {
+  return uploadLoteItemRepository.findAtivos();
+}
+
+export async function limparUploadLoteErros(): Promise<void> {
+  await uploadLoteItemRepository.softDeleteErros();
 }
 
 export async function deleteCandidato(

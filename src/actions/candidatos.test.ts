@@ -22,11 +22,20 @@ vi.mock("~/server/agents/orquestracao", () => ({
   orquestrarParaVagaNova: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { createCandidato, updateCandidato, deleteCandidato, uploadCurriculosEmLote } from "./candidatos";
+import {
+  createCandidato,
+  updateCandidato,
+  deleteCandidato,
+  processarItemLote,
+  iniciarUploadLote,
+  getUploadLoteAtivo,
+  limparUploadLoteErros,
+} from "./candidatos";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { triagemRepository } from "~/server/db/repositories/triagem";
+import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-item";
 import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
@@ -340,15 +349,9 @@ describe("candidatos server actions", () => {
     });
   });
 
-  describe("uploadCurriculosEmLote", () => {
-    function fakeFile(name: string) {
-      return new File(["conteudo"], name, { type: "application/pdf" });
-    }
-
-    function formDataWithFiles(files: File[]) {
-      const fd = new FormData();
-      for (const f of files) fd.append("files", f);
-      return fd;
+  describe("processarItemLote", () => {
+    function fakeFile(name: string, type = "application/pdf") {
+      return new File(["conteudo"], name, { type });
     }
 
     const extraido = {
@@ -376,67 +379,97 @@ describe("candidatos server actions", () => {
       certificacoes: [],
     };
 
-    it("rejects when no files are sent", async () => {
-      const result = await uploadCurriculosEmLote(formDataWithFiles([]));
-      expect(result.success).toBe(false);
+    it("marks the item as 'processando' before starting, then 'erro' when the upload fails", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
+      const oversizedFile = new File([new Uint8Array(6 * 1024 * 1024)], "huge.pdf", {
+        type: "application/pdf",
+      });
+
+      await processarItemLote("item-1", oversizedFile);
+
+      expect(updateStatusSpy).toHaveBeenNthCalledWith(1, "item-1", { status: "processando" });
+      expect(updateStatusSpy).toHaveBeenNthCalledWith(2, "item-1", {
+        status: "erro",
+        mensagem: expect.stringMatching(/5MB/i),
+      });
     });
 
-    it("rejects the whole batch when it exceeds the file limit", async () => {
-      const files = Array.from({ length: 16 }, (_, i) => fakeFile(`cv${i}.pdf`));
-      const result = await uploadCurriculosEmLote(formDataWithFiles(files));
-      expect(result.success).toBe(false);
-      expect(result.message).toMatch(/15/);
-      expect(executarExtracaoCurriculo).not.toHaveBeenCalled();
+    it("marks the item as 'erro' when the file type is not supported", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
+      const invalidFile = new File(["conteudo"], "cv.txt", { type: "text/plain" });
+
+      await processarItemLote("item-1", invalidFile);
+
+      expect(updateStatusSpy).toHaveBeenLastCalledWith("item-1", {
+        status: "erro",
+        mensagem: expect.stringMatching(/não suportado/i),
+      });
     });
 
-    it("creates a candidato from a successfully extracted file", async () => {
+    it("marks the item as 'sucesso' with the candidatoId from a successfully extracted file", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
       vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-1" } as any);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
 
-      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data[0]).toMatchObject({ fileName: "cv1.pdf", success: true, candidatoId: "cand-1" });
-      }
+      expect(updateStatusSpy).toHaveBeenLastCalledWith("item-1", {
+        status: "sucesso",
+        mensagem: expect.any(String),
+        candidatoId: "cand-1",
+      });
+      // revalidatePath NÃO pode ser chamado aqui: este processamento roda
+      // fire-and-forget, fora do escopo síncrono da Server Action que o
+      // disparou, e o Next.js rejeita revalidatePath nesse contexto — o que
+      // já derrubou uploads reais em produção local (candidato criado, mas
+      // o item ficava marcado como 'erro' e o arquivo era apagado do storage
+      // pelo catch). /candidatos já é `force-dynamic`, então não precisa.
+      expect(revalidatePath).not.toHaveBeenCalled();
     });
 
-    it("isolates a failing file without blocking the others in the same batch", async () => {
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-2" } as any);
-      vi.mocked(executarExtracaoCurriculo)
-        .mockRejectedValueOnce(new Error("falha no provider"))
-        .mockResolvedValueOnce({ ...extraido, email: "outra@example.com" } as any);
+    it("marks the item as 'erro' and deletes the uploaded file from storage when extraction fails", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
+      vi.mocked(executarExtracaoCurriculo).mockRejectedValueOnce(new Error("falha no provider"));
 
-      const result = await uploadCurriculosEmLote(
-        formDataWithFiles([fakeFile("ruim.pdf"), fakeFile("bom.pdf")]),
-      );
+      await processarItemLote("item-1", fakeFile("ruim.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const ruim = result.data.find((r) => r.fileName === "ruim.pdf");
-        const bom = result.data.find((r) => r.fileName === "bom.pdf");
-        expect(ruim).toMatchObject({ success: false });
-        expect(bom).toMatchObject({ success: true, candidatoId: "cand-2" });
-      }
+      expect(updateStatusSpy).toHaveBeenLastCalledWith("item-1", {
+        status: "erro",
+        mensagem: "falha no provider",
+        errorType: null,
+      });
       expect(storage.delete).toHaveBeenCalled();
     });
 
     it("tags the failure with errorType 'quota' when the provider quota is exhausted", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
       vi.mocked(executarExtracaoCurriculo).mockRejectedValueOnce(
         new AgenteQuotaExcedidaError(new Error("429")),
       );
 
-      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data[0]).toMatchObject({ success: false, errorType: "quota" });
-      }
+      expect(updateStatusSpy).toHaveBeenLastCalledWith(
+        "item-1",
+        expect.objectContaining({ status: "erro", errorType: "quota" }),
+      );
     });
 
     it("merges into the existing active candidato instead of creating a duplicate", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "existing",
         deletedAt: null,
@@ -447,17 +480,20 @@ describe("candidatos server actions", () => {
         .mockResolvedValueOnce({ candidato: { id: "existing" } as any, houveMudanca: false });
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
 
-      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "existing" });
-      }
+      expect(updateStatusSpy).toHaveBeenLastCalledWith(
+        "item-1",
+        expect.objectContaining({ status: "sucesso", candidatoId: "existing" }),
+      );
       expect(mergeAggregateSpy).toHaveBeenCalledWith("existing", expect.anything());
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
 
     it("restores a soft-deleted candidato instead of creating a duplicate", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "existing-deleted",
         deletedAt: new Date().toISOString(),
@@ -468,17 +504,18 @@ describe("candidatos server actions", () => {
         .mockResolvedValueOnce({ id: "existing-deleted" } as any);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
 
-      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "existing-deleted" });
-      }
+      expect(updateStatusSpy).toHaveBeenLastCalledWith(
+        "item-1",
+        expect.objectContaining({ status: "sucesso", candidatoId: "existing-deleted" }),
+      );
       expect(restoreAggregateSpy).toHaveBeenCalledWith("existing-deleted", expect.anything());
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
 
     it("generates a unique placeholder email instead of trusting one invented by the agent", async () => {
+      vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(null);
       const findByEmailSpy = vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted");
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
@@ -488,12 +525,8 @@ describe("candidatos server actions", () => {
         email: null,
       } as any);
 
-      const result = await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data[0]).toMatchObject({ success: true, candidatoId: "cand-sem-email" });
-      }
       // Nunca consulta duplicidade com um e-mail nulo/inventado pelo agente.
       expect(findByEmailSpy).not.toHaveBeenCalled();
       const dadosCandidato = createAggregateSpy.mock.calls[0]?.[0];
@@ -502,6 +535,7 @@ describe("candidatos server actions", () => {
     });
 
     it("normalizes an omitted (undefined) nullish field to null before hitting the repository", async () => {
+      vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
@@ -510,10 +544,76 @@ describe("candidatos server actions", () => {
       const { dataNascimento: _dn, ...extraidoSemNascimento } = extraido;
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraidoSemNascimento as any);
 
-      await uploadCurriculosEmLote(formDataWithFiles([fakeFile("cv1.pdf")]));
+      await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
       const dadosCandidato = createAggregateSpy.mock.calls[0]?.[0];
       expect(dadosCandidato?.dataNascimento).toBeNull();
+    });
+  });
+
+  describe("iniciarUploadLote", () => {
+    function fakeFile(name: string, type = "application/pdf") {
+      return new File(["conteudo"], name, { type });
+    }
+
+    function formDataWithFiles(files: File[]) {
+      const fd = new FormData();
+      files.forEach((f) => fd.append("files", f));
+      return fd;
+    }
+
+    it("rejects when no file is sent", async () => {
+      const result = await iniciarUploadLote(formDataWithFiles([]));
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/nenhum arquivo/i);
+    });
+
+    it("rejects a batch that exceeds the 15-file limit", async () => {
+      const files = Array.from({ length: 16 }, (_, i) => fakeFile(`cv${i}.pdf`));
+      const result = await iniciarUploadLote(formDataWithFiles(files));
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/excede o limite/i);
+    });
+
+    it("creates one 'pending' row per file and returns immediately without waiting for processing", async () => {
+      const createSpy = vi
+        .spyOn(uploadLoteItemRepository, "create")
+        .mockImplementation(async (data) => ({ id: `id-${data.fileName}`, ...data }) as any);
+      // Processing itself would hang forever if awaited — proves the action doesn't await it.
+      vi.mocked(executarExtracaoCurriculo).mockImplementation(() => new Promise(() => {}));
+
+      const result = await iniciarUploadLote(formDataWithFiles([fakeFile("cv1.pdf"), fakeFile("cv2.pdf")]));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toHaveLength(2);
+        expect(result.data.map((i) => i.fileName)).toEqual(["cv1.pdf", "cv2.pdf"]);
+      }
+      expect(createSpy).toHaveBeenCalledWith({ fileName: "cv1.pdf", status: "pendente" });
+      expect(createSpy).toHaveBeenCalledWith({ fileName: "cv2.pdf", status: "pendente" });
+    });
+  });
+
+  describe("getUploadLoteAtivo", () => {
+    it("delegates to uploadLoteItemRepository.findAtivos", async () => {
+      const itens = [{ id: "1", fileName: "cv1.pdf", status: "sucesso" }] as any;
+      vi.spyOn(uploadLoteItemRepository, "findAtivos").mockResolvedValueOnce(itens);
+
+      const result = await getUploadLoteAtivo();
+
+      expect(result).toEqual(itens);
+    });
+  });
+
+  describe("limparUploadLoteErros", () => {
+    it("delegates to uploadLoteItemRepository.softDeleteErros", async () => {
+      const softDeleteSpy = vi
+        .spyOn(uploadLoteItemRepository, "softDeleteErros")
+        .mockResolvedValueOnce(undefined);
+
+      await limparUploadLoteErros();
+
+      expect(softDeleteSpy).toHaveBeenCalled();
     });
   });
 });

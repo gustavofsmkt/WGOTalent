@@ -237,6 +237,34 @@ export type CandidatoExperiencia = typeof candidatoExperiencias.$inferSelect;
 export type NovaCandidatoExperiencia = typeof candidatoExperiencias.$inferInsert;
 export type CandidatoExperienciaProfissional = CandidatoExperiencia;
 
+export const uploadLoteStatusEnum = pgEnum("upload_lote_status", [
+  "pendente",
+  "processando",
+  "sucesso",
+  "erro",
+]);
+
+/**
+ * Rastreia cada arquivo de um lote de upload de currículos processado em
+ * background (desacoplado da requisição HTTP que o criou), para que o
+ * progresso e as falhas sobrevivam a reload de página — ver ADR upload
+ * assíncrono. Não é uma entidade de domínio do triagem; é estado operacional
+ * do pipeline de upload, no mesmo espírito das tabelas de config do
+ * agent-engine (ADR-0007).
+ */
+export const uploadLoteItens = createTable("upload_lote_itens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  status: uploadLoteStatusEnum("status").default("pendente").notNull(),
+  mensagem: text("mensagem"),
+  candidatoId: uuid("candidato_id").references(() => candidatos.id),
+  errorType: varchar("error_type", { length: 30 }),
+  ...timestamps,
+});
+
+export type UploadLoteItem = typeof uploadLoteItens.$inferSelect;
+export type NovoUploadLoteItem = typeof uploadLoteItens.$inferInsert;
+
 export const candidatoCertificacoes = createTable(
   "candidato_certificacoes",
   {
