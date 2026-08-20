@@ -31,6 +31,7 @@ export interface CandidatoSummary {
   celular: string;
   cidade: string;
   uf: string;
+  origem: "email" | "manual" | "indicacao";
   cargoInteresse: string | null;
   createdAt: string;
 }
@@ -68,6 +69,7 @@ export const candidatoRepository = {
           celular: candidatos.celular,
           cidade: candidatos.cidade,
           uf: candidatos.uf,
+          origem: candidatos.origem,
           createdAt: candidatos.createdAt,
           cargoInteresseTitulo: cargos.titulo,
         })
@@ -83,6 +85,7 @@ export const candidatoRepository = {
       celular: r.celular,
       cidade: r.cidade,
       uf: r.uf,
+      origem: r.origem,
       createdAt: r.createdAt,
       cargoInteresse: r.cargoInteresseTitulo,
     }));
