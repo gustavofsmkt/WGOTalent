@@ -19,6 +19,8 @@ import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
+import { triagemRepository } from "~/server/db/repositories/triagem";
+import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { DeleteVagaButton } from "../_components/delete-vaga-button";
 
 interface VagaDetailPageProps {
@@ -34,6 +36,10 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
   }
 
   const cargo = await cargoRepository.findById(vaga.cargoId);
+  const triagensAtivas = await triagemRepository.findAllWithJoins({
+    vagaId: vaga.id,
+    resultado: "em_andamento",
+  });
 
   const formatCurrency = (value?: string | null) => {
     if (!value) return "Não informada";
@@ -273,6 +279,25 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Pipeline de Candidatos */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">
+            Pipeline de Candidatos
+          </h2>
+        </div>
+        {triagensAtivas.length === 0 ? (
+          <Card className="shadow-xs border-border/60">
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Nenhuma triagem ativa para esta vaga.
+            </CardContent>
+          </Card>
+        ) : (
+          <TriagemPipelineBoard items={triagensAtivas} />
+        )}
       </div>
     </div>
   );

@@ -181,6 +181,10 @@ export interface CandidatoCertificacao {
 // Constraint (aplicação ou partial index): motivo só pode ser um valor de reprovação quando
 // resultado = 'reprovado', e um valor de desistência quando resultado = 'desistente'.
 //
+// parecer_rh_<etapa>: uma coluna de texto por etapa do funil (em vez de um único campo),
+//   permitindo notas independentes do RH em cada fase. `updated_at` da triagem já cobre
+//   "quando foi a última edição" — não há timestamp por coluna de parecer.
+//
 // unique index: impede duas triagen do mesmo candidato para a mesma vaga.
 //   UNIQUE (candidato_id, vaga_id)'
 // ---------------------------------------------------------------------------
@@ -210,8 +214,11 @@ export interface Triagem {
     | "nao_atendeu_contato"
     | "motivos_pessoais";
  
-  parecer_rh: string | null;          	// TEXT, null = sem parecer
-  parecer_rh_data: string | null;     	// TIMESTAMPTZ, null = sem parecer
+  parecer_rh_curriculo: string | null;          // TEXT, null = sem parecer nesta etapa
+  parecer_rh_testes: string | null;             // TEXT, null = sem parecer nesta etapa
+  parecer_rh_entrevista_rh: string | null;      // TEXT, null = sem parecer nesta etapa
+  parecer_rh_entrevista_gestor: string | null;  // TEXT, null = sem parecer nesta etapa
+  parecer_rh_finalizado: string | null;         // TEXT, null = sem parecer nesta etapa
 }
  
 // ---------------------------------------------------------------------------

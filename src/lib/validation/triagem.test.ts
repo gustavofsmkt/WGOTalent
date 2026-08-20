@@ -6,7 +6,7 @@ describe("triagemSchema", () => {
     vagaId: "123e4567-e89b-12d3-a456-426614174000",
     candidatoId: "123e4567-e89b-12d3-a456-426614174001",
     etapa: "curriculo",
-    parecerRh: "Bom candidato",
+    parecerRhCurriculo: "Bom candidato",
   };
 
   it("should validate when resultado is em_andamento and motivo is null", () => {

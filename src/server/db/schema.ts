@@ -270,8 +270,11 @@ export const triagens = createTable(
     etapa: triagemEtapaEnum("etapa").notNull(),
     resultado: triagemResultadoEnum("resultado").default("em_andamento").notNull(),
     motivo: triagemMotivoEnum("motivo"),
-    parecerRh: text("parecer_rh"),
-    parecerRhData: timestamp("parecer_rh_data", { withTimezone: true, mode: "string" }),
+    parecerRhCurriculo: text("parecer_rh_curriculo"),
+    parecerRhTestes: text("parecer_rh_testes"),
+    parecerRhEntrevistaRh: text("parecer_rh_entrevista_rh"),
+    parecerRhEntrevistaGestor: text("parecer_rh_entrevista_gestor"),
+    parecerRhFinalizado: text("parecer_rh_finalizado"),
     ...timestamps,
   },
   (table) => [

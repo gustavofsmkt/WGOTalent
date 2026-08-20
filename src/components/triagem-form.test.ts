@@ -17,7 +17,7 @@ describe("TriagemForm - Validation Integration", () => {
       vagaId: validVagaId,
       etapa: "curriculo" as const,
       resultado: "em_andamento" as const,
-      parecerRh: "Candidato alinhado com o perfil",
+      parecerRhCurriculo: "Candidato alinhado com o perfil",
     };
 
     const result = triagemSchema.safeParse(input);
@@ -101,7 +101,7 @@ describe("TriagemForm - Validation Integration", () => {
     const updateInput = {
       etapa: "finalizado" as const,
       resultado: "aprovado" as const,
-      parecerRh: "Aprovado na entrevista com a diretoria.",
+      parecerRhFinalizado: "Aprovado na entrevista com a diretoria.",
     };
 
     const result = updateTriagemSchema.safeParse(updateInput);

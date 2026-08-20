@@ -22,8 +22,6 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
       etapa: "curriculo",
       resultado: "em_andamento",
       motivo: null,
-      parecerRh: null,
-      parecerRhData: null,
       createdAt: "2024-01-15T10:00:00.000Z",
       updatedAt: "2024-01-15T10:00:00.000Z",
       candidato: {
@@ -49,8 +47,6 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
       etapa: "testes",
       resultado: "em_andamento",
       motivo: null,
-      parecerRh: null,
-      parecerRhData: null,
       createdAt: "2024-01-14T10:00:00.000Z",
       updatedAt: "2024-01-14T10:00:00.000Z",
       candidato: {
@@ -72,8 +68,6 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
       etapa: "finalizado",
       resultado: "reprovado",
       motivo: "fit_cultural",
-      parecerRh: "Candidato não alinhado com a cultura da empresa.",
-      parecerRhData: "2024-01-16T12:00:00.000Z",
       createdAt: "2024-01-10T10:00:00.000Z",
       updatedAt: "2024-01-16T12:00:00.000Z",
       candidato: {

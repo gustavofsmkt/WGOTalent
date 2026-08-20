@@ -7,15 +7,18 @@ import type { z } from "zod";
 import {
   triagemSchema,
   triagemBaseSchema,
-  updateTriagemSchema,
   motivosReprovacao,
   motivosDesistencia,
-  type TriagemEtapa,
-  type TriagemResultado,
   type TriagemMotivo,
 } from "~/lib/validation/triagem";
-import { createTriagem, updateTriagem } from "~/actions/triagens";
+import { createTriagem } from "~/actions/triagens";
 import type { Triagem } from "~/server/db/schema";
+import {
+  etapaLabels,
+  resultadoLabels,
+  motivoReprovacaoLabels,
+  motivoDesistenciaLabels,
+} from "~/lib/triagem-format";
 import {
   Card,
   CardHeader,
@@ -31,7 +34,6 @@ import {
   FieldDescription,
   FieldError,
 } from "~/components/ui/field";
-import { Textarea } from "~/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -39,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Button } from "~/components/ui/button";
 import { FormSubmitButton } from "~/components/form-submit-button";
 import { ErrorCallout } from "~/components/error-callout";
 import { cn } from "~/lib/utils";
@@ -64,83 +65,21 @@ export interface VagaOption {
 }
 
 export interface TriagemFormProps {
-  triagem?: {
-    id: string;
-    candidatoId: string;
-    vagaId: string;
-    etapa: TriagemEtapa;
-    resultado: TriagemResultado;
-    motivo?: TriagemMotivo | null;
-    parecerRh?: string | null;
-    candidato?: {
-      id: string;
-      nome: string;
-      email: string;
-    } | null;
-    vaga?: {
-      id: string;
-      cargoTitulo?: string;
-      departamentoNome?: string;
-      cidade?: string;
-      uf?: string;
-      cargo?: {
-        titulo: string;
-        departamento?: {
-          nome: string;
-        };
-      };
-    } | null;
-  } | null;
   candidatoOptions?: CandidatoOption[];
   vagaOptions?: VagaOption[];
   onSuccess?: (triagem: Triagem) => void;
-  onCancel?: () => void;
   redirectTo?: string;
   className?: string;
 }
 
-const etapaLabels: Record<TriagemEtapa, string> = {
-  curriculo: "Triagem de Currículo",
-  testes: "Testes / Avaliação",
-  entrevista_rh: "Entrevista RH",
-  entrevista_gestor: "Entrevista com Gestor",
-  finalizado: "Finalizado",
-};
-
-const resultadoLabels: Record<TriagemResultado, string> = {
-  em_andamento: "Em Andamento",
-  aprovado: "Aprovado",
-  reprovado: "Reprovado",
-  desistente: "Desistente",
-  banco_talentos: "Banco de Talentos",
-};
-
-const motivoReprovacaoLabels: Record<(typeof motivosReprovacao)[number], string> = {
-  curriculo: "Currículo / Perfil não aderente",
-  fit_cultural: "Fit cultural insuficiente",
-  testes: "Reprovado nos testes técnicos",
-  rh: "Avaliação do RH desfavorável",
-  gestor: "Avaliação do Gestor desfavorável",
-};
-
-const motivoDesistenciaLabels: Record<(typeof motivosDesistencia)[number], string> = {
-  incompatibilidade_salarial: "Incompatibilidade salarial",
-  aceitou_outra_proposta: "Aceitou outra proposta",
-  nao_atendeu_contato: "Não atendeu contato / Incomunicável",
-  motivos_pessoais: "Motivos pessoais",
-};
-
 export function TriagemForm({
-  triagem,
   candidatoOptions = [],
   vagaOptions = [],
   onSuccess,
-  onCancel,
   redirectTo,
   className,
 }: TriagemFormProps) {
   const router = useRouter();
-  const isEdit = Boolean(triagem?.id);
 
   const [serverError, setServerError] = React.useState<{
     message?: string;
@@ -149,12 +88,11 @@ export function TriagemForm({
 
   const form = useForm({
     defaultValues: {
-      candidatoId: triagem?.candidatoId ?? "",
-      vagaId: triagem?.vagaId ?? "",
-      etapa: (triagem?.etapa ?? "curriculo") as TriagemEtapa,
-      resultado: (triagem?.resultado ?? "em_andamento") as TriagemResultado,
-      motivo: (triagem?.motivo ?? null) as TriagemMotivo | null,
-      parecerRh: triagem?.parecerRh ?? "",
+      candidatoId: "",
+      vagaId: "",
+      etapa: "curriculo",
+      resultado: "em_andamento",
+      motivo: null,
     } as z.input<typeof triagemSchema>,
     validators: {
       onBlur: triagemSchema,
@@ -164,17 +102,13 @@ export function TriagemForm({
 
       const payload = {
         ...value,
-        parecerRh: value.parecerRh ? value.parecerRh : null,
         motivo:
           value.resultado === "reprovado" || value.resultado === "desistente"
             ? value.motivo || null
             : null,
       };
 
-      const result =
-        isEdit && triagem?.id
-          ? await updateTriagem(triagem.id, payload)
-          : await createTriagem(payload);
+      const result = await createTriagem(payload);
 
       if (!result.success) {
         setServerError({
@@ -203,11 +137,9 @@ export function TriagemForm({
   return (
     <Card className={cn("w-full max-w-3xl", className)}>
       <CardHeader>
-        <CardTitle>{isEdit ? "Editar Triagem" : "Nova Triagem"}</CardTitle>
+        <CardTitle>Nova Triagem</CardTitle>
         <CardDescription>
-          {isEdit
-            ? "Atualize a etapa, o resultado, o parecer do RH e os motivos da triagem."
-            : "Vincule um candidato a uma vaga aberta e inicie o processo de triagem."}
+          Vincule um candidato a uma vaga aberta e inicie o processo de triagem.
         </CardDescription>
       </CardHeader>
 
@@ -229,182 +161,146 @@ export function TriagemForm({
           )}
 
           <FieldGroup>
-            {/* Seção 1: Seleção de Candidato e Vaga (Apenas na Criação) */}
-            {!isEdit ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <form.Field
-                  name="candidatoId"
-                  validators={{
-                    onBlur: triagemBaseSchema.shape.candidatoId,
-                  }}
-                >
-                  {(field) => {
-                    const hasErrors = field.state.meta.errors.length > 0;
-                    const fieldId = "triagem-candidato-id";
-                    const errorId = `${fieldId}-error`;
-                    const descId = `${fieldId}-description`;
+            {/* Seção 1: Seleção de Candidato e Vaga */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <form.Field
+                name="candidatoId"
+                validators={{
+                  onBlur: triagemBaseSchema.shape.candidatoId,
+                }}
+              >
+                {(field) => {
+                  const hasErrors = field.state.meta.errors.length > 0;
+                  const fieldId = "triagem-candidato-id";
+                  const errorId = `${fieldId}-error`;
+                  const descId = `${fieldId}-description`;
 
-                    return (
-                      <Field data-invalid={hasErrors}>
-                        <FieldLabel htmlFor={fieldId}>Candidato *</FieldLabel>
-                        <Select
-                          value={field.state.value || ""}
-                          onValueChange={(val) => {
-                            if (typeof val === "string") {
-                              field.handleChange(val);
-                            }
-                          }}
+                  return (
+                    <Field data-invalid={hasErrors}>
+                      <FieldLabel htmlFor={fieldId}>Candidato *</FieldLabel>
+                      <Select
+                        value={field.state.value || ""}
+                        onValueChange={(val) => {
+                          if (typeof val === "string") {
+                            field.handleChange(val);
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          id={fieldId}
+                          className="w-full"
+                          aria-invalid={hasErrors}
+                          aria-describedby={
+                            hasErrors ? `${descId} ${errorId}` : descId
+                          }
                         >
-                          <SelectTrigger
-                            id={fieldId}
-                            className="w-full"
-                            aria-invalid={hasErrors}
-                            aria-describedby={
-                              hasErrors ? `${descId} ${errorId}` : descId
-                            }
-                          >
-                            <SelectValue placeholder="Selecione um candidato...">
-                              {(val: string | null) => {
-                                if (!val || val === "none") {
-                                  return "Selecione um candidato...";
-                                }
-                                const cand = candidatoOptions.find(
-                                  (c) => c.id === val,
-                                );
-                                if (!cand) return "Selecione um candidato...";
-                                return `${cand.nome} (${cand.email})`;
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {candidatoOptions.length === 0 ? (
-                              <SelectItem value="none" disabled>
-                                Nenhum candidato ativo disponível
+                          <SelectValue placeholder="Selecione um candidato...">
+                            {(val: string | null) => {
+                              if (!val || val === "none") {
+                                return "Selecione um candidato...";
+                              }
+                              const cand = candidatoOptions.find(
+                                (c) => c.id === val,
+                              );
+                              if (!cand) return "Selecione um candidato...";
+                              return `${cand.nome} (${cand.email})`;
+                            }}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {candidatoOptions.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              Nenhum candidato ativo disponível
+                            </SelectItem>
+                          ) : (
+                            candidatoOptions.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.nome} — {c.email}
                               </SelectItem>
-                            ) : (
-                              candidatoOptions.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome} — {c.email}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription id={descId}>
-                          Candidato a ser avaliado no processo.
-                        </FieldDescription>
-                        <FieldError
-                          id={errorId}
-                          errors={field.state.meta.errors}
-                        />
-                      </Field>
-                    );
-                  }}
-                </form.Field>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription id={descId}>
+                        Candidato a ser avaliado no processo.
+                      </FieldDescription>
+                      <FieldError
+                        id={errorId}
+                        errors={field.state.meta.errors}
+                      />
+                    </Field>
+                  );
+                }}
+              </form.Field>
 
-                <form.Field
-                  name="vagaId"
-                  validators={{
-                    onBlur: triagemBaseSchema.shape.vagaId,
-                  }}
-                >
-                  {(field) => {
-                    const hasErrors = field.state.meta.errors.length > 0;
-                    const fieldId = "triagem-vaga-id";
-                    const errorId = `${fieldId}-error`;
-                    const descId = `${fieldId}-description`;
+              <form.Field
+                name="vagaId"
+                validators={{
+                  onBlur: triagemBaseSchema.shape.vagaId,
+                }}
+              >
+                {(field) => {
+                  const hasErrors = field.state.meta.errors.length > 0;
+                  const fieldId = "triagem-vaga-id";
+                  const errorId = `${fieldId}-error`;
+                  const descId = `${fieldId}-description`;
 
-                    return (
-                      <Field data-invalid={hasErrors}>
-                        <FieldLabel htmlFor={fieldId}>Vaga *</FieldLabel>
-                        <Select
-                          value={field.state.value || ""}
-                          onValueChange={(val) => {
-                            if (typeof val === "string") {
-                              field.handleChange(val);
-                            }
-                          }}
+                  return (
+                    <Field data-invalid={hasErrors}>
+                      <FieldLabel htmlFor={fieldId}>Vaga *</FieldLabel>
+                      <Select
+                        value={field.state.value || ""}
+                        onValueChange={(val) => {
+                          if (typeof val === "string") {
+                            field.handleChange(val);
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          id={fieldId}
+                          className="w-full"
+                          aria-invalid={hasErrors}
+                          aria-describedby={
+                            hasErrors ? `${descId} ${errorId}` : descId
+                          }
                         >
-                          <SelectTrigger
-                            id={fieldId}
-                            className="w-full"
-                            aria-invalid={hasErrors}
-                            aria-describedby={
-                              hasErrors ? `${descId} ${errorId}` : descId
-                            }
-                          >
-                            <SelectValue placeholder="Selecione uma vaga...">
-                              {(val: string | null) => {
-                                if (!val || val === "none") {
-                                  return "Selecione uma vaga...";
-                                }
-                                const v = vagaOptions.find((o) => o.id === val);
-                                if (!v) return "Selecione uma vaga...";
-                                return `${v.cargo.titulo} (${v.cidade}/${v.uf})`;
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {vagaOptions.length === 0 ? (
-                              <SelectItem value="none" disabled>
-                                Nenhuma vaga ativa disponível
+                          <SelectValue placeholder="Selecione uma vaga...">
+                            {(val: string | null) => {
+                              if (!val || val === "none") {
+                                return "Selecione uma vaga...";
+                              }
+                              const v = vagaOptions.find((o) => o.id === val);
+                              if (!v) return "Selecione uma vaga...";
+                              return `${v.cargo.titulo} (${v.cidade}/${v.uf})`;
+                            }}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vagaOptions.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              Nenhuma vaga ativa disponível
+                            </SelectItem>
+                          ) : (
+                            vagaOptions.map((v) => (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.cargo.titulo} — {v.cargo.departamento.nome} ({v.cidade}/{v.uf})
                               </SelectItem>
-                            ) : (
-                              vagaOptions.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>
-                                  {v.cargo.titulo} — {v.cargo.departamento.nome} ({v.cidade}/{v.uf})
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription id={descId}>
-                          Vaga de destino para a candidatura.
-                        </FieldDescription>
-                        <FieldError
-                          id={errorId}
-                          errors={field.state.meta.errors}
-                        />
-                      </Field>
-                    );
-                  }}
-                </form.Field>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-border bg-muted/40 p-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Candidato
-                    </span>
-                    <p className="mt-1 font-medium text-foreground">
-                      {triagem?.candidato?.nome ?? "Candidato vinculado"}
-                    </p>
-                    {triagem?.candidato?.email && (
-                      <p className="text-xs text-muted-foreground">
-                        {triagem.candidato.email}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Vaga
-                    </span>
-                    <p className="mt-1 font-medium text-foreground">
-                      {triagem?.vaga?.cargo?.titulo ??
-                        triagem?.vaga?.cargoTitulo ??
-                        "Vaga vinculada"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {triagem?.vaga?.cargo?.departamento?.nome ??
-                        triagem?.vaga?.departamentoNome ??
-                        ""}{" "}
-                      {triagem?.vaga?.cidade ? `(${triagem.vaga.cidade}/${triagem.vaga.uf})` : ""}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription id={descId}>
+                        Vaga de destino para a candidatura.
+                      </FieldDescription>
+                      <FieldError
+                        id={errorId}
+                        errors={field.state.meta.errors}
+                      />
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            </div>
 
             {/* Seção 2: Etapa e Resultado */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -427,7 +323,7 @@ export function TriagemForm({
                         value={field.state.value}
                         onValueChange={(val) => {
                           if (typeof val === "string") {
-                            field.handleChange(val as TriagemEtapa);
+                            field.handleChange(val as typeof field.state.value);
                           }
                         }}
                       >
@@ -442,13 +338,13 @@ export function TriagemForm({
                           <SelectValue placeholder="Selecione a etapa...">
                             {(val: string | null) =>
                               val && val in etapaLabels
-                                ? etapaLabels[val as TriagemEtapa]
+                                ? etapaLabels[val as keyof typeof etapaLabels]
                                 : "Selecione a etapa..."
                             }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {(Object.keys(etapaLabels) as TriagemEtapa[]).map(
+                          {(Object.keys(etapaLabels) as (keyof typeof etapaLabels)[]).map(
                             (etapa) => (
                               <SelectItem key={etapa} value={etapa}>
                                 {etapaLabels[etapa]}
@@ -488,7 +384,7 @@ export function TriagemForm({
                         value={field.state.value}
                         onValueChange={(val) => {
                           if (typeof val === "string") {
-                            const newRes = val as TriagemResultado;
+                            const newRes = val as typeof field.state.value;
                             field.handleChange(newRes);
                             // Limpa o motivo se não for reprovado nem desistente
                             if (newRes !== "reprovado" && newRes !== "desistente") {
@@ -508,14 +404,14 @@ export function TriagemForm({
                           <SelectValue placeholder="Selecione o resultado...">
                             {(val: string | null) =>
                               val && val in resultadoLabels
-                                ? resultadoLabels[val as TriagemResultado]
+                                ? resultadoLabels[val as keyof typeof resultadoLabels]
                                 : "Selecione o resultado..."
                             }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {(
-                            Object.keys(resultadoLabels) as TriagemResultado[]
+                            Object.keys(resultadoLabels) as (keyof typeof resultadoLabels)[]
                           ).map((res) => (
                             <SelectItem key={res} value={res}>
                               {resultadoLabels[res]}
@@ -633,55 +529,10 @@ export function TriagemForm({
                 );
               }}
             </form.Subscribe>
-
-            {/* Seção 4: Parecer RH */}
-            <form.Field name="parecerRh">
-              {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
-                const fieldId = "triagem-parecer-rh";
-                const errorId = `${fieldId}-error`;
-                const descId = `${fieldId}-description`;
-
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor={fieldId}>Parecer do RH</FieldLabel>
-                    <Textarea
-                      id={fieldId}
-                      value={field.state.value ?? ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Registre as impressões gerais, feedback das entrevistas e alinhamentos com o gestor..."
-                      rows={4}
-                      aria-invalid={hasErrors}
-                      aria-describedby={
-                        hasErrors ? `${descId} ${errorId}` : descId
-                      }
-                    />
-                    <FieldDescription id={descId}>
-                      Observações detalhadas da equipe de RH sobre o candidato.
-                    </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
-                  </Field>
-                );
-              }}
-            </form.Field>
           </FieldGroup>
         </CardContent>
 
         <CardFooter className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-          )}
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
           >
@@ -692,7 +543,7 @@ export function TriagemForm({
                 loadingText="Salvando..."
                 className="w-full sm:w-auto"
               >
-                {isEdit ? "Salvar Alterações" : "Criar Triagem"}
+                Criar Triagem
               </FormSubmitButton>
             )}
           </form.Subscribe>

@@ -20,6 +20,8 @@ export interface TriagemFiltros {
   etapa?: string;
   resultado?: string;
   motivo?: string;
+  vagaId?: string;
+  vagaAtiva?: boolean;
 }
 
 export interface TriagemListItem {
@@ -27,8 +29,6 @@ export interface TriagemListItem {
   etapa: string;
   resultado: string;
   motivo: string | null;
-  parecerRh: string | null;
-  parecerRhData: string | null;
   createdAt: string;
   updatedAt: string;
   candidato: {
@@ -78,6 +78,8 @@ export const triagemRepository = {
     if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa as any));
     if (filtros?.resultado) conditions.push(eq(triagens.resultado, filtros.resultado as any));
     if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo as any));
+    if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
+    if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
 
     // Uses notDeleted ONLY on triagens. This respects the ADR of soft delete semantics:
     // even if a Vaga or Candidato is soft-deleted, historical Triagens remain intact and their references hydrate correctly.
@@ -106,8 +108,6 @@ export const triagemRepository = {
       etapa: r.triagem.etapa,
       resultado: r.triagem.resultado,
       motivo: r.triagem.motivo,
-      parecerRh: r.triagem.parecerRh,
-      parecerRhData: r.triagem.parecerRhData,
       createdAt: r.triagem.createdAt,
       updatedAt: r.triagem.updatedAt,
       candidato: {

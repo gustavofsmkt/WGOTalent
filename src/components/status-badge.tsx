@@ -32,7 +32,7 @@ interface StatusConfig {
   tone: StatusTone;
 }
 
-const statusConfigMap: Record<DomainStatus, StatusConfig> = {
+export const statusConfigMap: Record<DomainStatus, StatusConfig> = {
   // Vagas
   aberta: { label: "Aberta", tone: "success" },
   concluida: { label: "Concluída", tone: "neutral" },
@@ -59,7 +59,7 @@ const statusConfigMap: Record<DomainStatus, StatusConfig> = {
   inativo: { label: "Inativo", tone: "neutral" },
 };
 
-const toneStyles: Record<StatusTone, string> = {
+export const toneStyles: Record<StatusTone, string> = {
   success:
     "bg-success/15 text-success border-success/30 dark:bg-success/20 dark:text-success",
   warning:

@@ -6,6 +6,7 @@ import { Badge } from "~/components/ui/badge";
 import { StatusBadge } from "~/components/status-badge";
 import { buttonVariants } from "~/components/ui/button";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
+import { PARECER_FIELD_BY_ETAPA } from "~/lib/triagem-format";
 
 interface CandidateScreeningsProps {
   triagens: CandidatoDetailCompleto["triagens"];
@@ -67,7 +68,11 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {triagens.map((triagem) => (
+            {triagens.map((triagem) => {
+              const parecerEtapaAtual =
+                triagem[PARECER_FIELD_BY_ETAPA[triagem.etapa]];
+
+              return (
               <div
                 key={triagem.id}
                 className="p-4 rounded-lg bg-card border border-border/60 hover:border-border transition-colors shadow-2xs space-y-3"
@@ -109,14 +114,14 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
                   </p>
                 )}
 
-                {triagem.parecerRh && (
+                {parecerEtapaAtual && (
                   <div className="text-xs text-muted-foreground/90 bg-muted/40 p-2.5 rounded-md border border-border/40">
                     <span className="font-medium text-foreground flex items-center gap-1 mb-1">
                       <MessageSquare className="size-3 text-muted-foreground/70" />
                       Parecer RH:
                     </span>
                     <p className="whitespace-pre-line leading-relaxed">
-                      {triagem.parecerRh}
+                      {parecerEtapaAtual}
                     </p>
                   </div>
                 )}
@@ -135,7 +140,8 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
                   </Link>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

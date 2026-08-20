@@ -646,9 +646,8 @@ export async function seed() {
           etapa: "entrevista_gestor",
           resultado: "em_andamento",
           motivo: null,
-          parecerRh:
+          parecerRhEntrevistaRh:
             "Candidato demonstrou excelente domínio técnico na entrevista com o time de RH. Alinhamento cultural perfeito. Encaminhado para a entrevista com o Tech Lead.",
-          parecerRhData: "2026-08-10T14:30:00.000Z",
         },
         {
           vagaId: vagaDevSP.id,
@@ -656,9 +655,8 @@ export async function seed() {
           etapa: "curriculo",
           resultado: "reprovado",
           motivo: "curriculo",
-          parecerRh:
+          parecerRhCurriculo:
             "Candidato com perfil júnior, sem a senioridade mínima de 4 anos exigida pelos critérios eliminatórios do cargo.",
-          parecerRhData: "2026-08-11T09:00:00.000Z",
         },
         {
           vagaId: vagaDevopsBH.id,
@@ -666,9 +664,8 @@ export async function seed() {
           etapa: "finalizado",
           resultado: "aprovado",
           motivo: null,
-          parecerRh:
+          parecerRhFinalizado:
             "Processo seletivo concluído com louvor. Candidata aprovada na avaliação técnica e pelo gestor da área. Proposta formalizada e aceita.",
-          parecerRhData: "2026-08-12T16:00:00.000Z",
         },
         {
           vagaId: vagaRHPR.id,
@@ -676,9 +673,8 @@ export async function seed() {
           etapa: "entrevista_rh",
           resultado: "em_andamento",
           motivo: null,
-          parecerRh:
+          parecerRhCurriculo:
             "Triagem curricular positiva. Entrevista individual agendada para validação de experiências com R&S tech.",
-          parecerRhData: "2026-08-13T10:00:00.000Z",
         },
         {
           vagaId: vagaVendasSP.id,
@@ -686,9 +682,8 @@ export async function seed() {
           etapa: "finalizado",
           resultado: "aprovado",
           motivo: null,
-          parecerRh:
+          parecerRhFinalizado:
             "Candidato aprovado em todas as etapas e contratado para a posição de Executivo de Contas B2B.",
-          parecerRhData: "2026-08-05T11:00:00.000Z",
         },
         {
           vagaId: vagaLogRJ.id,
@@ -696,9 +691,8 @@ export async function seed() {
           etapa: "testes",
           resultado: "desistente",
           motivo: "aceitou_outra_proposta",
-          parecerRh:
+          parecerRhTestes:
             "Candidata informou que aceitou proposta de outra empresa antes da realização da prova técnica.",
-          parecerRhData: "2026-08-08T15:00:00.000Z",
         },
         {
           vagaId: vagaDevFloripa.id,
@@ -706,9 +700,8 @@ export async function seed() {
           etapa: "curriculo",
           resultado: "banco_talentos",
           motivo: "fit_cultural",
-          parecerRh:
+          parecerRhCurriculo:
             "Perfil técnico excelente, porém candidato não possui interesse em modelo presencial/híbrido em Florianópolis. Mantido em banco de talentos para posições 100% remotas.",
-          parecerRhData: "2026-08-14T17:00:00.000Z",
         },
       ])
       .returning();

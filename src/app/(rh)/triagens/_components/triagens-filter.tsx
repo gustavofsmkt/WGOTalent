@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, X, Kanban, List, Filter } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import type { VagaOption } from "~/server/db/repositories/triagem";
 
 const ETAPA_OPTIONS = [
   { value: "todas", label: "Todas as Etapas" },
@@ -44,7 +46,11 @@ const MOTIVO_OPTIONS = [
   { value: "motivos_pessoais", label: "Desistência: Motivos Pessoais" },
 ];
 
-export function TriagensFilter() {
+export function TriagensFilter({
+  vagaOptions = [],
+}: {
+  vagaOptions?: VagaOption[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -55,6 +61,19 @@ export function TriagensFilter() {
   const currentResultado = searchParams.get("resultado") ?? "todas";
   const currentMotivo = searchParams.get("motivo") ?? "todos";
   const currentView = searchParams.get("view") ?? "pipeline";
+  const currentVagaAtiva = searchParams.get("vagaAtiva") === "1";
+  const currentVaga = searchParams.get("vaga") ?? "todas";
+
+  const VAGA_OPTIONS = React.useMemo(
+    () => [
+      { value: "todas", label: "Todas as Vagas" },
+      ...vagaOptions.map((v) => ({
+        value: v.id,
+        label: `${v.cargo.titulo} — ${v.cidade}/${v.uf}`,
+      })),
+    ],
+    [vagaOptions],
+  );
 
   const [searchTerm, setSearchTerm] = React.useState(currentQuery);
 
@@ -68,6 +87,8 @@ export function TriagensFilter() {
     resultado?: string;
     motivo?: string;
     view?: string;
+    vagaAtiva?: boolean;
+    vaga?: string;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -77,6 +98,9 @@ export function TriagensFilter() {
       updates.resultado !== undefined ? updates.resultado : currentResultado;
     const nextMotivo = updates.motivo !== undefined ? updates.motivo : currentMotivo;
     const nextView = updates.view !== undefined ? updates.view : currentView;
+    const nextVagaAtiva =
+      updates.vagaAtiva !== undefined ? updates.vagaAtiva : currentVagaAtiva;
+    const nextVaga = updates.vaga !== undefined ? updates.vaga : currentVaga;
 
     if (nextQuery.trim()) {
       params.set("q", nextQuery.trim());
@@ -108,6 +132,18 @@ export function TriagensFilter() {
       params.delete("view");
     }
 
+    if (nextVagaAtiva) {
+      params.set("vagaAtiva", "1");
+    } else {
+      params.delete("vagaAtiva");
+    }
+
+    if (nextVaga && nextVaga !== "todas") {
+      params.set("vaga", nextVaga);
+    } else {
+      params.delete("vaga");
+    }
+
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`);
     });
@@ -137,7 +173,9 @@ export function TriagensFilter() {
     Boolean(currentQuery) ||
     currentEtapa !== "todas" ||
     currentResultado !== "todas" ||
-    currentMotivo !== "todos";
+    currentMotivo !== "todos" ||
+    currentVagaAtiva ||
+    currentVaga !== "todas";
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -212,6 +250,29 @@ export function TriagensFilter() {
           <span>Filtros:</span>
         </div>
 
+        {/* Vaga Select */}
+        <div className="w-full sm:w-auto min-w-[220px]">
+          <Select
+            value={currentVaga}
+            onValueChange={(val) => updateFilters({ vaga: val ?? "todas" })}
+          >
+            <SelectTrigger className="h-8 text-xs bg-background">
+              <SelectValue placeholder="Vaga">
+                {(val: string | null) =>
+                  VAGA_OPTIONS.find((opt) => opt.value === val)?.label ?? "Vaga"
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="min-w-[300px]">
+              {VAGA_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  <span className="whitespace-normal break-words">{opt.label}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Etapa Select */}
         <div className="w-full sm:w-auto min-w-[170px]">
           <Select
@@ -219,12 +280,16 @@ export function TriagensFilter() {
             onValueChange={(val) => updateFilters({ etapa: val ?? "todas" })}
           >
             <SelectTrigger className="h-8 text-xs bg-background">
-              <SelectValue placeholder="Etapa" />
+              <SelectValue placeholder="Etapa">
+                {(val: string | null) =>
+                  ETAPA_OPTIONS.find((opt) => opt.value === val)?.label ?? "Etapa"
+                }
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-[190px]">
               {ETAPA_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
+                  <span className="whitespace-normal break-words">{opt.label}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -238,12 +303,16 @@ export function TriagensFilter() {
             onValueChange={(val) => updateFilters({ resultado: val ?? "todas" })}
           >
             <SelectTrigger className="h-8 text-xs bg-background">
-              <SelectValue placeholder="Resultado" />
+              <SelectValue placeholder="Resultado">
+                {(val: string | null) =>
+                  RESULTADO_OPTIONS.find((opt) => opt.value === val)?.label ?? "Resultado"
+                }
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-[190px]">
               {RESULTADO_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
+                  <span className="whitespace-normal break-words">{opt.label}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -257,17 +326,36 @@ export function TriagensFilter() {
             onValueChange={(val) => updateFilters({ motivo: val ?? "todos" })}
           >
             <SelectTrigger className="h-8 text-xs bg-background">
-              <SelectValue placeholder="Motivo" />
+              <SelectValue placeholder="Motivo">
+                {(val: string | null) =>
+                  MOTIVO_OPTIONS.find((opt) => opt.value === val)?.label ?? "Motivo"
+                }
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="min-w-[280px]">
               {MOTIVO_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
+                  <span className="whitespace-normal break-words">{opt.label}</span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        {/* Vaga Ativa Toggle */}
+        <label
+          htmlFor="triagens-vaga-ativa"
+          className="flex items-center gap-2 h-8 px-2 text-xs font-medium text-foreground cursor-pointer select-none"
+        >
+          <Checkbox
+            id="triagens-vaga-ativa"
+            checked={currentVagaAtiva}
+            onCheckedChange={(checked) =>
+              updateFilters({ vagaAtiva: checked === true })
+            }
+          />
+          Somente vagas ativas
+        </label>
 
         {hasActiveFilters && (
           <Button

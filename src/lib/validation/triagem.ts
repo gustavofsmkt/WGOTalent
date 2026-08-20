@@ -50,7 +50,11 @@ export const triagemBaseSchema = z.object({
   etapa: triagemEtapaEnum,
   resultado: triagemResultadoEnum,
   motivo: triagemMotivoEnum.nullable().optional(),
-  parecerRh: z.string().nullable().optional(),
+  parecerRhCurriculo: z.string().nullable().optional(),
+  parecerRhTestes: z.string().nullable().optional(),
+  parecerRhEntrevistaRh: z.string().nullable().optional(),
+  parecerRhEntrevistaGestor: z.string().nullable().optional(),
+  parecerRhFinalizado: z.string().nullable().optional(),
 });
 
 export const updateTriagemBaseSchema = triagemBaseSchema.omit({

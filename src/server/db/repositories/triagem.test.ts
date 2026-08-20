@@ -11,7 +11,7 @@ vi.mock("~/env", () => ({
 
 import { vi } from "vitest";
 import { triagemRepository } from "./triagem";
-import { triagens } from "~/server/db/schema";
+import { triagens, vagas } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -55,5 +55,31 @@ describe("triagemRepository", () => {
     expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
     expect(sql).toContain('"wgotalent_triagens"."etapa" =');
     expect(sql).toContain('"wgotalent_triagens"."resultado" =');
+  });
+
+  it("findAllWithJoins filters by vagaId when provided", () => {
+    const vagaId = "22222222-2222-2222-2222-222222222222";
+    const qb = notDeleted(
+      mockDb.select({ id: triagens.id }).from(triagens),
+      triagens,
+      eq(triagens.vagaId, vagaId),
+    );
+    const sql = qb.toSQL().sql;
+    expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_triagens"."vaga_id" =');
+  });
+
+  it("findAllWithJoins filters by vaga status='aberta' when vagaAtiva is true", () => {
+    const qb = notDeleted(
+      mockDb
+        .select({ id: triagens.id })
+        .from(triagens)
+        .innerJoin(vagas, eq(triagens.vagaId, vagas.id)),
+      triagens,
+      eq(vagas.status, "aberta"),
+    );
+    const sql = qb.toSQL().sql;
+    expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_vagas"."status" =');
   });
 });
