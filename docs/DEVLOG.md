@@ -83,3 +83,14 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Zod schema validando e impedindo missing de e-mail e celular (`candidatoSchema`).
 - Removido typecasting problemático (N+1) e otimizadas as views de listagem e detalhe completo via `notDeleted()` de forma consistente, ocultando excluídos lógicos.
 - Sucesso nos quality gates: testes, linting, build Next.js com Server Actions funcionais. Nenhuma API CRUD paralela criada.
+
+## Marco: TASK-105 — Validação e Limpeza de Triagem
+*Data: 2026-08-20*
+
+- Validado o fluxo completo de pipeline de Triagens (listagem, filtros, detalhes com/sem IA, criação e edição).
+- Testada a regra de `partial unique`, onde um candidato não pode ter mais de uma triagem `em_andamento` para a mesma vaga.
+- Testado o schema e condicionais: motivo exigido e validado para resultados de reprovação e desistência.
+- Assegurada a correta exibição e edição de Triagens via Server Components/Server Actions.
+- Confirmada a ausência de CRUD independente para `AvaliacaoIA`.
+- Sucesso em todas as etapas de build, verificação de tipos (`typecheck`) e nos 293 testes do repositório (Vitest).
+
