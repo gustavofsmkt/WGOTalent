@@ -1,0 +1,84 @@
+import { GoogleGenAI } from "@google/genai";
+import type { z } from "zod";
+
+export interface GeminiArquivo {
+  mimeType: string;
+  data: Buffer;
+}
+
+export interface GerarRespostaEstruturadaInput<T> {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  /** JSON Schema (subset suportado pelo Gemini) descrevendo o formato esperado da resposta. */
+  responseJsonSchema: Record<string, unknown>;
+  /** Schema Zod usado para validar em runtime o JSON já parseado, antes de devolver ao chamador. */
+  responseZodSchema: z.ZodType<T, z.ZodTypeDef, unknown>;
+  arquivo?: GeminiArquivo;
+}
+
+export class AgenteRespostaInvalidaError extends Error {
+  constructor(cause: unknown) {
+    super("Resposta do agente não corresponde ao schema esperado.");
+    this.cause = cause;
+  }
+}
+
+export class AgenteChamadaError extends Error {
+  constructor(cause: unknown) {
+    super("Falha ao chamar o provedor de LLM.");
+    this.cause = cause;
+  }
+}
+
+export async function gerarRespostaEstruturada<T>(
+  input: GerarRespostaEstruturadaInput<T>,
+): Promise<T> {
+  const ai = new GoogleGenAI({ apiKey: input.apiKey });
+
+  const parts: Array<Record<string, unknown>> = [];
+  if (input.arquivo) {
+    parts.push({
+      inlineData: {
+        mimeType: input.arquivo.mimeType,
+        data: input.arquivo.data.toString("base64"),
+      },
+    });
+  }
+  parts.push({ text: input.userPrompt });
+
+  let responseText: string | undefined;
+  try {
+    const response = await ai.models.generateContent({
+      model: input.model,
+      contents: [{ role: "user", parts }],
+      config: {
+        systemInstruction: input.systemPrompt,
+        responseMimeType: "application/json",
+        responseJsonSchema: input.responseJsonSchema,
+      },
+    });
+    responseText = response.text;
+  } catch (error) {
+    throw new AgenteChamadaError(error);
+  }
+
+  if (!responseText) {
+    throw new AgenteChamadaError(new Error("Resposta vazia do provedor."));
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(responseText);
+  } catch (error) {
+    throw new AgenteRespostaInvalidaError(error);
+  }
+
+  const result = input.responseZodSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new AgenteRespostaInvalidaError(result.error);
+  }
+
+  return result.data;
+}

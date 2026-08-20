@@ -1,11 +1,13 @@
 ---
 name: layer-db
 description: >-
-  Owns all Drizzle ORM artifacts: table schema definitions for all 9 entities
-  (Departamento, Cargo, Vaga, Candidato, CandidatoFormacao,
-  CandidatoExperienciaProfissional, CandidatoCertificacao, Triagem, AvaliacaoIA),
-  the Drizzle client singleton, the notDeleted() query helper, hydrated projection
-  types (CandidatoCompleto, VagaCompleta, TriagemCompleta), and one Repository
+  Owns all Drizzle ORM artifacts: table schema definitions for the 9 triagem
+  domain entities (Departamento, Cargo, Vaga, Candidato, CandidatoFormacao,
+  CandidatoExperienciaProfissional, CandidatoCertificacao, Triagem, AvaliacaoIA)
+  plus the 2 agent-engine config tables (LlmCredencial, AgenteConfig — see
+  ADR-0007, not part of docs/db_triagem_proposta.ts), the Drizzle client
+  singleton, the notDeleted() query helper, hydrated projection types
+  (CandidatoCompleto, VagaCompleta, TriagemCompleta), and one Repository
   module per entity that centralises all Drizzle queries. Load when touching
   src/server/db/schema.ts, src/server/db/index.ts, src/server/db/query-helpers.ts, or any file under
   src/server/db/repositories/. Trigger terms: schema, Drizzle, notDeleted, soft delete,

@@ -11,6 +11,7 @@ import {
   smallint,
   char,
   date,
+  jsonb,
   check,
   index,
   uniqueIndex,
@@ -303,6 +304,44 @@ export const avaliacaoIA = createTable(
 
 export type AvaliacaoIA = typeof avaliacaoIA.$inferSelect;
 export type NovaAvaliacaoIA = typeof avaliacaoIA.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Motor de Agentes IA (ADR-0007) — config e credenciais, não fazem parte do
+// domínio de negócio de 9 entidades em docs/db_triagem_proposta.ts.
+// ---------------------------------------------------------------------------
+
+export const agenteSlotEnum = pgEnum("agente_slot", [
+  "extracao_curriculo",
+  "classificador_aderencia",
+  "avaliador_triagem",
+]);
+
+export const llmCredenciais = createTable("llm_credenciais", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: varchar("provider", { length: 60 }).notNull(),
+  apiKeyCifrada: text("api_key_cifrada").notNull(),
+  ativo: boolean("ativo").default(true).notNull(),
+  ...timestamps,
+});
+
+export type LlmCredencial = typeof llmCredenciais.$inferSelect;
+export type NovaLlmCredencial = typeof llmCredenciais.$inferInsert;
+
+export const agenteConfig = createTable("agente_config", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slot: agenteSlotEnum("slot").notNull().unique(),
+  provider: varchar("provider", { length: 60 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  systemPrompt: text("system_prompt").notNull(),
+  userPrompt: text("user_prompt").notNull(),
+  params: jsonb("params"),
+  thresholdScore: numeric("threshold_score", { precision: 5, scale: 2 }),
+  ativo: boolean("ativo").default(true).notNull(),
+  ...timestamps,
+});
+
+export type AgenteConfig = typeof agenteConfig.$inferSelect;
+export type NovoAgenteConfig = typeof agenteConfig.$inferInsert;
 
 export const departamentosRelations = relations(departamentos, ({ many }) => ({
   cargos: many(cargos),

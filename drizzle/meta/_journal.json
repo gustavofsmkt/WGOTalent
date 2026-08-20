@@ -71,6 +71,13 @@
       "when": 1786723650065,
       "tag": "0009_update_schema_nullability_and_unique_index",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787188501024,
+      "tag": "0010_create_agent_engine_tables",
+      "breakpoints": true
     }
   ]
 }

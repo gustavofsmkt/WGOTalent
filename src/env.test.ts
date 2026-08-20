@@ -15,6 +15,7 @@ describe("T3 Typed Environment Validation", () => {
   it("exports validated env properties when environment variables are set correctly", async () => {
     process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
     process.env.STORAGE_ROOT = "./storage";
+    process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = "a".repeat(32);
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 
     const { env } = await import("~/env");
