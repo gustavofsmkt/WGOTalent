@@ -20,7 +20,7 @@ const navItems = [
   { name: "Vagas", href: "/vagas", icon: Target },
   { name: "Candidatos", href: "/candidatos", icon: Users },
   { name: "Triagens", href: "/triagens", icon: ClipboardCheck },
-  { name: "Motor de Agentes", href: "/admin/agentes", icon: Bot },
+  { name: "Administração", href: "/admin", icon: Bot },
 ];
 
 interface NavLinksProps {

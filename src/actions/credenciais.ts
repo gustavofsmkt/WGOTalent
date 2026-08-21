@@ -35,7 +35,7 @@ export async function createCredencial(
       apiKeyCifrada: encryptCredential(parsed.data.apiKey),
     });
 
-    revalidatePath("/admin/credenciais");
+    revalidatePath("/admin");
 
     return {
       success: true,
@@ -59,7 +59,7 @@ export async function createCredencial(
 export async function deactivateCredencial(id: string): Promise<ActionState<void>> {
   try {
     await llmCredencialRepository.deactivate(id);
-    revalidatePath("/admin/credenciais");
+    revalidatePath("/admin");
     return { success: true, data: undefined, message: "Credencial desativada." };
   } catch (error) {
     console.error("[deactivateCredencial] Erro:", error);
@@ -84,7 +84,7 @@ export async function deleteCredencial(id: string): Promise<ActionState<void>> {
     }
 
     await llmCredencialRepository.softDelete(id);
-    revalidatePath("/admin/credenciais");
+    revalidatePath("/admin");
     return { success: true, data: undefined, message: "Credencial excluída." };
   } catch (error) {
     console.error("[deleteCredencial] Erro:", error);

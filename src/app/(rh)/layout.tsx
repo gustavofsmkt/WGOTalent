@@ -3,7 +3,7 @@ import { Menu } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "~/components/ui/sheet";
-import { NavLinks } from "./_components/nav-links";
+import { NavLinks } from "~/components/nav-links";
 import { UploadProgressProvider } from "~/components/upload-progress/upload-progress-store";
 import { UploadProgressPopup } from "~/components/upload-progress/upload-progress-popup";
 

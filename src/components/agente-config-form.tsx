@@ -86,7 +86,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
         return;
       }
 
-      router.push("/admin/agentes");
+      router.push("/admin");
       router.refresh();
     },
   });

@@ -1,0 +1,108 @@
+import Link from "next/link";
+import { PageHeader } from "~/components/page-header";
+import { Card, CardContent } from "~/components/ui/card";
+import { buttonVariants } from "~/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
+
+import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
+import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
+import { getProviderLabel, getModelsForProvider } from "~/lib/agents/provider-catalog";
+
+import { CreateCredencialForm } from "./credenciais/_components/create-credencial-form";
+import { DeactivateCredencialButton } from "./credenciais/_components/deactivate-credencial-button";
+import { DeleteCredencialButton } from "./credenciais/_components/delete-credencial-button";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Administração | WGOTalent",
+};
+
+export default async function AdminPage() {
+  const [agentes, credenciais] = await Promise.all([
+    agenteConfigRepository.findAll(),
+    llmCredencialRepository.findAll(),
+  ]);
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full">
+      <PageHeader
+        title="Administração"
+        description="Gerencie agentes, credenciais e configurações da plataforma."
+      />
+
+      <Tabs defaultValue="agentes" className="mt-8">
+        <TabsList>
+          <TabsTrigger value="agentes">Agentes</TabsTrigger>
+          <TabsTrigger value="credenciais">Credenciais</TabsTrigger>
+          <TabsTrigger value="configuracoes">Configurações Gerais</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agentes" className="mt-6">
+          <div className="space-y-3">
+            {agentes.map((agente) => (
+              <Card key={agente.id}>
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <div className="font-medium">{agente.slot}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {getProviderLabel(agente.provider)} ·{" "}
+                      {getModelsForProvider(agente.provider).find((m) => m.value === agente.model)
+                        ?.label ?? agente.model}{" "}
+                      · {agente.ativo ? "ativo" : "inativo"}
+                    </div>
+                  </div>
+                  <Link
+                    href={`/admin/agentes/${agente.slot}`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Editar
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="credenciais" className="mt-6 space-y-8">
+          <div className="space-y-3">
+            {credenciais.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma credencial cadastrada.</p>
+            ) : (
+              credenciais.map((c) => (
+                <Card key={c.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="font-medium">{getProviderLabel(c.provider)}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
+                        {new Date(c.createdAt).toLocaleDateString("pt-BR")}
+                      </div>
+                    </div>
+                    {c.ativo ? (
+                      <DeactivateCredencialButton credencialId={c.id} />
+                    ) : (
+                      <DeleteCredencialButton credencialId={c.id} />
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          <div className="flex justify-center">
+            <CreateCredencialForm />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="configuracoes" className="mt-6">
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              Configurações gerais da plataforma — em breve.
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

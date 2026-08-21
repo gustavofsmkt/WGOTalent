@@ -36,7 +36,7 @@ export async function updateAgenteConfig(
       return { success: false, message: "Configuração de agente não encontrada." };
     }
 
-    revalidatePath("/admin/agentes");
+    revalidatePath("/admin");
     revalidatePath(`/admin/agentes/${slot}`);
 
     return { success: true, data: updated, message: "Configuração atualizada com sucesso." };
