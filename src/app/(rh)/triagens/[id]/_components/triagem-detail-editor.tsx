@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  ArrowLeft,
   Briefcase,
   MapPin,
   Mail,
@@ -147,7 +148,22 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemCompleta }) {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 mx-auto max-w-7xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+      {/* Breadcrumb / Back button */}
+      <div className="flex items-center gap-2">
+        <Link
+          href="/triagens"
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "text-muted-foreground hover:text-foreground",
+          })}
+        >
+          <ArrowLeft className="size-4 mr-1.5" />
+          Voltar para Triagens
+        </Link>
+      </div>
+
       <PageHeader
         title={triagem.candidato.nome}
         description={
@@ -219,9 +235,9 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemCompleta }) {
               disabled={!isDirty || isPending}
             >
               {isPending ? (
-                <Loader2 className="animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               ) : (
-                <Save />
+                <Save className="size-4" />
               )}
               Salvar
             </Button>

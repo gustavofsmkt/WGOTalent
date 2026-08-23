@@ -4,15 +4,13 @@ import Link from "next/link";
 import {
   Pencil,
   Building2,
-  Briefcase,
-  ChevronRight,
+  ArrowLeft,
   MapPin,
   Users,
-  DollarSign,
-  Calendar,
   ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
+import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
@@ -59,71 +57,59 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
-      {/* Header with breadcrumbs and actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link
-              href="/vagas"
-              className="hover:text-foreground transition-colors"
-            >
-              Vagas
-            </Link>
-            <ChevronRight className="size-3" />
-            <span className="text-foreground font-medium">Detalhes</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
-              {vaga.cargo.titulo}
-            </h1>
-            <StatusBadge status={vaga.status} className="text-sm" />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm pt-1">
-            <div className="flex items-center gap-1.5">
-              <Building2 className="size-4" />
-              <span>{vaga.cargo.departamento.nome}</span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-border/60 pl-4">
-              <MapPin className="size-4" />
-              <span>
-                {vaga.cidade} / {vaga.uf}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-border/60 pl-4">
-              <Users className="size-4" />
-              <span>
-                {vaga.posicoesDisponiveis}{" "}
-                {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-border/60 pl-4">
-              <span>Criada em {formatDate(vaga.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <DeleteVagaButton
-            vagaId={vaga.id}
-            vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
-            redirectTo="/vagas"
-            variant="button"
-            className="flex-1 sm:flex-none"
-          />
-          <Link
-            href={`/vagas/${vaga.id}/editar`}
-            className={buttonVariants({
-              variant: "default",
-              className: "flex-1 sm:flex-none",
-            })}
-          >
-            <Pencil className="size-4 mr-2" />
-            Editar Vaga
-          </Link>
-        </div>
+      {/* Breadcrumb / Back button */}
+      <div className="flex items-center gap-2">
+        <Link
+          href="/vagas"
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "text-muted-foreground hover:text-foreground",
+          })}
+        >
+          <ArrowLeft className="size-4 mr-1.5" />
+          Voltar para Vagas
+        </Link>
       </div>
+
+      <PageHeader
+        title={vaga.cargo.titulo}
+        description={
+          <div className="flex flex-wrap items-center gap-3 pt-0.5">
+            <StatusBadge status={vaga.status} className="text-xs" />
+            <span className="flex items-center gap-1.5">
+              <Building2 className="size-3.5" />
+              {vaga.cargo.departamento.nome}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <MapPin className="size-3.5" />
+              {vaga.cidade} / {vaga.uf}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="size-3.5" />
+              {vaga.posicoesDisponiveis}{" "}
+              {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
+            </span>
+          </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <DeleteVagaButton
+              vagaId={vaga.id}
+              vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
+              redirectTo="/vagas"
+              variant="button"
+            />
+            <Link
+              href={`/vagas/${vaga.id}/editar`}
+              className={buttonVariants({ variant: "default" })}
+            >
+              <Pencil className="size-4 mr-2" />
+              Editar Vaga
+            </Link>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Content - 2 columns */}
@@ -290,11 +276,10 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
           </h2>
         </div>
         {triagensAtivas.length === 0 ? (
-          <Card className="shadow-xs border-border/60">
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma triagem ativa para esta vaga.
-            </CardContent>
-          </Card>
+          <DataEmptyState
+            title="Nenhuma triagem ativa"
+            description="Nenhuma triagem em andamento para esta vaga."
+          />
         ) : (
           <TriagemPipelineBoard items={triagensAtivas} />
         )}

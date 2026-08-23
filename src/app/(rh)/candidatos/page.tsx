@@ -34,7 +34,6 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
 
   const manualCount = allCandidatos.filter((c) => c.origem === "manual").length;
   const emailCount = allCandidatos.filter((c) => c.origem === "email").length;
-  const indicacaoCount = allCandidatos.filter((c) => c.origem === "indicacao").length;
 
   const filteredCandidatos = allCandidatos.filter((candidato) => {
     const matchesQuery =

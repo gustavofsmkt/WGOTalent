@@ -1,9 +1,10 @@
 import * as React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Building2, Briefcase, ChevronRight, MapPin, Users } from "lucide-react";
+import { Pencil, Building2, Briefcase, ArrowLeft, MapPin, Users, Plus } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
-import { Button, buttonVariants } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
+import { DataEmptyState } from "~/components/data-empty-state";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
@@ -43,57 +44,57 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <Link
-              href="/cargos"
-              className="hover:text-foreground transition-colors"
-            >
-              Cargos
-            </Link>
-            <ChevronRight className="size-3" />
-            <span className="text-foreground font-medium">Detalhes</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3">
-            {cargo.titulo}
+      {/* Breadcrumb / Back button */}
+      <div className="flex items-center gap-2">
+        <Link
+          href="/cargos"
+          className={buttonVariants({
+            variant: "ghost",
+            size: "sm",
+            className: "text-muted-foreground hover:text-foreground",
+          })}
+        >
+          <ArrowLeft className="size-4 mr-1.5" />
+          Voltar para Cargos
+        </Link>
+      </div>
+
+      <PageHeader
+        title={cargo.titulo}
+        description={
+          <div className="flex flex-wrap items-center gap-3 pt-0.5">
             <StatusBadge
               status={cargo.ativo ? "aberta" : "incompleta"}
               label={cargo.ativo ? "Ativo" : "Inativo"}
-              className="text-sm mt-1 sm:mt-0"
+              className="text-xs"
             />
-          </h1>
-          <div className="flex items-center gap-4 text-muted-foreground text-sm pt-1">
-            <div className="flex items-center gap-1.5">
-              <Building2 className="size-4" />
-              <span>{cargo.departamento.nome}</span>
-            </div>
-            <div className="flex items-center gap-1.5 border-l border-border/60 pl-4">
-              <span>Criado em {formatDate(cargo.createdAt)}</span>
-            </div>
+            <span className="flex items-center gap-1.5">
+              <Building2 className="size-3.5" />
+              {cargo.departamento.nome}
+            </span>
+            <span className="text-xs">
+              Criado em {formatDate(cargo.createdAt)}
+            </span>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <DeleteCargoButton
-            cargoId={cargo.id}
-            cargoTitulo={cargo.titulo}
-            redirectTo="/cargos"
-            variant="button"
-            className="flex-1 sm:flex-none"
-          />
-          <Link
-            href={`/cargos/${cargo.id}/editar`}
-            className={buttonVariants({
-              variant: "default",
-              className: "flex-1 sm:flex-none",
-            })}
-          >
-            <Pencil className="size-4 mr-2" />
-            Editar
-          </Link>
-        </div>
-      </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <DeleteCargoButton
+              cargoId={cargo.id}
+              cargoTitulo={cargo.titulo}
+              redirectTo="/cargos"
+              variant="button"
+            />
+            <Link
+              href={`/cargos/${cargo.id}/editar`}
+              className={buttonVariants({ variant: "default" })}
+            >
+              <Pencil className="size-4 mr-2" />
+              Editar
+            </Link>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
@@ -206,17 +207,21 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
         </CardHeader>
         <CardContent className="p-0">
           {vagasDoCargo.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Briefcase className="size-10 text-muted-foreground/40 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Nenhuma vaga cadastrada para este cargo.
-              </p>
-              <Link
-                href={`/vagas/novo`}
-                className={buttonVariants({ variant: "outline", className: "mt-4 text-sm" })}
-              >
-                Criar primeira vaga
-              </Link>
+            <div className="p-6">
+              <DataEmptyState
+                icon={Briefcase}
+                title="Nenhuma vaga cadastrada para este cargo"
+                description="Crie uma vaga para iniciar o processo seletivo deste cargo."
+                action={
+                  <Link
+                    href="/vagas/novo"
+                    className={buttonVariants({ variant: "default", size: "sm" })}
+                  >
+                    <Plus className="size-4 mr-1.5" />
+                    Criar Vaga
+                  </Link>
+                }
+              />
             </div>
           ) : (
             <Table>

@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Briefcase, Eye, Building2 } from "lucide-react";
+import { Plus, Briefcase, Eye, Building2, Pencil } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { Button, buttonVariants } from "~/components/ui/button";
@@ -174,6 +174,18 @@ export default async function CargosPage(props: CargosPageProps) {
                               aria-label={`Ver detalhes de ${cargo.titulo}`}
                             >
                               <Eye className="size-4" />
+                            </Link>
+                            <Link
+                              href={`/cargos/${cargo.id}/editar`}
+                              className={buttonVariants({
+                                variant: "ghost",
+                                size: "icon-sm",
+                                className: "text-muted-foreground hover:text-primary",
+                              })}
+                              title={`Editar ${cargo.titulo}`}
+                              aria-label={`Editar ${cargo.titulo}`}
+                            >
+                              <Pencil className="size-4" />
                             </Link>
                             <DeleteCargoButton
                               cargoId={cargo.id}
