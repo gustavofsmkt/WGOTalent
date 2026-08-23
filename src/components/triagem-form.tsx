@@ -170,7 +170,7 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "triagem-candidato-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -240,7 +240,7 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "triagem-vaga-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -311,7 +311,7 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "triagem-etapa";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -372,7 +372,7 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "triagem-resultado";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -444,27 +444,12 @@ export function TriagemForm({
                 if (!showMotivo) return null;
 
                 return (
-                  <form.Field
-                    name="motivo"
-                    validators={{
-                      onBlur: ({ value }) => {
-                        if (isReprovado) {
-                          if (!value) return "Motivo é obrigatório para candidato reprovado";
-                          if (!motivosReprovacao.includes(value as any)) {
-                            return "Motivo de reprovação inválido";
-                          }
-                        } else if (isDesistente) {
-                          if (!value) return "Motivo é obrigatório para candidato desistente";
-                          if (!motivosDesistencia.includes(value as any)) {
-                            return "Motivo de desistência inválido";
-                          }
-                        }
-                        return undefined;
-                      },
-                    }}
-                  >
+                  // A validação de obrigatoriedade/consistência de `motivo` já vive em
+                  // `triagemSchema.superRefine` (~/lib/validation/triagem.ts) e é aplicada
+                  // pelo validator onBlur do form — não duplicar a regra aqui.
+                  <form.Field name="motivo">
                     {(field) => {
-                      const hasErrors = field.state.meta.errors.length > 0;
+                      const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                       const fieldId = "triagem-motivo";
                       const errorId = `${fieldId}-error`;
                       const descId = `${fieldId}-description`;

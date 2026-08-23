@@ -61,6 +61,28 @@ export interface CargoOption {
   };
 }
 
+/**
+ * Alias para a instância do form tipada pelo shape agregado do candidato.
+ * Os parâmetros de validators/eventos ficam `any` (não afetam o shape de
+ * `values`/`field.state`) para evitar repetir os 11 generics de
+ * `ReactFormExtendedApi` em cada seção — usado como prop nas seções abaixo
+ * em vez de `form: any`.
+ */
+type CandidatoFormApi = ReactFormExtendedApi<
+  CandidatoAgregadoInput,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+>;
+
 const ESTADO_CIVIL_LABELS: Record<string, string> = {
   nao_informado: "Não Informado",
   solteiro: "Solteiro(a)",
@@ -146,14 +168,14 @@ function CurriculoSection({
   );
 }
 
-function DadosPessoaisSection({ form }: { form: any }) {
+function DadosPessoaisSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Dados Pessoais</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field name="nome" validators={{ onBlur: candidatoSchema.shape.nome }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-nome">Nome Completo *</FieldLabel>
@@ -172,8 +194,8 @@ function DadosPessoaisSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="nomeSocial" validators={{ onBlur: candidatoSchema.shape.nomeSocial }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-nome-social">Nome Social</FieldLabel>
@@ -193,8 +215,8 @@ function DadosPessoaisSection({ form }: { form: any }) {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <form.Field name="dataNascimento" validators={{ onBlur: candidatoSchema.shape.dataNascimento }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-data-nascimento">Data de Nascimento *</FieldLabel>
@@ -213,8 +235,8 @@ function DadosPessoaisSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="nacionalidade" validators={{ onBlur: candidatoSchema.shape.nacionalidade }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-nacionalidade">Nacionalidade</FieldLabel>
@@ -232,14 +254,18 @@ function DadosPessoaisSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="estadoCivil" validators={{ onBlur: candidatoSchema.shape.estadoCivil }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-estado-civil">Estado Civil</FieldLabel>
                 <Select
                   value={field.state.value}
-                  onValueChange={(val: any) => field.handleChange(val)}
+                  onValueChange={(val) => {
+                    if (typeof val === "string") {
+                      field.handleChange(val as typeof field.state.value);
+                    }
+                  }}
                 >
                   <SelectTrigger id="candidato-estado-civil" aria-invalid={hasErrors}>
                     <SelectValue placeholder="Selecione...">
@@ -263,8 +289,8 @@ function DadosPessoaisSection({ form }: { form: any }) {
       </div>
 
       <form.Field name="pcd" validators={{ onBlur: candidatoSchema.shape.pcd }}>
-        {(field: any) => {
-          const hasErrors = field.state.meta.errors.length > 0;
+        {(field) => {
+          const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
           return (
             <Field data-invalid={hasErrors}>
               <FieldLabel htmlFor="candidato-pcd">PCD (Especifique se houver)</FieldLabel>
@@ -285,21 +311,21 @@ function DadosPessoaisSection({ form }: { form: any }) {
   );
 }
 
-function ContatoURLsSection({ form }: { form: any }) {
+function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Contato e Links</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field name="email" validators={{ onBlur: candidatoSchema.shape.email }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-email">E-mail *</FieldLabel>
                 <Input
                   id="candidato-email"
                   type="email"
-                  value={field.state.value}
+                  value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
@@ -312,14 +338,14 @@ function ContatoURLsSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="celular" validators={{ onBlur: candidatoSchema.shape.celular }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-celular">Celular *</FieldLabel>
                 <Input
                   id="candidato-celular"
-                  value={field.state.value}
+                  value={field.state.value ?? ""}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
@@ -335,15 +361,15 @@ function ContatoURLsSection({ form }: { form: any }) {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field name="linkedin" validators={{ onBlur: candidatoSchema.shape.linkedin }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-linkedin">LinkedIn</FieldLabel>
                 <Input
                   id="candidato-linkedin"
                   type="url"
-                  value={field.state.value || ""}
+                  value={(field.state.value as string | null | undefined) ?? ""}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
@@ -356,15 +382,15 @@ function ContatoURLsSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="portfolio" validators={{ onBlur: candidatoSchema.shape.portfolio }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-portfolio">Portfólio / Site</FieldLabel>
                 <Input
                   id="candidato-portfolio"
                   type="url"
-                  value={field.state.value || ""}
+                  value={(field.state.value as string | null | undefined) ?? ""}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
@@ -380,14 +406,14 @@ function ContatoURLsSection({ form }: { form: any }) {
   );
 }
 
-function EnderecoSection({ form }: { form: any }) {
+function EnderecoSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Endereço</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_3fr]">
         <form.Field name="cep" validators={{ onBlur: candidatoSchema.shape.cep }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-cep">CEP *</FieldLabel>
@@ -406,8 +432,8 @@ function EnderecoSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="logradouro" validators={{ onBlur: candidatoSchema.shape.logradouro }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-logradouro">Logradouro *</FieldLabel>
@@ -427,8 +453,8 @@ function EnderecoSection({ form }: { form: any }) {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <form.Field name="bairro" validators={{ onBlur: candidatoSchema.shape.bairro }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-bairro">Bairro *</FieldLabel>
@@ -446,8 +472,8 @@ function EnderecoSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="cidade" validators={{ onBlur: candidatoSchema.shape.cidade }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-cidade">Cidade *</FieldLabel>
@@ -465,8 +491,8 @@ function EnderecoSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="uf" validators={{ onBlur: candidatoSchema.shape.uf }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-uf">UF *</FieldLabel>
@@ -488,12 +514,12 @@ function EnderecoSection({ form }: { form: any }) {
   );
 }
 
-function InteressesSection({ 
-  form, 
-  cargoOptions, 
-  departamentoOptions 
-}: { 
-  form: any,
+function InteressesSection({
+  form,
+  cargoOptions,
+  departamentoOptions
+}: {
+  form: CandidatoFormApi,
   cargoOptions: CargoOption[],
   departamentoOptions: DepartamentoOption[]
 }) {
@@ -502,8 +528,8 @@ function InteressesSection({
       <h3 className="text-lg font-medium">Perfil e Interesses</h3>
       
       <form.Field name="resumoProfissional" validators={{ onBlur: candidatoSchema.shape.resumoProfissional }}>
-        {(field: any) => {
-          const hasErrors = field.state.meta.errors.length > 0;
+        {(field) => {
+          const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
           return (
             <Field data-invalid={hasErrors}>
               <FieldLabel htmlFor="candidato-resumo">Resumo Profissional *</FieldLabel>
@@ -523,8 +549,8 @@ function InteressesSection({
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field name="cargoInteresseId" validators={{ onBlur: candidatoSchema.shape.cargoInteresseId }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-cargo-interesse">Cargo de Interesse</FieldLabel>
@@ -555,8 +581,8 @@ function InteressesSection({
         </form.Field>
 
         <form.Field name="areaInteresseId" validators={{ onBlur: candidatoSchema.shape.areaInteresseId }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-area-interesse">Área de Interesse</FieldLabel>
@@ -588,14 +614,18 @@ function InteressesSection({
       </div>
 
       <form.Field name="origem" validators={{ onBlur: candidatoSchema.shape.origem }}>
-        {(field: any) => {
-          const hasErrors = field.state.meta.errors.length > 0;
+        {(field) => {
+          const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
           return (
             <Field data-invalid={hasErrors}>
               <FieldLabel htmlFor="candidato-origem">Origem *</FieldLabel>
               <Select
                 value={field.state.value}
-                onValueChange={(val: any) => field.handleChange(val)}
+                onValueChange={(val) => {
+                  if (typeof val === "string") {
+                    field.handleChange(val as typeof field.state.value);
+                  }
+                }}
               >
                 <SelectTrigger id="candidato-origem" aria-invalid={hasErrors}>
                   <SelectValue placeholder="Selecione a origem">
@@ -617,21 +647,25 @@ function InteressesSection({
   );
 }
 
-function DisponibilidadesSection({ form }: { form: any }) {
+function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Disponibilidades e Requisitos</h3>
       
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field name="cnh" validators={{ onBlur: candidatoSchema.shape.cnh }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-cnh">Categoria CNH</FieldLabel>
                 <Select
                   value={field.state.value || "none"}
-                  onValueChange={(val: any) => field.handleChange(val === "none" ? null : val)}
+                  onValueChange={(val) => {
+                    if (typeof val === "string") {
+                      field.handleChange(val === "none" ? null : (val as typeof field.state.value));
+                    }
+                  }}
                 >
                   <SelectTrigger id="candidato-cnh" aria-invalid={hasErrors}>
                     <SelectValue placeholder="Não possui ou não informada">
@@ -655,8 +689,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="disponibilidadeHorarios" validators={{ onBlur: candidatoSchema.shape.disponibilidadeHorarios }}>
-          {(field: any) => {
-            const hasErrors = field.state.meta.errors.length > 0;
+          {(field) => {
+            const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
                 <FieldLabel htmlFor="candidato-disponibilidade-horarios">Disponibilidade de Horários</FieldLabel>
@@ -677,8 +711,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <form.Field name="possuiVeiculo">
-          {(field: any) => (
-            <Field className="flex flex-row items-start space-x-3 space-y-0 p-2">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start gap-3 p-2">
               <Checkbox
                 id="candidato-possui-veiculo"
                 checked={field.state.value}
@@ -693,8 +727,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="disponivelViagens">
-          {(field: any) => (
-            <Field className="flex flex-row items-start space-x-3 space-y-0 p-2">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start gap-3 p-2">
               <Checkbox
                 id="candidato-disponivel-viagens"
                 checked={field.state.value}
@@ -709,8 +743,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="disponivelMudanca">
-          {(field: any) => (
-            <Field className="flex flex-row items-start space-x-3 space-y-0 p-2">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start gap-3 p-2">
               <Checkbox
                 id="candidato-disponivel-mudanca"
                 checked={field.state.value}
@@ -725,8 +759,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
         </form.Field>
 
         <form.Field name="inicioImediato">
-          {(field: any) => (
-            <Field className="flex flex-row items-start space-x-3 space-y-0 p-2">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start gap-3 p-2">
               <Checkbox
                 id="candidato-inicio-imediato"
                 checked={field.state.value}
@@ -743,8 +777,8 @@ function DisponibilidadesSection({ form }: { form: any }) {
 
       <div className="grid grid-cols-1">
         <form.Field name="ensinoMedioConcluido">
-          {(field: any) => (
-            <Field className="flex flex-row items-start space-x-3 space-y-0 p-2">
+          {(field) => (
+            <Field orientation="horizontal" className="items-start gap-3 p-2">
               <Checkbox
                 id="candidato-ensino-medio"
                 checked={field.state.value}
@@ -762,7 +796,7 @@ function DisponibilidadesSection({ form }: { form: any }) {
   );
 }
 
-function FormacoesSection({ form }: { form: any }) {
+function FormacoesSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -775,7 +809,7 @@ function FormacoesSection({ form }: { form: any }) {
       </div>
 
       <form.Field name="formacoes" mode="array">
-        {(field: any) => {
+        {(field) => {
           const items: FormacaoInput[] = field.state.value || [];
 
           return (
@@ -814,8 +848,8 @@ function FormacoesSection({ form }: { form: any }) {
                         name={`formacoes[${index}].titulo`}
                         validators={{ onBlur: formacaoBaseSchema.shape.titulo }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`formacao-titulo-${index}`}>
@@ -839,8 +873,8 @@ function FormacoesSection({ form }: { form: any }) {
                         name={`formacoes[${index}].areaFormacao`}
                         validators={{ onBlur: formacaoBaseSchema.shape.areaFormacao }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`formacao-area-${index}`}>
@@ -866,8 +900,8 @@ function FormacoesSection({ form }: { form: any }) {
                         name={`formacoes[${index}].instituicao`}
                         validators={{ onBlur: formacaoBaseSchema.shape.instituicao }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`formacao-instituicao-${index}`}>
@@ -893,8 +927,8 @@ function FormacoesSection({ form }: { form: any }) {
                         name={`formacoes[${index}].dataInicio`}
                         validators={{ onBlur: formacaoBaseSchema.shape.dataInicio }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`formacao-data-inicio-${index}`}>
@@ -918,8 +952,8 @@ function FormacoesSection({ form }: { form: any }) {
                         name={`formacoes[${index}].dataTermino`}
                         validators={{ onBlur: formacaoBaseSchema.shape.dataTermino }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`formacao-data-termino-${index}`}>
@@ -970,7 +1004,7 @@ function FormacoesSection({ form }: { form: any }) {
   );
 }
 
-function ExperienciasSection({ form }: { form: any }) {
+function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -983,7 +1017,7 @@ function ExperienciasSection({ form }: { form: any }) {
       </div>
 
       <form.Field name="experiencias" mode="array">
-        {(field: any) => {
+        {(field) => {
           const items: ExperienciaInput[] = field.state.value || [];
 
           return (
@@ -1022,8 +1056,8 @@ function ExperienciasSection({ form }: { form: any }) {
                         name={`experiencias[${index}].cargoTitulo`}
                         validators={{ onBlur: experienciaBaseSchema.shape.cargoTitulo }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`experiencia-cargo-${index}`}>
@@ -1047,8 +1081,8 @@ function ExperienciasSection({ form }: { form: any }) {
                         name={`experiencias[${index}].empresa`}
                         validators={{ onBlur: experienciaBaseSchema.shape.empresa }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`experiencia-empresa-${index}`}>
@@ -1076,8 +1110,8 @@ function ExperienciasSection({ form }: { form: any }) {
                         name={`experiencias[${index}].dataEntrada`}
                         validators={{ onBlur: experienciaBaseSchema.shape.dataEntrada }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`experiencia-data-entrada-${index}`}>
@@ -1101,8 +1135,8 @@ function ExperienciasSection({ form }: { form: any }) {
                         name={`experiencias[${index}].dataSaida`}
                         validators={{ onBlur: experienciaBaseSchema.shape.dataSaida }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`experiencia-data-saida-${index}`}>
@@ -1132,8 +1166,8 @@ function ExperienciasSection({ form }: { form: any }) {
                       name={`experiencias[${index}].descricao`}
                       validators={{ onBlur: experienciaBaseSchema.shape.descricao }}
                     >
-                      {(subField: any) => {
-                        const hasErrors = subField.state.meta.errors.length > 0;
+                      {(subField) => {
+                        const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                         return (
                           <Field data-invalid={hasErrors}>
                             <FieldLabel htmlFor={`experiencia-descricao-${index}`}>
@@ -1184,7 +1218,7 @@ function ExperienciasSection({ form }: { form: any }) {
   );
 }
 
-function CertificacoesSection({ form }: { form: any }) {
+function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1197,7 +1231,7 @@ function CertificacoesSection({ form }: { form: any }) {
       </div>
 
       <form.Field name="certificacoes" mode="array">
-        {(field: any) => {
+        {(field) => {
           const items: CertificacaoInput[] = field.state.value || [];
 
           return (
@@ -1237,8 +1271,8 @@ function CertificacoesSection({ form }: { form: any }) {
                           name={`certificacoes[${index}].titulo`}
                           validators={{ onBlur: certificacaoBaseSchema.shape.titulo }}
                         >
-                          {(subField: any) => {
-                            const hasErrors = subField.state.meta.errors.length > 0;
+                          {(subField) => {
+                            const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                             return (
                               <Field data-invalid={hasErrors}>
                                 <FieldLabel htmlFor={`certificacao-titulo-${index}`}>
@@ -1263,8 +1297,8 @@ function CertificacoesSection({ form }: { form: any }) {
                         name={`certificacoes[${index}].obtidaEm`}
                         validators={{ onBlur: certificacaoBaseSchema.shape.obtidaEm }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`certificacao-obtida-em-${index}`}>
@@ -1290,8 +1324,8 @@ function CertificacoesSection({ form }: { form: any }) {
                         name={`certificacoes[${index}].validade`}
                         validators={{ onBlur: certificacaoBaseSchema.shape.validade }}
                       >
-                        {(subField: any) => {
-                          const hasErrors = subField.state.meta.errors.length > 0;
+                        {(subField) => {
+                          const hasErrors = subField.state.meta.isTouched && subField.state.meta.errors.length > 0;
                           return (
                             <Field data-invalid={hasErrors}>
                               <FieldLabel htmlFor={`certificacao-validade-${index}`}>
@@ -1491,9 +1525,9 @@ export function CandidatoBaseForm({
             </FormSubmitButton>
           )}
           <form.Subscribe
-            selector={(state: any) => [state.canSubmit, state.isSubmitting]}
+            selector={(state) => [state.canSubmit, state.isSubmitting] as const}
           >
-            {([canSubmit, isSubmitting]: any) => (
+            {([canSubmit, isSubmitting]) => (
               <FormSubmitButton
                 type="submit"
                 disabled={!canSubmit}

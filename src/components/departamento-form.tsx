@@ -140,7 +140,8 @@ export function DepartamentoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "departamento-nome";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -183,7 +184,8 @@ export function DepartamentoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "departamento-descricao";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;

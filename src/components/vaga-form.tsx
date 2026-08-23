@@ -95,17 +95,15 @@ export function VagaForm({
     defaultValues: {
       cargoId: vaga?.cargoId ?? "",
       status: (vaga?.status ?? "aberta") as StatusVaga,
-      posicoesDisponiveis: (vaga?.posicoesDisponiveis ?? 1) as any,
+      posicoesDisponiveis: vaga?.posicoesDisponiveis ?? 1,
       remuneracaoOferecida: (vaga?.remuneracaoOferecida
         ? String(vaga.remuneracaoOferecida)
         : "") as string,
       cidade: vaga?.cidade ?? "",
-      uf: (vaga?.uf ?? "") as any,
+      uf: vaga?.uf ?? "",
     } as z.input<typeof vagaSchema>,
     validators: {
       onBlur: vagaSchema,
-      onChange: vagaSchema,
-
     },
     onSubmit: async ({ value }) => {
       setServerError(null);
@@ -177,7 +175,7 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "vaga-cargo-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -252,7 +250,7 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "vaga-status";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -315,7 +313,7 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "vaga-posicoes-disponiveis";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -335,11 +333,7 @@ export function VagaForm({
                         placeholder="1"
                         value={field.state.value ?? ""}
                         onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value === "" ? ("" as any) : e.target.value,
-                          )
-                        }
+                        onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={hasErrors}
                         aria-describedby={
                           hasErrors ? `${descId} ${errorId}` : descId
@@ -365,7 +359,7 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "vaga-remuneracao-oferecida";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -409,11 +403,10 @@ export function VagaForm({
                   name="cidade"
                   validators={{
                     onBlur: vagaSchema.shape.cidade,
-                    onChange: vagaSchema.shape.cidade,
                   }}
                 >
                   {(field) => {
-                    const hasErrors = field.state.meta.errors.length > 0;
+                    const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                     const fieldId = "vaga-cidade";
                     const errorId = `${fieldId}-error`;
                     const descId = `${fieldId}-description`;
@@ -453,11 +446,10 @@ export function VagaForm({
                   name="uf"
                   validators={{
                     onBlur: vagaSchema.shape.uf,
-                    onChange: vagaSchema.shape.uf,
                   }}
                 >
                   {(field) => {
-                    const hasErrors = field.state.meta.errors.length > 0;
+                    const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                     const fieldId = "vaga-uf";
                     const errorId = `${fieldId}-error`;
                     const descId = `${fieldId}-description`;
@@ -469,7 +461,7 @@ export function VagaForm({
                           value={field.state.value || ""}
                           onValueChange={(val) => {
                             if (typeof val === "string") {
-                              field.handleChange(val as any);
+                              field.handleChange(val);
                               field.handleBlur();
                             }
                           }}

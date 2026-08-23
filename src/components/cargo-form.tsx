@@ -167,7 +167,7 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "cargo-titulo";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -209,7 +209,7 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "cargo-departamento-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -279,7 +279,7 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.errors.length > 0;
+                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                   const fieldId = "cargo-faixa-salarial";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -361,7 +361,7 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "cargo-descricao";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -404,7 +404,7 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "cargo-requisitos";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -447,7 +447,7 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "cargo-requisitos-desejaveis";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -490,7 +490,7 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.errors.length > 0;
+                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
                 const fieldId = "cargo-criterios-eliminatorios";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
