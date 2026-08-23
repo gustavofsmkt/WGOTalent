@@ -1,12 +1,13 @@
 import * as React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Building2, Briefcase, ChevronRight } from "lucide-react";
+import { Pencil, Building2, Briefcase, ChevronRight, MapPin, Users } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "../_components/delete-cargo-button";
 
@@ -21,6 +22,8 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
   if (!cargo) {
     notFound();
   }
+
+  const vagasDoCargo = await cargoRepository.findActiveVagas(params.id);
 
   const formatCurrency = (value?: string | null) => {
     if (!value) return "Não informada";
@@ -190,6 +193,82 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
           </Card>
         </div>
       </div>
+
+      <Card className="shadow-xs border-border/60">
+        <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Briefcase className="size-4 text-primary" />
+            Vagas deste Cargo
+            <span className="text-sm font-normal text-muted-foreground">
+              ({vagasDoCargo.length})
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {vagasDoCargo.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Briefcase className="size-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma vaga cadastrada para este cargo.
+              </p>
+              <Link
+                href={`/vagas/novo`}
+                className={buttonVariants({ variant: "outline", className: "mt-4 text-sm" })}
+              >
+                Criar primeira vaga
+              </Link>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/20 hover:bg-muted/20">
+                  <TableHead className="pl-6">Localização</TableHead>
+                  <TableHead>Posições</TableHead>
+                  <TableHead>Remuneração</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Criada em</TableHead>
+                  <TableHead className="pr-6 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vagasDoCargo.map((vaga) => (
+                  <TableRow key={vaga.id}>
+                    <TableCell className="pl-6">
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <MapPin className="size-3.5 text-muted-foreground" />
+                        {vaga.cidade} / {vaga.uf}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Users className="size-3.5 text-muted-foreground" />
+                        {vaga.posicoesDisponiveis}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatCurrency(vaga.remuneracaoOferecida)}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={vaga.status} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(vaga.createdAt)}
+                    </TableCell>
+                    <TableCell className="pr-6 text-right">
+                      <Link
+                        href={`/vagas/${vaga.id}`}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        Ver
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
