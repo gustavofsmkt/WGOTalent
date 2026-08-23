@@ -152,11 +152,8 @@ export const candidatoSchema = z.object({
   dataNascimento: dateStringSchema,
   estadoCivil: estadoCivilSchema.default("nao_informado"),
   pcd: trimmedString.optional().nullable(),
-  email: emailSchema.max(254, "O e-mail deve ter no máximo 254 caracteres"),
-  celular: nonEmptyString("O celular é obrigatório").max(
-    20,
-    "O celular deve ter no máximo 20 caracteres"
-  ),
+  email: emailSchema.max(254, "O e-mail deve ter no máximo 254 caracteres").optional().nullable(),
+  celular: trimmedString.max(20, "O celular deve ter no máximo 20 caracteres").optional().nullable(),
   cep: nonEmptyString("O CEP é obrigatório").max(
     9,
     "O CEP deve ter no máximo 9 caracteres"

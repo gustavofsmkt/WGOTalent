@@ -80,7 +80,7 @@ describe("CandidatosPage - Server Component Logic", () => {
     const filtered = list.filter(
       (c) =>
         c.nome.toLowerCase().includes(query) ||
-        c.email.toLowerCase().includes(query) ||
+        (c.email?.toLowerCase().includes(query) ?? false) ||
         c.cidade.toLowerCase().includes(query) ||
         c.uf.toLowerCase().includes(query) ||
         (c.cargoInteresse && c.cargoInteresse.toLowerCase().includes(query)),

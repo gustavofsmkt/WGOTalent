@@ -85,7 +85,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
     if (!query) return true;
     return (
       item.candidato.nome.toLowerCase().includes(query) ||
-      item.candidato.email.toLowerCase().includes(query) ||
+      (item.candidato.email?.toLowerCase().includes(query) ?? false) ||
       item.vaga.cargoTitulo.toLowerCase().includes(query) ||
       item.vaga.departamentoNome.toLowerCase().includes(query) ||
       item.vaga.cidade.toLowerCase().includes(query) ||

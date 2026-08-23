@@ -34,7 +34,7 @@ export interface TriagemListItem {
   candidato: {
     id: string;
     nome: string;
-    email: string;
+    email: string | null;
   };
   vaga: {
     id: string;
@@ -66,7 +66,7 @@ export interface VagaOption {
 export interface CandidatoOption {
   id: string;
   nome: string;
-  email: string;
+  email: string | null;
 }
 
 export const triagemRepository = {

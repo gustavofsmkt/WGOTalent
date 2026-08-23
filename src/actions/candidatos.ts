@@ -105,11 +105,15 @@ export async function createCandidato(
   }
 
   try {
-    const { cargoInteresseId, areaInteresseId, email } = parsed.data;
+    const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
 
-    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
-    // mescla dados novos/diferentes (se ativo) — ver ADR 0008.
-    const existing = await candidatoRepository.findByEmailIncludingDeleted(email);
+    if (!email && !celular) {
+      return { success: false, message: "Informe pelo menos um e-mail ou celular." };
+    }
+
+    const existing =
+      (email ? await candidatoRepository.findByEmailIncludingDeleted(email) : null) ??
+      (celular ? await candidatoRepository.findByCelularIncludingDeleted(celular) : null);
 
     // Validar referências
     if (cargoInteresseId) {
@@ -207,20 +211,29 @@ export async function updateCandidato(
   }
 
   try {
-    const { cargoInteresseId, areaInteresseId, email } = parsed.data;
+    const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
 
     const existingCandidato = await candidatoRepository.findById(id);
     if (!existingCandidato) {
       return { success: false, message: "Candidato não encontrado." };
     }
 
-    // Validar unicidade de email se foi alterado
-    if (email !== existingCandidato.email) {
+    if (email && email !== existingCandidato.email) {
       const emailExists = await candidatoRepository.findByEmailIncludingDeleted(email);
       if (emailExists) {
         return {
           success: false,
           message: "O e-mail informado já está cadastrado no sistema.",
+        };
+      }
+    }
+
+    if (celular && celular !== existingCandidato.celular) {
+      const celularExists = await candidatoRepository.findByCelularIncludingDeleted(celular);
+      if (celularExists) {
+        return {
+          success: false,
+          message: "O celular informado já está cadastrado no sistema.",
         };
       }
     }
@@ -336,14 +349,19 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
     // confiável — pode não ser um e-mail válido, ou colidir com o de outra
     // pessoa e disparar uma mesclagem indevida), geramos um placeholder
     // único aqui. "E-mail" entra em dadosPendentes para o RH completar.
+    if (!extraido.email && !extraido.celular) {
+      await uploadLoteItemRepository.updateStatus(itemId, {
+        status: "erro",
+        mensagem: "Currículo sem e-mail e sem celular — candidato não criado.",
+      });
+      return;
+    }
+
     const dadosPendentes = calcularDadosPendentes(extraido);
-    const email = extraido.email ?? `sememail+${crypto.randomUUID()}@wgotalent.local`;
-    // O schema de extração aceita chave ausente (undefined) além de null
-    // nesses campos — normaliza pra null aqui, que é o que o repositório
-    // (CandidatoAgregadoInsercao) espera.
     const dadosCandidato = {
       ...extraido,
-      email,
+      email: extraido.email ?? null,
+      celular: extraido.celular ?? null,
       dataNascimento: extraido.dataNascimento ?? null,
       cep: extraido.cep ?? null,
       bairro: extraido.bairro ?? null,
@@ -352,13 +370,9 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
       dadosPendentes,
     };
 
-    // E-mail já cadastrado: em vez de rejeitar, restaura (se excluído) ou
-    // mescla dados novos/diferentes (se ativo) — ver ADR 0008. Pulado quando
-    // o currículo não tinha e-mail: o placeholder acima é sempre único, então
-    // nunca haveria correspondência real.
-    const existing = extraido.email
-      ? await candidatoRepository.findByEmailIncludingDeleted(extraido.email)
-      : null;
+    const existing =
+      (extraido.email ? await candidatoRepository.findByEmailIncludingDeleted(extraido.email) : null) ??
+      (extraido.celular ? await candidatoRepository.findByCelularIncludingDeleted(extraido.celular) : null);
 
     let candidato: Awaited<ReturnType<typeof candidatoRepository.createAggregate>>;
     let mensagem = "Candidato criado com sucesso.";

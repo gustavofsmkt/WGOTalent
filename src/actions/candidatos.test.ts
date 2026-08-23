@@ -74,6 +74,7 @@ describe("candidatos server actions", () => {
       };
 
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce(mockCandidato as any);
 
       const result = await createCandidato({
@@ -415,6 +416,7 @@ describe("candidatos server actions", () => {
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-1" } as any);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
 
@@ -514,9 +516,11 @@ describe("candidatos server actions", () => {
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
 
-    it("generates a unique placeholder email instead of trusting one invented by the agent", async () => {
-      vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(null);
-      const findByEmailSpy = vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted");
+    it("creates the candidate with null email when only celular is present", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
+      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
         .mockResolvedValueOnce({ id: "cand-sem-email" } as any);
@@ -527,16 +531,38 @@ describe("candidatos server actions", () => {
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
-      // Nunca consulta duplicidade com um e-mail nulo/inventado pelo agente.
-      expect(findByEmailSpy).not.toHaveBeenCalled();
       const dadosCandidato = createAggregateSpy.mock.calls[0]?.[0];
-      expect(dadosCandidato?.email).toMatch(/^sememail\+.+@wgotalent\.local$/);
+      expect(dadosCandidato?.email).toBeNull();
       expect(dadosCandidato?.dadosPendentes).toContain("E-mail");
+      expect(updateStatusSpy).toHaveBeenLastCalledWith(
+        "item-1",
+        expect.objectContaining({ status: "sucesso", candidatoId: "cand-sem-email" }),
+      );
+    });
+
+    it("marks the item as 'erro' when the curriculum has neither email nor celular", async () => {
+      const updateStatusSpy = vi
+        .spyOn(uploadLoteItemRepository, "updateStatus")
+        .mockResolvedValue(null);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce({
+        ...extraido,
+        email: null,
+        celular: null,
+      } as any);
+
+      await processarItemLote("item-1", fakeFile("cv-sem-contato.pdf"));
+
+      expect(updateStatusSpy).toHaveBeenLastCalledWith("item-1", {
+        status: "erro",
+        mensagem: expect.stringMatching(/sem e-mail e sem celular/i),
+      });
+      expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
     });
 
     it("normalizes an omitted (undefined) nullish field to null before hitting the repository", async () => {
       vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
         .mockResolvedValueOnce({ id: "cand-sem-nascimento" } as any);

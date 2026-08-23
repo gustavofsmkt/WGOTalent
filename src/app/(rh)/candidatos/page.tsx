@@ -40,7 +40,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     const matchesQuery =
       !query ||
       candidato.nome.toLowerCase().includes(query) ||
-      candidato.email.toLowerCase().includes(query) ||
+      (candidato.email?.toLowerCase().includes(query) ?? false) ||
       candidato.cidade.toLowerCase().includes(query) ||
       candidato.uf.toLowerCase().includes(query) ||
       (candidato.cargoInteresse && candidato.cargoInteresse.toLowerCase().includes(query));

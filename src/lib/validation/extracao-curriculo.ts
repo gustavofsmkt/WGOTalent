@@ -22,11 +22,8 @@ export const extracaoCurriculoOutputSchema = candidatoAgregadoSchema.extend({
   cep: candidatoAgregadoSchema.shape.cep.nullish(),
   bairro: candidatoAgregadoSchema.shape.bairro.nullish(),
   logradouro: candidatoAgregadoSchema.shape.logradouro.nullish(),
-  // Currículo sem e-mail visível: nullish pelo mesmo motivo dos campos
-  // acima. Quem substitui por um placeholder único (nunca null/undefined)
-  // antes de gravar no banco é processarArquivoLote — email é
-  // NOT NULL/UNIQUE na tabela candidatos.
   email: candidatoAgregadoSchema.shape.email.nullish(),
+  celular: candidatoAgregadoSchema.shape.celular.nullish(),
 });
 
 export type ExtracaoCurriculoOutput = z.output<typeof extracaoCurriculoOutputSchema>;
@@ -37,11 +34,12 @@ const CAMPOS_POTENCIALMENTE_FALTANTES = [
   { campo: "bairro", label: "Bairro" },
   { campo: "logradouro", label: "Logradouro" },
   { campo: "email", label: "E-mail" },
+  { campo: "celular", label: "Celular" },
 ] as const;
 
 /** Calcula o texto de `dados_pendentes` a partir dos campos nulos retornados pela extração. */
 export function calcularDadosPendentes(
-  extraido: Pick<ExtracaoCurriculoOutput, "dataNascimento" | "cep" | "bairro" | "logradouro" | "email">,
+  extraido: Pick<ExtracaoCurriculoOutput, "dataNascimento" | "cep" | "bairro" | "logradouro" | "email" | "celular">,
 ): string | null {
   const faltantes = CAMPOS_POTENCIALMENTE_FALTANTES.filter(
     ({ campo }) => extraido[campo] === null || extraido[campo] === undefined,

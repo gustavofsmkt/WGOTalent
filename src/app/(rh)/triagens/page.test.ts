@@ -125,7 +125,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
     const filtered = mockTriagens.filter(
       (item) =>
         item.candidato.nome.toLowerCase().includes(query) ||
-        item.candidato.email.toLowerCase().includes(query) ||
+        (item.candidato.email?.toLowerCase().includes(query) ?? false) ||
         item.vaga.cargoTitulo.toLowerCase().includes(query) ||
         item.vaga.cidade.toLowerCase().includes(query),
     );

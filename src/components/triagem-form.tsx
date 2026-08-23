@@ -48,7 +48,7 @@ import { cn } from "~/lib/utils";
 export interface CandidatoOption {
   id: string;
   nome: string;
-  email: string;
+  email: string | null;
 }
 
 export interface VagaOption {

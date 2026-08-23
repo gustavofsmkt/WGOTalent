@@ -74,6 +74,7 @@ describe("calcularDadosPendentes", () => {
         bairro: "Centro",
         logradouro: "Rua A",
         email: "maria@example.com",
+        celular: "62999999999",
       }),
     ).toBeNull();
   });
@@ -86,6 +87,7 @@ describe("calcularDadosPendentes", () => {
         bairro: "Centro",
         logradouro: "Rua A",
         email: "maria@example.com",
+        celular: "62999999999",
       }),
     ).toBe("Data de nascimento, CEP");
   });
@@ -98,7 +100,21 @@ describe("calcularDadosPendentes", () => {
         bairro: "Centro",
         logradouro: "Rua A",
         email: null,
+        celular: "62999999999",
       }),
     ).toBe("E-mail");
+  });
+
+  it("flags a missing celular as pending too", () => {
+    expect(
+      calcularDadosPendentes({
+        dataNascimento: "1990-01-01",
+        cep: "74000-000",
+        bairro: "Centro",
+        logradouro: "Rua A",
+        email: "maria@example.com",
+        celular: null,
+      }),
+    ).toBe("Celular");
   });
 });

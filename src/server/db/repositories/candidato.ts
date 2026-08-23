@@ -116,6 +116,13 @@ export function mergeScalarFields(
     }
   }
 
+  // Placeholder emails (gerados por versões anteriores do código para
+  // contornar o NOT NULL) devem ser limpos quando o novo envio não traz
+  // e-mail real — o campo agora é nullable e o placeholder não tem valor.
+  if (!incoming.email && current.email?.endsWith("@wgotalent.local")) {
+    updates.email = null;
+  }
+
   for (const campo of CAMPOS_BOOLEANOS_ADITIVOS) {
     if (incoming[campo] === true && (current as Record<string, unknown>)[campo] === false) {
       updates[campo] = true;
@@ -137,8 +144,8 @@ export function mergeScalarFields(
 export interface CandidatoSummary {
   id: string;
   nome: string;
-  email: string;
-  celular: string;
+  email: string | null;
+  celular: string | null;
   cidade: string;
   uf: string;
   origem: "email" | "manual" | "indicacao";
@@ -379,7 +386,19 @@ export const candidatoRepository = {
       .select()
       .from(candidatos)
       .where(eq(candidatos.email, email));
-    
+
+    return rows[0] ?? null;
+  },
+
+  findByCelularIncludingDeleted: async (
+    celular: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<Candidato | null> => {
+    const rows = await dbOrTx
+      .select()
+      .from(candidatos)
+      .where(eq(candidatos.celular, celular));
+
     return rows[0] ?? null;
   },
 
