@@ -33,57 +33,49 @@ export async function generateMetadata(props: EditarCandidatoPageProps) {
 
 export default async function EditarCandidatoPage(props: EditarCandidatoPageProps) {
   const { id } = await props.params;
-  const candidato = await candidatoRepository.findByIdComplete(id);
+  const [candidato, activeCargoOptions, activeDepartamentoOptions] = await Promise.all([
+    candidatoRepository.findByIdComplete(id),
+    candidatoRepository.findActiveCargoOptions(),
+    candidatoRepository.findActiveDepartamentoOptions(),
+  ]);
 
   if (!candidato) {
     notFound();
   }
 
-  const [activeCargoOptions, activeDepartamentoOptions] = await Promise.all([
-    candidatoRepository.findActiveCargoOptions(),
-    candidatoRepository.findActiveDepartamentoOptions(),
+  const [currentCargo, currentDept] = await Promise.all([
+    candidato.cargoInteresseId && !activeCargoOptions.some((c) => c.id === candidato.cargoInteresseId)
+      ? cargoRepository.findByIdWithDepartamento(candidato.cargoInteresseId)
+      : Promise.resolve(null),
+    candidato.areaInteresseId && !activeDepartamentoOptions.some((d) => d.id === candidato.areaInteresseId)
+      ? departamentoRepository.findById(candidato.areaInteresseId)
+      : Promise.resolve(null),
   ]);
 
   let cargoOptions = activeCargoOptions;
-  if (
-    candidato.cargoInteresseId &&
-    !activeCargoOptions.some((c) => c.id === candidato.cargoInteresseId)
-  ) {
-    const currentCargo = await cargoRepository.findByIdWithDepartamento(
-      candidato.cargoInteresseId,
-    );
-    if (currentCargo) {
-      cargoOptions = [
-        {
-          id: currentCargo.id,
-          titulo: `${currentCargo.titulo} (Inativo)`,
-          departamento: {
-            id: currentCargo.departamento.id,
-            nome: currentCargo.departamento.nome,
-          },
+  if (currentCargo) {
+    cargoOptions = [
+      {
+        id: currentCargo.id,
+        titulo: `${currentCargo.titulo} (Inativo)`,
+        departamento: {
+          id: currentCargo.departamento.id,
+          nome: currentCargo.departamento.nome,
         },
-        ...activeCargoOptions,
-      ];
-    }
+      },
+      ...activeCargoOptions,
+    ];
   }
 
   let departamentoOptions = activeDepartamentoOptions;
-  if (
-    candidato.areaInteresseId &&
-    !activeDepartamentoOptions.some((d) => d.id === candidato.areaInteresseId)
-  ) {
-    const currentDept = await departamentoRepository.findById(
-      candidato.areaInteresseId,
-    );
-    if (currentDept) {
-      departamentoOptions = [
-        {
-          id: currentDept.id,
-          nome: `${currentDept.nome} (Inativo)`,
-        },
-        ...activeDepartamentoOptions,
-      ];
-    }
+  if (currentDept) {
+    departamentoOptions = [
+      {
+        id: currentDept.id,
+        nome: `${currentDept.nome} (Inativo)`,
+      },
+      ...activeDepartamentoOptions,
+    ];
   }
 
   return (

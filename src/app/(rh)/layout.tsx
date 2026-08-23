@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { Menu } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "~/components/ui/sheet";
 import { NavLinks } from "~/components/nav-links";
 import { UploadProgressProvider } from "~/components/upload-progress/upload-progress-store";
-import { UploadProgressPopup } from "~/components/upload-progress/upload-progress-popup";
+
+const UploadProgressPopup = dynamic(() =>
+  import("~/components/upload-progress/upload-progress-popup").then((m) => m.UploadProgressPopup),
+);
 
 export default function RhLayout({ children }: { children: ReactNode }) {
   return (

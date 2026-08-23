@@ -17,6 +17,7 @@ export interface VagaWithCargoAndDepartamento extends Vaga {
     id: string;
     titulo: string;
     ativo: boolean;
+    descricao: string;
     requisitos: string;
     requisitosDesejaveis: string;
     criteriosEliminatorios: string;
@@ -62,6 +63,7 @@ export const vagaRepository = {
           cargoIdValue: cargos.id,
           cargoTitulo: cargos.titulo,
           cargoAtivo: cargos.ativo,
+          cargoDescricao: cargos.descricao,
           cargoRequisitos: cargos.requisitos,
           cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
           cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
@@ -89,6 +91,7 @@ export const vagaRepository = {
         id: r.cargoIdValue,
         titulo: r.cargoTitulo,
         ativo: r.cargoAtivo,
+        descricao: r.cargoDescricao,
         requisitos: r.cargoRequisitos,
         requisitosDesejaveis: r.cargoRequisitosDesejaveis,
         criteriosEliminatorios: r.cargoCriteriosEliminatorios,
@@ -132,6 +135,7 @@ export const vagaRepository = {
           cargoIdValue: cargos.id,
           cargoTitulo: cargos.titulo,
           cargoAtivo: cargos.ativo,
+          cargoDescricao: cargos.descricao,
           cargoRequisitos: cargos.requisitos,
           cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
           cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
@@ -163,6 +167,7 @@ export const vagaRepository = {
         id: r.cargoIdValue,
         titulo: r.cargoTitulo,
         ativo: r.cargoAtivo,
+        descricao: r.cargoDescricao,
         requisitos: r.cargoRequisitos,
         requisitosDesejaveis: r.cargoRequisitosDesejaveis,
         criteriosEliminatorios: r.cargoCriteriosEliminatorios,
@@ -193,6 +198,7 @@ export const vagaRepository = {
         cargoIdValue: cargos.id,
         cargoTitulo: cargos.titulo,
         cargoAtivo: cargos.ativo,
+        cargoDescricao: cargos.descricao,
         cargoRequisitos: cargos.requisitos,
         cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
         cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
@@ -222,6 +228,7 @@ export const vagaRepository = {
         id: r.cargoIdValue ?? "",
         titulo: r.cargoTitulo ?? "Cargo não identificado",
         ativo: r.cargoAtivo ?? false,
+        descricao: r.cargoDescricao ?? "",
         requisitos: r.cargoRequisitos ?? "",
         requisitosDesejaveis: r.cargoRequisitosDesejaveis ?? "",
         criteriosEliminatorios: r.cargoCriteriosEliminatorios ?? "",
@@ -281,6 +288,7 @@ export const vagaRepository = {
           cargoIdValue: cargos.id,
           cargoTitulo: cargos.titulo,
           cargoAtivo: cargos.ativo,
+          cargoDescricao: cargos.descricao,
           cargoRequisitos: cargos.requisitos,
           cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
           cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
@@ -309,6 +317,7 @@ export const vagaRepository = {
         id: r.cargoIdValue,
         titulo: r.cargoTitulo,
         ativo: r.cargoAtivo,
+        descricao: r.cargoDescricao,
         requisitos: r.cargoRequisitos,
         requisitosDesejaveis: r.cargoRequisitosDesejaveis,
         criteriosEliminatorios: r.cargoCriteriosEliminatorios,

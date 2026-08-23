@@ -16,13 +16,14 @@ interface EditarVagaPageProps {
 
 export default async function EditarVagaPage(props: EditarVagaPageProps) {
   const params = await props.params;
-  const vaga = await vagaRepository.findById(params.id);
+  const [vaga, activeCargoOptions] = await Promise.all([
+    vagaRepository.findById(params.id),
+    vagaRepository.findActiveCargoOptions(),
+  ]);
 
   if (!vaga) {
     notFound();
   }
-
-  const activeCargoOptions = await vagaRepository.findActiveCargoOptions();
   let cargoOptions = activeCargoOptions;
 
   // If the currently assigned cargo is not in active options (e.g. deactivated), include it so select retains its value

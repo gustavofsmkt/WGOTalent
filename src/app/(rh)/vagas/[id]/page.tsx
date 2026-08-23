@@ -16,7 +16,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
 import { vagaRepository } from "~/server/db/repositories/vaga";
-import { cargoRepository } from "~/server/db/repositories/cargo";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { DeleteVagaButton } from "../_components/delete-vaga-button";
@@ -33,7 +32,6 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
     notFound();
   }
 
-  const cargo = await cargoRepository.findById(vaga.cargoId);
   const triagensAtivas = await triagemRepository.findAllWithJoins({
     vagaId: vaga.id,
     resultado: "em_andamento",
@@ -115,70 +113,66 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
         {/* Main Content - 2 columns */}
         <div className="md:col-span-2 space-y-6">
           {/* Cargo Details */}
-          {cargo && (
-            <>
-              <Card className="shadow-xs border-border/60">
-                <CardHeader className="bg-muted/30 border-b border-border/40 pb-4 flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">Descrição do Cargo</CardTitle>
-                  <Link
-                    href={`/cargos/${cargo.id}`}
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                  >
-                    Ver Cargo completo
-                    <ExternalLink className="size-3" />
-                  </Link>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                    <p className="whitespace-pre-wrap leading-relaxed">
-                      {cargo.descricao}
-                    </p>
+          <Card className="shadow-xs border-border/60">
+            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Descrição do Cargo</CardTitle>
+              <Link
+                href={`/cargos/${vaga.cargo.id}`}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                Ver Cargo completo
+                <ExternalLink className="size-3" />
+              </Link>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                <p className="whitespace-pre-wrap leading-relaxed">
+                  {vaga.cargo.descricao}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xs border-border/60">
+            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+              <CardTitle className="text-lg">Requisitos e Critérios</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  Requisitos Obrigatórios
+                </h3>
+                <div className="pl-3.5 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                  {vaga.cargo.requisitos || "Nenhum requisito especificado."}
+                </div>
+              </div>
+
+              {vaga.cargo.requisitosDesejaveis && (
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground" />
+                    Requisitos Desejáveis
+                  </h3>
+                  <div className="pl-3.5 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {vaga.cargo.requisitosDesejaveis}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              )}
 
-              <Card className="shadow-xs border-border/60">
-                <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
-                  <CardTitle className="text-lg">Requisitos e Critérios</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      Requisitos Obrigatórios
-                    </h3>
-                    <div className="pl-3.5 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                      {cargo.requisitos || "Nenhum requisito especificado."}
-                    </div>
+              {vaga.cargo.criteriosEliminatorios && (
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <h3 className="text-sm font-semibold text-destructive flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                    Critérios Eliminatórios
+                  </h3>
+                  <div className="pl-3.5 text-sm text-destructive/90 whitespace-pre-wrap leading-relaxed">
+                    {vaga.cargo.criteriosEliminatorios}
                   </div>
-
-                  {cargo.requisitosDesejaveis && (
-                    <div className="space-y-2 pt-2 border-t border-border/40">
-                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground" />
-                        Requisitos Desejáveis
-                      </h3>
-                      <div className="pl-3.5 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                        {cargo.requisitosDesejaveis}
-                      </div>
-                    </div>
-                  )}
-
-                  {cargo.criteriosEliminatorios && (
-                    <div className="space-y-2 pt-2 border-t border-border/40">
-                      <h3 className="text-sm font-semibold text-destructive flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                        Critérios Eliminatórios
-                      </h3>
-                      <div className="pl-3.5 text-sm text-destructive/90 whitespace-pre-wrap leading-relaxed">
-                        {cargo.criteriosEliminatorios}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </>
-          )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar Panel - 1 column */}
