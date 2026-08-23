@@ -12,6 +12,7 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 - [0006: n8n como Serviço no Docker Compose](./0006-n8n-docker-compose-service.md)
 - [0007: Encerramento da Integração via n8n e Adoção de Motor de Agentes Nativo](./0007-encerramento-integracao-n8n.md)
 - [0008: Candidato Duplicado por E-mail — Restaurar e Mesclar em Vez de Rejeitar](./0008-candidato-duplicado-restaurar-e-mesclar.md)
+- [0009: Sistema de Ícones Padrão](./0009-icon-system-lucide-react.md)
 
 ---
 
