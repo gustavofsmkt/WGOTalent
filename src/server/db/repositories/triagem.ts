@@ -7,6 +7,11 @@ import {
   cargos,
   departamentos,
   avaliacaoIA,
+  triagemEtapaEnum,
+  triagemResultadoEnum,
+  triagemMotivoEnum,
+  type Triagem,
+  type NovaTriagem,
   type TriagemCompleta,
   type AvaliacaoIA,
   type NovaAvaliacaoIA,
@@ -17,9 +22,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
 
 export interface TriagemFiltros {
-  etapa?: string;
-  resultado?: string;
-  motivo?: string;
+  etapa?: (typeof triagemEtapaEnum.enumValues)[number];
+  resultado?: (typeof triagemResultadoEnum.enumValues)[number];
+  motivo?: (typeof triagemMotivoEnum.enumValues)[number];
   vagaId?: string;
   vagaAtiva?: boolean;
 }
@@ -75,9 +80,9 @@ export const triagemRepository = {
     dbOrTx: DbOrTx = db,
   ): Promise<TriagemListItem[]> => {
     const conditions: (SQL | undefined)[] = [];
-    if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa as any));
-    if (filtros?.resultado) conditions.push(eq(triagens.resultado, filtros.resultado as any));
-    if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo as any));
+    if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa));
+    if (filtros?.resultado) conditions.push(eq(triagens.resultado, filtros.resultado));
+    if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo));
     if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
     if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
 
@@ -236,12 +241,16 @@ export const triagemRepository = {
     return rows.length > 0;
   },
 
-  create: async (data: any, dbOrTx: DbOrTx = db): Promise<any> => {
+  create: async (data: NovaTriagem, dbOrTx: DbOrTx = db): Promise<Triagem> => {
     const rows = await dbOrTx.insert(triagens).values(data).returning();
-    return rows[0];
+    return rows[0]!;
   },
 
-  update: async (id: string, data: any, dbOrTx: DbOrTx = db): Promise<any> => {
+  update: async (
+    id: string,
+    data: Partial<NovaTriagem>,
+    dbOrTx: DbOrTx = db,
+  ): Promise<Triagem | undefined> => {
     const rows = await dbOrTx
       .update(triagens)
       .set({ ...data, updatedAt: new Date().toISOString() })

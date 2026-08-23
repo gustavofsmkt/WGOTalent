@@ -12,6 +12,7 @@ vi.mock("~/env", () => ({
 
 import {
   triagemRepository,
+  type TriagemFiltros,
   type TriagemListItem,
 } from "~/server/db/repositories/triagem";
 
@@ -107,7 +108,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
       .spyOn(triagemRepository, "findAllWithJoins")
       .mockResolvedValueOnce([mockTriagens[2]!]);
 
-    const filters = {
+    const filters: TriagemFiltros = {
       etapa: "finalizado",
       resultado: "reprovado",
       motivo: "fit_cultural",

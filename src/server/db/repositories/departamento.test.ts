@@ -13,7 +13,7 @@ vi.mock("~/server/db/query-helpers", async (importOriginal) => {
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
-import { departamentoRepository } from "./departamento";
+import { departamentoRepository, type DbOrTx } from "./departamento";
 import { departamentos, cargos } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { eq } from "drizzle-orm";
@@ -79,7 +79,7 @@ describe("departamentoRepository", () => {
           }),
         }),
       }),
-    } as any;
+    } as unknown as DbOrTx;
 
     await departamentoRepository.findAllWithActiveCargosCount(mockFakeDb);
 

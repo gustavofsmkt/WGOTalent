@@ -40,6 +40,9 @@ import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
 import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
+import type { Candidato, UploadLoteItem } from "~/server/db/schema";
+import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
+import type { ExtracaoCurriculoOutput } from "~/lib/validation/extracao-curriculo";
 
 describe("candidatos server actions", () => {
   beforeEach(() => {
@@ -75,7 +78,7 @@ describe("candidatos server actions", () => {
 
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
       vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce(mockCandidato as unknown as CandidatoDetailCompleto);
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -111,10 +114,10 @@ describe("candidatos server actions", () => {
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
         deletedAt: null,
-      } as any);
+      } as unknown as Candidato);
       const mergeAggregateSpy = vi
         .spyOn(candidatoRepository, "mergeAggregate")
-        .mockResolvedValueOnce({ candidato: { id: "cand-2" } as any, houveMudanca: false });
+        .mockResolvedValueOnce({ candidato: { id: "cand-2" } as unknown as CandidatoDetailCompleto, houveMudanca: false });
       const findEmCurriculoSpy = vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato");
 
       const result = await createCandidato({
@@ -147,9 +150,9 @@ describe("candidatos server actions", () => {
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
         deletedAt: null,
-      } as any);
+      } as unknown as Candidato);
       vi.spyOn(candidatoRepository, "mergeAggregate").mockResolvedValueOnce({
-        candidato: { id: "cand-2" } as any,
+        candidato: { id: "cand-2" } as unknown as CandidatoDetailCompleto,
         houveMudanca: true,
       });
       vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato").mockResolvedValueOnce(["triagem-1"]);
@@ -182,10 +185,10 @@ describe("candidatos server actions", () => {
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
         deletedAt: new Date().toISOString(),
-      } as any);
+      } as unknown as Candidato);
       const restoreAggregateSpy = vi
         .spyOn(candidatoRepository, "restoreAggregate")
-        .mockResolvedValueOnce({ id: "cand-3" } as any);
+        .mockResolvedValueOnce({ id: "cand-3" } as unknown as CandidatoDetailCompleto);
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -238,8 +241,8 @@ describe("candidatos server actions", () => {
         deletedAt: null,
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
-      vi.spyOn(candidatoRepository, "updateAggregate").mockResolvedValueOnce({ ...mockCandidato, nome: "João Pedro Silva" } as any);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
+      vi.spyOn(candidatoRepository, "updateAggregate").mockResolvedValueOnce({ ...mockCandidato, nome: "João Pedro Silva" } as unknown as CandidatoDetailCompleto);
 
       const result = await updateCandidato("cand-1", {
         nome: "João Pedro Silva",
@@ -276,12 +279,12 @@ describe("candidatos server actions", () => {
         email: "joao.silva@example.com",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "cand-2",
         nome: "Maria",
         email: "maria@example.com",
-      } as any);
+      } as unknown as Candidato);
 
       const result = await updateCandidato("cand-1", {
         nome: "João Silva",
@@ -313,7 +316,7 @@ describe("candidatos server actions", () => {
         nome: "João Silva",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
       vi.spyOn(candidatoRepository, "softDelete").mockResolvedValueOnce(undefined);
 
       const result = await deleteCandidato("cand-1");
@@ -340,7 +343,7 @@ describe("candidatos server actions", () => {
         nome: "João Silva",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as any);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
       vi.spyOn(candidatoRepository, "softDelete").mockRejectedValueOnce(new Error("DB Error"));
 
       const result = await deleteCandidato("cand-1");
@@ -417,8 +420,8 @@ describe("candidatos server actions", () => {
         .mockResolvedValue(null);
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
       vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-1" } as any);
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
+      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-1" } as unknown as CandidatoDetailCompleto);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -475,12 +478,12 @@ describe("candidatos server actions", () => {
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "existing",
         deletedAt: null,
-      } as any);
+      } as unknown as Candidato);
       const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
       const mergeAggregateSpy = vi
         .spyOn(candidatoRepository, "mergeAggregate")
-        .mockResolvedValueOnce({ candidato: { id: "existing" } as any, houveMudanca: false });
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
+        .mockResolvedValueOnce({ candidato: { id: "existing" } as unknown as CandidatoDetailCompleto, houveMudanca: false });
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -499,12 +502,12 @@ describe("candidatos server actions", () => {
       vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
         id: "existing-deleted",
         deletedAt: new Date().toISOString(),
-      } as any);
+      } as unknown as Candidato);
       const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
       const restoreAggregateSpy = vi
         .spyOn(candidatoRepository, "restoreAggregate")
-        .mockResolvedValueOnce({ id: "existing-deleted" } as any);
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as any);
+        .mockResolvedValueOnce({ id: "existing-deleted" } as unknown as CandidatoDetailCompleto);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -523,11 +526,11 @@ describe("candidatos server actions", () => {
       vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
-        .mockResolvedValueOnce({ id: "cand-sem-email" } as any);
+        .mockResolvedValueOnce({ id: "cand-sem-email" } as unknown as CandidatoDetailCompleto);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce({
         ...extraido,
         email: null,
-      } as any);
+      } as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -548,7 +551,7 @@ describe("candidatos server actions", () => {
         ...extraido,
         email: null,
         celular: null,
-      } as any);
+      } as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv-sem-contato.pdf"));
 
@@ -565,10 +568,10 @@ describe("candidatos server actions", () => {
       vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
-        .mockResolvedValueOnce({ id: "cand-sem-nascimento" } as any);
+        .mockResolvedValueOnce({ id: "cand-sem-nascimento" } as unknown as CandidatoDetailCompleto);
       // Reprodução do caso real: o agente omite a chave em vez de mandar null.
       const { dataNascimento: _dn, ...extraidoSemNascimento } = extraido;
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraidoSemNascimento as any);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraidoSemNascimento as unknown as ExtracaoCurriculoOutput);
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -604,7 +607,7 @@ describe("candidatos server actions", () => {
     it("creates one 'pending' row per file and returns immediately without waiting for processing", async () => {
       const createSpy = vi
         .spyOn(uploadLoteItemRepository, "create")
-        .mockImplementation(async (data) => ({ id: `id-${data.fileName}`, ...data }) as any);
+        .mockImplementation(async (data) => ({ id: `id-${data.fileName}`, ...data }) as unknown as UploadLoteItem);
       // Processing itself would hang forever if awaited — proves the action doesn't await it.
       vi.mocked(executarExtracaoCurriculo).mockImplementation(() => new Promise(() => {}));
 
@@ -622,7 +625,7 @@ describe("candidatos server actions", () => {
 
   describe("getUploadLoteAtivo", () => {
     it("delegates to uploadLoteItemRepository.findAtivos", async () => {
-      const itens = [{ id: "1", fileName: "cv1.pdf", status: "sucesso" }] as any;
+      const itens = [{ id: "1", fileName: "cv1.pdf", status: "sucesso" }] as unknown as UploadLoteItem[];
       vi.spyOn(uploadLoteItemRepository, "findAtivos").mockResolvedValueOnce(itens);
 
       const result = await getUploadLoteAtivo();

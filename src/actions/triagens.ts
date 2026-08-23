@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { PostgresError } from "postgres";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
@@ -60,8 +61,11 @@ export async function createTriagem(
       success: true,
       data: triagem,
     };
-  } catch (error: any) {
-    if (error?.message?.includes("unique") || error?.code === "23505") {
+  } catch (error) {
+    if (
+      error instanceof PostgresError &&
+      (error.message.includes("unique") || error.code === "23505")
+    ) {
       return {
         success: false,
         message: "O candidato já possui uma triagem em andamento para esta vaga.",
@@ -124,8 +128,11 @@ export async function updateTriagem(
       success: true,
       data: triagem,
     };
-  } catch (error: any) {
-    if (error?.message?.includes("unique") || error?.code === "23505") {
+  } catch (error) {
+    if (
+      error instanceof PostgresError &&
+      (error.message.includes("unique") || error.code === "23505")
+    ) {
       return {
         success: false,
         message: "O candidato já possui uma triagem em andamento para esta vaga.",
@@ -157,7 +164,7 @@ export async function deleteTriagem(
     return {
       success: true,
     };
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       message: "Erro ao excluir triagem.",

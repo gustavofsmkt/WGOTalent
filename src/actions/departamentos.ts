@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { PostgresError } from "postgres";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import {
   createDepartamentoSchema,
@@ -29,9 +30,12 @@ export async function createDepartamento(
       success: true,
       data: departamento,
     };
-  } catch (error: any) {
+  } catch (error) {
     // Tratamento basico para unique constraint (pode ser refinado depois)
-    if (error?.message?.includes("unique") || error?.code === "23505") {
+    if (
+      error instanceof PostgresError &&
+      (error.message.includes("unique") || error.code === "23505")
+    ) {
       return {
         success: false,
         message: "Já existe um departamento com este nome.",
@@ -72,8 +76,11 @@ export async function updateDepartamento(
       success: true,
       data: departamento,
     };
-  } catch (error: any) {
-    if (error?.message?.includes("unique") || error?.code === "23505") {
+  } catch (error) {
+    if (
+      error instanceof PostgresError &&
+      (error.message.includes("unique") || error.code === "23505")
+    ) {
       return {
         success: false,
         message: "Já existe um departamento com este nome.",

@@ -46,7 +46,7 @@ export async function createVaga(
       success: true,
       data: vaga,
     };
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       message: "Erro ao criar vaga.",
@@ -92,7 +92,7 @@ export async function updateVaga(
       success: true,
       data: vaga,
     };
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       message: "Erro ao atualizar vaga.",

@@ -13,7 +13,7 @@ vi.mock("~/server/db/query-helpers", async (importOriginal) => {
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
-import { dashboardRepository } from "./dashboard";
+import { dashboardRepository, type DbOrTx } from "./dashboard";
 import {
   vagas,
   candidatos,
@@ -233,7 +233,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       const result = await dashboardRepository.getTriagensPorEtapa(mockFakeDb);
       expect(result).toEqual({
@@ -258,7 +258,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       const result = await dashboardRepository.getTriagensPorResultado(mockFakeDb);
       expect(result).toEqual({
@@ -279,7 +279,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       const result = await dashboardRepository.getMediaScoreIa(mockFakeDb);
       expect(result).toEqual({
@@ -297,7 +297,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       const result = await dashboardRepository.getMediaScoreIa(mockFakeDb);
       expect(result).toEqual({
@@ -316,7 +316,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       await dashboardRepository.getMediaScoreIa(mockFakeDb);
 
@@ -347,7 +347,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       await dashboardRepository.getVagasComMaisCandidatos(5, mockFakeDb);
 
@@ -376,7 +376,7 @@ describe("dashboardRepository", () => {
             }),
           }),
         }),
-      } as any;
+      } as unknown as DbOrTx;
 
       await dashboardRepository.getAtividadeRecente(5, mockFakeDb);
 

@@ -19,6 +19,7 @@ import {
 } from "./departamentos";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { revalidatePath } from "next/cache";
+import { PostgresError } from "postgres";
 
 describe("departamentos server actions", () => {
   beforeEach(() => {
@@ -73,10 +74,12 @@ describe("departamentos server actions", () => {
     });
 
     it("handles unique constraint error when department name already exists", async () => {
-      vi.spyOn(departamentoRepository, "create").mockRejectedValueOnce({
-        code: "23505",
-        message: "duplicate key value violates unique constraint",
-      });
+      vi.spyOn(departamentoRepository, "create").mockRejectedValueOnce(
+        Object.assign(
+          new PostgresError("duplicate key value violates unique constraint"),
+          { code: "23505" },
+        ),
+      );
 
       const result = await createDepartamento({
         nome: "TI Existente",

@@ -13,7 +13,7 @@ vi.mock("~/server/db/query-helpers", async (importOriginal) => {
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
-import { agenteConfigRepository } from "./agente-config";
+import { agenteConfigRepository, type DbOrTx } from "./agente-config";
 import { agenteConfig } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -46,7 +46,7 @@ describe("agenteConfigRepository", () => {
           }),
         }),
       }),
-    } as any;
+    } as unknown as DbOrTx;
 
     await agenteConfigRepository.findAll(mockFakeDb);
 
@@ -61,7 +61,7 @@ describe("agenteConfigRepository", () => {
           where: async () => [],
         }),
       }),
-    } as any;
+    } as unknown as DbOrTx;
 
     await agenteConfigRepository.findBySlot("extracao_curriculo", mockFakeDb);
 

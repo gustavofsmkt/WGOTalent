@@ -20,6 +20,7 @@ import {
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { revalidatePath } from "next/cache";
+import type { Cargo } from "~/server/db/schema";
 
 describe("cargos server actions", () => {
   beforeEach(() => {
@@ -53,7 +54,7 @@ describe("cargos server actions", () => {
       });
 
       vi.spyOn(cargoRepository, "create").mockResolvedValueOnce(
-        mockCreated as any,
+        mockCreated as unknown as Cargo,
       );
 
       const result = await createCargo({
@@ -127,7 +128,7 @@ describe("cargos server actions", () => {
       };
 
       vi.spyOn(cargoRepository, "update").mockResolvedValueOnce(
-        mockUpdated as any,
+        mockUpdated as unknown as Cargo,
       );
 
       const result = await updateCargo("cargo-1", {
@@ -192,7 +193,7 @@ describe("cargos server actions", () => {
         deletedAt: new Date().toISOString(),
       };
       vi.spyOn(cargoRepository, "softDelete").mockResolvedValueOnce(
-        mockDeleted as any,
+        mockDeleted as unknown as Cargo,
       );
 
       const result = await deleteCargo("cargo-empty");

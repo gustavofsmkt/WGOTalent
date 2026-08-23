@@ -21,13 +21,22 @@ import {
   TableCell,
 } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
-import { triagemRepository } from "~/server/db/repositories/triagem";
+import { triagemRepository, type TriagemFiltros } from "~/server/db/repositories/triagem";
+import {
+  triagemEtapaEnum,
+  triagemResultadoEnum,
+  triagemMotivoEnum,
+} from "~/server/db/schema";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { MOTIVO_LABELS, getInitials, formatDate } from "~/lib/triagem-format";
 import { TriagensFilter } from "./_components/triagens-filter";
 import { DeleteTriagemButton } from "./_components/delete-triagem-button";
 
 export const dynamic = "force-dynamic";
+
+function isEnumValue<T extends string>(values: readonly T[], value: string): value is T {
+  return (values as readonly string[]).includes(value);
+}
 
 interface TriagensPageProps {
   searchParams?: Promise<{
@@ -51,20 +60,18 @@ export default async function TriagensPage(props: TriagensPageProps) {
   const vagaAtivaFilter = searchParams.vagaAtiva === "1";
   const vagaFilter = (searchParams.vaga ?? "").trim();
 
-  const dbFilter: {
-    etapa?: string;
-    resultado?: string;
-    motivo?: string;
-    vagaAtiva?: boolean;
-    vagaId?: string;
-  } = {};
-  if (etapaFilter && etapaFilter !== "todas") {
+  const dbFilter: TriagemFiltros = {};
+  if (etapaFilter && etapaFilter !== "todas" && isEnumValue(triagemEtapaEnum.enumValues, etapaFilter)) {
     dbFilter.etapa = etapaFilter;
   }
-  if (resultadoFilter && resultadoFilter !== "todas") {
+  if (
+    resultadoFilter &&
+    resultadoFilter !== "todas" &&
+    isEnumValue(triagemResultadoEnum.enumValues, resultadoFilter)
+  ) {
     dbFilter.resultado = resultadoFilter;
   }
-  if (motivoFilter && motivoFilter !== "todos") {
+  if (motivoFilter && motivoFilter !== "todos" && isEnumValue(triagemMotivoEnum.enumValues, motivoFilter)) {
     dbFilter.motivo = motivoFilter;
   }
   if (vagaAtivaFilter) {

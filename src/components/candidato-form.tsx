@@ -68,6 +68,10 @@ export interface CargoOption {
  * `ReactFormExtendedApi` em cada seção — usado como prop nas seções abaixo
  * em vez de `form: any`.
  */
+/* eslint-disable @typescript-eslint/no-explicit-any -- mirrors TanStack Form's
+   own useFormContext() signature, which hardcodes `any` for these 11 slots;
+   each has a constraint (e.g. `undefined | FormValidateOrFn<TFormData>`) that
+   `unknown` does not satisfy, so `any` is the only substitute that compiles. */
 type CandidatoFormApi = ReactFormExtendedApi<
   CandidatoAgregadoInput,
   any,
@@ -82,6 +86,7 @@ type CandidatoFormApi = ReactFormExtendedApi<
   any,
   any
 >;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const ESTADO_CIVIL_LABELS: Record<string, string> = {
   nao_informado: "Não Informado",

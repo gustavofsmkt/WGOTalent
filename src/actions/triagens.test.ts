@@ -4,6 +4,7 @@ import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { revalidatePath } from "next/cache";
+import type { Candidato, Triagem, TriagemCompleta, Vaga } from "~/server/db/schema";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -42,10 +43,10 @@ describe("Triagem Server Actions", () => {
       const mockVaga = { id: "22222222-2222-2222-2222-222222222222" };
       const mockTriagem = { id: "triagem-123", candidatoId: mockCandidato.id, vagaId: mockVaga.id, etapa: "curriculo", resultado: "em_andamento" };
 
-      vi.mocked(candidatoRepository.findById).mockResolvedValue(mockCandidato as any);
-      vi.mocked(vagaRepository.findById).mockResolvedValue(mockVaga as any);
+      vi.mocked(candidatoRepository.findById).mockResolvedValue(mockCandidato as unknown as Candidato);
+      vi.mocked(vagaRepository.findById).mockResolvedValue(mockVaga as unknown as Vaga);
       vi.mocked(triagemRepository.checkActiveEmAndamento).mockResolvedValue(false);
-      vi.mocked(triagemRepository.create).mockResolvedValue(mockTriagem as any);
+      vi.mocked(triagemRepository.create).mockResolvedValue(mockTriagem as unknown as Triagem);
 
       const response = await createTriagem({
         candidatoId: mockCandidato.id,
@@ -71,8 +72,8 @@ describe("Triagem Server Actions", () => {
       const mockCandidato = { id: "11111111-1111-1111-1111-111111111111" };
       const mockVaga = { id: "22222222-2222-2222-2222-222222222222" };
 
-      vi.mocked(candidatoRepository.findById).mockResolvedValue(mockCandidato as any);
-      vi.mocked(vagaRepository.findById).mockResolvedValue(mockVaga as any);
+      vi.mocked(candidatoRepository.findById).mockResolvedValue(mockCandidato as unknown as Candidato);
+      vi.mocked(vagaRepository.findById).mockResolvedValue(mockVaga as unknown as Vaga);
       vi.mocked(triagemRepository.checkActiveEmAndamento).mockResolvedValue(true);
 
       const response = await createTriagem({
@@ -131,9 +132,9 @@ describe("Triagem Server Actions", () => {
         vaga: { id: "vaga-123" }
       };
 
-      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as any);
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as unknown as TriagemCompleta);
       vi.mocked(triagemRepository.checkActiveEmAndamento).mockResolvedValue(false);
-      vi.mocked(triagemRepository.update).mockResolvedValue({ id: "triagem-123", etapa: "testes", resultado: "em_andamento" } as any);
+      vi.mocked(triagemRepository.update).mockResolvedValue({ id: "triagem-123", etapa: "testes", resultado: "em_andamento" } as unknown as Triagem);
 
       const response = await updateTriagem("triagem-123", {
         etapa: "testes",
@@ -155,7 +156,7 @@ describe("Triagem Server Actions", () => {
         vaga: { id: "vaga-123" }
       };
 
-      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as any);
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as unknown as TriagemCompleta);
       vi.mocked(triagemRepository.checkActiveEmAndamento).mockResolvedValue(true); // ja existe uma ativa
 
       const response = await updateTriagem("triagem-123", {
@@ -179,7 +180,7 @@ describe("Triagem Server Actions", () => {
         vaga: { id: "vaga-123" }
       };
 
-      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as any);
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(mockExisting as unknown as TriagemCompleta);
       vi.mocked(triagemRepository.softDelete).mockResolvedValue();
 
       const response = await deleteTriagem("triagem-123");

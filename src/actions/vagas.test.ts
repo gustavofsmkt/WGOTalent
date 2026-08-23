@@ -39,6 +39,7 @@ import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { db } from "~/server/db";
 import { revalidatePath } from "next/cache";
+import type { Vaga } from "~/server/db/schema";
 
 describe("vagas server actions", () => {
   const validCargoId = "550e8400-e29b-41d4-a716-446655440000";
@@ -77,7 +78,7 @@ describe("vagas server actions", () => {
         deletedAt: null,
       });
 
-      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as any);
+      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
 
       const result = await createVaga({
         cargoId: validCargoId,
@@ -126,7 +127,7 @@ describe("vagas server actions", () => {
         deletedAt: null,
       });
 
-      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as any);
+      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
 
       const result = await createVaga({
         cargoId: validCargoId,
@@ -219,7 +220,7 @@ describe("vagas server actions", () => {
         deletedAt: null,
       };
 
-      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(mockUpdated as any);
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(mockUpdated as unknown as Vaga);
 
       const result = await updateVaga("vaga-1", {
         status: "concluida",
@@ -295,7 +296,7 @@ describe("vagas server actions", () => {
         deletedAt: new Date().toISOString(),
       };
 
-      vi.spyOn(vagaRepository, "softDelete").mockResolvedValueOnce(mockDeleted as any);
+      vi.spyOn(vagaRepository, "softDelete").mockResolvedValueOnce(mockDeleted as unknown as Vaga);
 
       const result = await deleteVaga("vaga-1");
 

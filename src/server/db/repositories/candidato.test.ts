@@ -9,7 +9,12 @@ vi.mock("~/env", () => ({
   },
 }));
 
-import { mergeScalarFields, candidatoRepository } from "./candidato";
+import {
+  mergeScalarFields,
+  candidatoRepository,
+  type CandidatoAgregadoInsercao,
+  type DbOrTx,
+} from "./candidato";
 import {
   type Candidato,
   candidatos,
@@ -59,7 +64,9 @@ function baseCandidato(overrides: Partial<Candidato> = {}): Candidato {
   } as Candidato;
 }
 
-function baseIncoming(overrides: Record<string, unknown> = {}) {
+function baseIncoming(
+  overrides: Partial<CandidatoAgregadoInsercao> = {},
+): CandidatoAgregadoInsercao {
   return {
     nome: "João Silva",
     nomeSocial: null,
@@ -94,7 +101,7 @@ function baseIncoming(overrides: Record<string, unknown> = {}) {
     experiencias: [],
     certificacoes: [],
     ...overrides,
-  } as any;
+  } as unknown as CandidatoAgregadoInsercao;
 }
 
 describe("mergeScalarFields", () => {
@@ -195,7 +202,7 @@ describe("candidatoRepository.softDelete (cascade)", () => {
       candidatoDeletedAt: null,
       triagemRows: [{ id: "triagem-1" }, { id: "triagem-2" }],
     });
-    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as any;
+    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as unknown as DbOrTx;
 
     await candidatoRepository.softDelete("cand-1", fakeDb);
 
@@ -213,7 +220,7 @@ describe("candidatoRepository.softDelete (cascade)", () => {
 
   it("skips avaliacaoIA and triagens updates when the candidato has no triagens", async () => {
     const { tx, updates } = buildFakeTx({ candidatoDeletedAt: null, triagemRows: [] });
-    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as any;
+    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as unknown as DbOrTx;
 
     await candidatoRepository.softDelete("cand-1", fakeDb);
 
@@ -228,7 +235,7 @@ describe("candidatoRepository.softDelete (cascade)", () => {
       candidatoDeletedAt: "2026-01-01T00:00:00.000Z",
       triagemRows: [{ id: "triagem-1" }],
     });
-    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as any;
+    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as unknown as DbOrTx;
 
     await candidatoRepository.softDelete("cand-1", fakeDb);
 
@@ -241,7 +248,7 @@ describe("candidatoRepository.softDelete (cascade)", () => {
       select: () => ({ from: () => ({ where: async () => [] }) }),
       update: () => ({ set: () => ({ where: async () => { updates.push(1); } }) }),
     };
-    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as any;
+    const fakeDb = { transaction: async (cb: (tx: unknown) => Promise<void>) => cb(tx) } as unknown as DbOrTx;
 
     await candidatoRepository.softDelete("cand-nao-existe", fakeDb);
 

@@ -38,7 +38,7 @@ export async function createCargo(
       success: true,
       data: cargo,
     };
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       message: "Erro ao criar cargo.",
@@ -84,7 +84,7 @@ export async function updateCargo(
       success: true,
       data: cargo,
     };
-  } catch (error: any) {
+  } catch {
     return {
       success: false,
       message: "Erro ao atualizar cargo.",

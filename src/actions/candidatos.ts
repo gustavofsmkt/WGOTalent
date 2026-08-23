@@ -135,8 +135,11 @@ export async function createCandidato(
       try {
         fileKey = await handleFileUpload(file);
         parsed.data.curriculoArquivoKey = fileKey;
-      } catch (e: any) {
-        return { success: false, message: e.message || "Erro ao fazer upload do currículo." };
+      } catch (e) {
+        return {
+          success: false,
+          message: e instanceof Error ? e.message : "Erro ao fazer upload do currículo.",
+        };
       }
     }
 
@@ -181,7 +184,7 @@ export async function createCandidato(
       data: result,
       message,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("[createCandidato] Error:", error);
     return {
       success: false,
@@ -254,14 +257,17 @@ export async function updateCandidato(
     }
 
     let newFileKey: string | null = null;
-    let oldFileKey = existingCandidato.curriculoArquivoKey;
+    const oldFileKey = existingCandidato.curriculoArquivoKey;
 
     if (file) {
       try {
         newFileKey = await handleFileUpload(file);
         parsed.data.curriculoArquivoKey = newFileKey;
-      } catch (e: any) {
-        return { success: false, message: e.message || "Erro ao fazer upload do currículo." };
+      } catch (e) {
+        return {
+          success: false,
+          message: e instanceof Error ? e.message : "Erro ao fazer upload do currículo.",
+        };
       }
     } else {
       // Preserve existing key if no new file is uploaded
@@ -327,10 +333,10 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
   let fileKey: string | null = null;
   try {
     fileKey = await handleFileUpload(file);
-  } catch (e: any) {
+  } catch (e) {
     await uploadLoteItemRepository.updateStatus(itemId, {
       status: "erro",
-      mensagem: e.message || "Erro ao salvar arquivo.",
+      mensagem: e instanceof Error ? e.message : "Erro ao salvar arquivo.",
     });
     return;
   }
@@ -411,11 +417,11 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
     // arquivo do storage e deixava o registro com uma referência morta. A
     // página /candidatos já é `force-dynamic` (busca dados frescos a cada
     // navegação), então a revalidação nem é necessária neste caminho.
-  } catch (e: any) {
+  } catch (e) {
     await storage.delete(fileKey).catch(console.error);
     await uploadLoteItemRepository.updateStatus(itemId, {
       status: "erro",
-      mensagem: e.message || "Erro ao processar extração do currículo.",
+      mensagem: e instanceof Error ? e.message : "Erro ao processar extração do currículo.",
       errorType: e instanceof AgenteQuotaExcedidaError ? "quota" : null,
     });
   }
