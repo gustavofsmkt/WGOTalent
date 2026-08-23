@@ -1,4 +1,4 @@
-import { eq, sql, isNull, asc } from "drizzle-orm";
+import { eq, sql, asc } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   departamentos,
@@ -26,19 +26,21 @@ export const departamentoRepository = {
   findAllWithActiveCargosCount: async (
     dbOrTx: DbOrTx = db,
   ): Promise<DepartamentoWithCargosCount[]> => {
-    const rows = await dbOrTx
-      .select({
-        id: departamentos.id,
-        nome: departamentos.nome,
-        descricao: departamentos.descricao,
-        createdAt: departamentos.createdAt,
-        updatedAt: departamentos.updatedAt,
-        deletedAt: departamentos.deletedAt,
-        activeCargosCount: sql<number>`count(${cargos.id}) filter (where ${cargos.deletedAt} is null and ${cargos.ativo} = true)::int`,
-      })
-      .from(departamentos)
-      .leftJoin(cargos, eq(cargos.departamentoId, departamentos.id))
-      .where(isNull(departamentos.deletedAt))
+    const rows = await notDeleted(
+      dbOrTx
+        .select({
+          id: departamentos.id,
+          nome: departamentos.nome,
+          descricao: departamentos.descricao,
+          createdAt: departamentos.createdAt,
+          updatedAt: departamentos.updatedAt,
+          deletedAt: departamentos.deletedAt,
+          activeCargosCount: sql<number>`count(${cargos.id}) filter (where ${cargos.deletedAt} is null and ${cargos.ativo} = true)::int`,
+        })
+        .from(departamentos)
+        .leftJoin(cargos, eq(cargos.departamentoId, departamentos.id)),
+      departamentos,
+    )
       .groupBy(departamentos.id)
       .orderBy(asc(departamentos.nome));
 

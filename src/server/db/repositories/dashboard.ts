@@ -219,14 +219,17 @@ export const dashboardRepository = {
   getMediaScoreIa: async (
     dbOrTx: DbOrTx = db,
   ): Promise<MediaScoreIaResult> => {
-    const rows = await dbOrTx
-      .select({
-        media: sql<number | null>`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
-        total: sql<number>`count(*)::int`,
-      })
-      .from(avaliacaoIA)
-      .innerJoin(triagens, eq(avaliacaoIA.triagemId, triagens.id))
-      .where(and(isNull(avaliacaoIA.deletedAt), isNull(triagens.deletedAt)));
+    const rows = await notDeleted(
+      dbOrTx
+        .select({
+          media: sql<number | null>`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
+          total: sql<number>`count(*)::int`,
+        })
+        .from(avaliacaoIA)
+        .innerJoin(triagens, eq(avaliacaoIA.triagemId, triagens.id)),
+      avaliacaoIA,
+      isNull(triagens.deletedAt),
+    );
 
     const first = rows[0];
     const total = Number(first?.total ?? 0);
@@ -248,22 +251,23 @@ export const dashboardRepository = {
     limit = 5,
     dbOrTx: DbOrTx = db,
   ): Promise<VagaComMaisCandidatosItem[]> => {
-    const rows = await dbOrTx
-      .select({
-        vagaId: vagas.id,
-        cargoTitulo: cargos.titulo,
-        departamentoNome: departamentos.nome,
-        cidade: vagas.cidade,
-        uf: vagas.uf,
-        posicoesDisponiveis: vagas.posicoesDisponiveis,
-        totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
-      })
-      .from(vagas)
-      .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-      .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-      .leftJoin(triagens, eq(vagas.id, triagens.vagaId))
-      .where(isNull(vagas.deletedAt))
-      .groupBy(
+    const rows = await notDeleted(
+      dbOrTx
+        .select({
+          vagaId: vagas.id,
+          cargoTitulo: cargos.titulo,
+          departamentoNome: departamentos.nome,
+          cidade: vagas.cidade,
+          uf: vagas.uf,
+          posicoesDisponiveis: vagas.posicoesDisponiveis,
+          totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
+        })
+        .from(vagas)
+        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+        .leftJoin(triagens, eq(vagas.id, triagens.vagaId)),
+      vagas,
+    ).groupBy(
         vagas.id,
         cargos.titulo,
         departamentos.nome,
@@ -296,34 +300,36 @@ export const dashboardRepository = {
     limit = 5,
     dbOrTx: DbOrTx = db,
   ): Promise<AtividadeRecenteItem[]> => {
-    const rows = await dbOrTx
-      .select({
-        id: triagens.id,
-        candidatoId: candidatos.id,
-        candidatoNome: candidatos.nome,
-        vagaId: vagas.id,
-        cargoTitulo: cargos.titulo,
-        departamentoNome: departamentos.nome,
-        etapa: triagens.etapa,
-        resultado: triagens.resultado,
-        motivo: triagens.motivo,
-        scoreIa: avaliacaoIA.scoreIa,
-        createdAt: triagens.createdAt,
-        updatedAt: triagens.updatedAt,
-      })
-      .from(triagens)
-      .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
-      .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
-      .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-      .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-      .leftJoin(
-        avaliacaoIA,
-        and(
-          eq(triagens.id, avaliacaoIA.triagemId),
-          isNull(avaliacaoIA.deletedAt),
+    const rows = await notDeleted(
+      dbOrTx
+        .select({
+          id: triagens.id,
+          candidatoId: candidatos.id,
+          candidatoNome: candidatos.nome,
+          vagaId: vagas.id,
+          cargoTitulo: cargos.titulo,
+          departamentoNome: departamentos.nome,
+          etapa: triagens.etapa,
+          resultado: triagens.resultado,
+          motivo: triagens.motivo,
+          scoreIa: avaliacaoIA.scoreIa,
+          createdAt: triagens.createdAt,
+          updatedAt: triagens.updatedAt,
+        })
+        .from(triagens)
+        .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
+        .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+        .leftJoin(
+          avaliacaoIA,
+          and(
+            eq(triagens.id, avaliacaoIA.triagemId),
+            isNull(avaliacaoIA.deletedAt),
+          ),
         ),
-      )
-      .where(isNull(triagens.deletedAt))
+      triagens,
+    )
       .orderBy(desc(triagens.updatedAt), desc(triagens.createdAt))
       .limit(limit);
 

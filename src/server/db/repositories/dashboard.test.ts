@@ -8,6 +8,10 @@ vi.mock("~/env", () => ({
     NODE_ENV: "test",
   },
 }));
+vi.mock("~/server/db/query-helpers", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/server/db/query-helpers")>();
+  return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
+});
 
 import { dashboardRepository } from "./dashboard";
 import {
@@ -300,6 +304,83 @@ describe("dashboardRepository", () => {
         media: 82.5,
         totalAvaliadas: 14,
       });
+    });
+
+    it("getMediaScoreIa routes its filter through notDeleted() on avaliacaoIA instead of an inline isNull", async () => {
+      vi.mocked(notDeleted).mockClear();
+      const mockFakeDb = {
+        select: () => ({
+          from: () => ({
+            innerJoin: () => ({
+              where: async () => [{ media: 82.5, total: 14 }],
+            }),
+          }),
+        }),
+      } as any;
+
+      await dashboardRepository.getMediaScoreIa(mockFakeDb);
+
+      expect(notDeleted).toHaveBeenCalledWith(
+        expect.anything(),
+        avaliacaoIA,
+        expect.anything(),
+      );
+    });
+
+    it("getVagasComMaisCandidatos routes its filter through notDeleted() on vagas instead of an inline isNull", async () => {
+      vi.mocked(notDeleted).mockClear();
+      const mockFakeDb = {
+        select: () => ({
+          from: () => ({
+            innerJoin: () => ({
+              innerJoin: () => ({
+                leftJoin: () => ({
+                  where: () => ({
+                    groupBy: () => ({
+                      orderBy: () => ({
+                        limit: async () => [],
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      } as any;
+
+      await dashboardRepository.getVagasComMaisCandidatos(5, mockFakeDb);
+
+      expect(notDeleted).toHaveBeenCalledWith(expect.anything(), vagas);
+    });
+
+    it("getAtividadeRecente routes its filter through notDeleted() on triagens instead of an inline isNull", async () => {
+      vi.mocked(notDeleted).mockClear();
+      const mockFakeDb = {
+        select: () => ({
+          from: () => ({
+            innerJoin: () => ({
+              innerJoin: () => ({
+                innerJoin: () => ({
+                  innerJoin: () => ({
+                    leftJoin: () => ({
+                      where: () => ({
+                        orderBy: () => ({
+                          limit: async () => [],
+                        }),
+                      }),
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      } as any;
+
+      await dashboardRepository.getAtividadeRecente(5, mockFakeDb);
+
+      expect(notDeleted).toHaveBeenCalledWith(expect.anything(), triagens);
     });
 
     it("handles getDashboardSummary aggregate call", async () => {

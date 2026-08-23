@@ -8,6 +8,10 @@ vi.mock("~/env", () => ({
     NODE_ENV: "test",
   },
 }));
+vi.mock("~/server/db/query-helpers", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/server/db/query-helpers")>();
+  return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
+});
 
 import { departamentoRepository } from "./departamento";
 import { departamentos, cargos } from "~/server/db/schema";
@@ -59,5 +63,26 @@ describe("departamentoRepository", () => {
     );
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_cargos"."deleted_at" is null');
+  });
+
+  it("findAllWithActiveCargosCount routes its filter through notDeleted() on departamentos instead of an inline isNull", async () => {
+    vi.mocked(notDeleted).mockClear();
+    const mockFakeDb = {
+      select: () => ({
+        from: () => ({
+          leftJoin: () => ({
+            where: () => ({
+              groupBy: () => ({
+                orderBy: async () => [],
+              }),
+            }),
+          }),
+        }),
+      }),
+    } as any;
+
+    await departamentoRepository.findAllWithActiveCargosCount(mockFakeDb);
+
+    expect(notDeleted).toHaveBeenCalledWith(expect.anything(), departamentos);
   });
 });
