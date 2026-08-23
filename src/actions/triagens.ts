@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { PostgresError } from "postgres";
+import postgres from "postgres";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
@@ -63,7 +63,7 @@ export async function createTriagem(
     };
   } catch (error) {
     if (
-      error instanceof PostgresError &&
+      error instanceof postgres.PostgresError &&
       (error.message.includes("unique") || error.code === "23505")
     ) {
       return {
@@ -130,7 +130,7 @@ export async function updateTriagem(
     };
   } catch (error) {
     if (
-      error instanceof PostgresError &&
+      error instanceof postgres.PostgresError &&
       (error.message.includes("unique") || error.code === "23505")
     ) {
       return {

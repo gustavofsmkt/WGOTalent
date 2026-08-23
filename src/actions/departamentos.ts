@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { PostgresError } from "postgres";
+import postgres from "postgres";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import {
   createDepartamentoSchema,
@@ -33,7 +33,7 @@ export async function createDepartamento(
   } catch (error) {
     // Tratamento basico para unique constraint (pode ser refinado depois)
     if (
-      error instanceof PostgresError &&
+      error instanceof postgres.PostgresError &&
       (error.message.includes("unique") || error.code === "23505")
     ) {
       return {
@@ -78,7 +78,7 @@ export async function updateDepartamento(
     };
   } catch (error) {
     if (
-      error instanceof PostgresError &&
+      error instanceof postgres.PostgresError &&
       (error.message.includes("unique") || error.code === "23505")
     ) {
       return {
