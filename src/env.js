@@ -13,6 +13,7 @@ export const env = createEnv({
       .default("development"),
     STORAGE_ROOT: z.string().min(1),
     AGENT_CREDENTIALS_ENCRYPTION_KEY: z.string().min(32),
+    EMAIL_CAPTURA_INTERVALO_MS: z.coerce.number().int().positive().default(60000),
   },
 
   /**
@@ -32,6 +33,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     STORAGE_ROOT: process.env.STORAGE_ROOT,
     AGENT_CREDENTIALS_ENCRYPTION_KEY: process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY,
+    EMAIL_CAPTURA_INTERVALO_MS: process.env.EMAIL_CAPTURA_INTERVALO_MS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

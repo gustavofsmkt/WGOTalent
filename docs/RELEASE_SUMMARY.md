@@ -1,8 +1,10 @@
 # Release Summary — WGOTalent MVP v1 (Greenfield)
 
-> Fechamento do marco greenfield (TASK-130). Consolida em um único documento o
-> que o MVP entrega, sem introduzir nenhuma feature nova — apenas resume o
-> estado já validado em [FINAL_VALIDATION.md](FINAL_VALIDATION.md) e
+> Fechamento do marco greenfield (TASK-130), atualizado após a decisão de
+> antecipar a captação de currículo por e-mail para dentro do MVP atual (ver
+> [ADR-0010](decisions/0010-captacao-curriculo-via-email.md)). Consolida em
+> um único documento o que o MVP entrega — a base entregue no fechamento
+> original está validada em [FINAL_VALIDATION.md](FINAL_VALIDATION.md) e
 > [PROJECT_STATE.md](PROJECT_STATE.md).
 
 **Data do fechamento**: 2026-08-24
@@ -24,6 +26,9 @@ Capacidades entregues:
 - Extração, classificação e avaliação de candidatos via motor de agentes de
   IA nativo (ADR-0007), configurável via `/admin/agentes` e
   `/admin/credenciais`.
+- Captação automática de currículo por e-mail via IMAP genérico (loop interno
+  no processo Next.js, sem cron externo), configurável via `/admin`
+  (ADR-0010).
 - Dashboard com KPIs, funil por etapa, desfechos e atividade recente.
 
 Fora de escopo (decisão de produto, não pendência): autenticação/autorização,
@@ -62,14 +67,17 @@ Fonte canônica: [db_triagem_proposta.ts](db_triagem_proposta.ts).
 Entidades: `Departamento` 1—N `Cargo` 1—N `Vaga`; `Candidato` 1—N `Triagem`
 N—1 `Vaga`; `Triagem` 1—1 `AvaliacaoIA`; `Candidato` 1—N
 `CandidatoFormacao`/`CandidatoExperienciaProfissional`/`CandidatoCertificacao`.
-Mais duas tabelas de suporte ao motor de IA (configuração de agente por slot
-e credenciais de provedor cifradas).
+Mais três tabelas de suporte: configuração de agente por slot, credenciais de
+provedor de LLM cifradas e credenciais de e-mail (IMAP) cifradas.
 
-17 migrations aplicadas (`drizzle/0000`…`0016`), cobrindo criação de todas as
+18 migrations aplicadas (`drizzle/0000`…`0017`), cobrindo criação de todas as
 tabelas, ajustes de nullability/índices únicos, criação das tabelas do motor
-de agentes, o parecer de RH por etapa e o relaxamento de e-mail/celular do
-candidato para nullable+unique. Todas idempotentes e validadas de ponta a
-ponta contra um volume Postgres vazio em `FINAL_VALIDATION.md`.
+de agentes, o parecer de RH por etapa, o relaxamento de e-mail/celular do
+candidato para nullable+unique e a tabela de credenciais de e-mail. Todas
+idempotentes; `0000`–`0016` validadas de ponta a ponta contra um volume
+Postgres vazio em `FINAL_VALIDATION.md` (fechamento original do greenfield —
+`0017` foi adicionada depois e aplicada localmente, ver
+[Captação de Currículo via E-mail no README](../README.md#captação-de-currículo-via-e-mail)).
 
 ## Formulários
 
@@ -100,22 +108,28 @@ gráficos — funil e KPIs do dashboard são CSS puro.
   enviado), servidos via `GET /api/files/[...path]`. Sem validação de tipo
   de conteúdo/malware/tamanho — risco aceito conscientemente para o MVP (ver
   [SECURITY.md](SECURITY.md#currículo-arquivo)).
-- **Intake** — cadastro manual (`/candidatos/novo`) e upload em lote
-  (`/candidatos/upload-lote`); e-mail duplicado restaura/mescla o candidato
-  (ADR-0008) em vez de rejeitar por conflito (substitui ADR-0002).
+- **Intake** — cadastro manual (`/candidatos/novo`), upload em lote
+  (`/candidatos/upload-lote`) e captação automática por e-mail (IMAP
+  genérico, loop interno via `instrumentation.ts`, watermark de UID por
+  mailbox — ver ADR-0010); e-mail duplicado restaura/mescla o candidato
+  (ADR-0008) em vez de rejeitar por conflito (substitui ADR-0002). Os três
+  caminhos convergem no mesmo processamento
+  (`src/server/candidatos/processar-curriculo-recebido.ts`).
 - **Motor de IA** — pipeline nativo `extração → classificação → avaliação`
   (`src/server/agents/`) via `@google/genai`, configurável por slot em
-  `/admin/agentes`; credenciais de provedor cifradas em repouso
-  (AES-256-GCM, `src/lib/agents/crypto.ts`) e nunca expostas fora da camada
-  de repository (ADR-0007, SECURITY.md).
+  `/admin/agentes`; credenciais de provedor de LLM e de e-mail cifradas em
+  repouso (AES-256-GCM, `src/lib/agents/crypto.ts`) e nunca expostas fora da
+  camada de repository (ADR-0007, ADR-0010, SECURITY.md).
 
 ## Testes
 
-- 48 arquivos de teste / 390 testes (Vitest), todos verdes na validação
-  final.
+- 54 arquivos de teste / 426 testes (Vitest), todos verdes após a adição da
+  captação por e-mail (48 arquivos / 390 testes na validação final original
+  do greenfield).
 - Cobertura em repositories, Server Actions, validação Zod, motor de
   agentes (extração/classificação/avaliação/orquestração), storage,
-  cripto de credenciais e rota de arquivos.
+  cripto de credenciais, cliente IMAP, ciclo/loop de captação de e-mail e
+  rota de arquivos.
 - Gates npm: `check` = `lint && test:run && build`; `check:integration` =
   `db:migrate && db:smoke`.
 - Validação de ponta a ponta contra banco/volume Docker vazio documentada em

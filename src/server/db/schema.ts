@@ -9,6 +9,8 @@ import {
   boolean,
   numeric,
   smallint,
+  integer,
+  bigint,
   char,
   date,
   jsonb,
@@ -379,6 +381,21 @@ export const agenteConfig = createTable("agente_config", {
 
 export type AgenteConfig = typeof agenteConfig.$inferSelect;
 export type NovoAgenteConfig = typeof agenteConfig.$inferInsert;
+
+export const emailCredenciais = createTable("email_credenciais", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  host: varchar("host", { length: 255 }).notNull(),
+  porta: integer("porta").notNull(),
+  usuario: varchar("usuario", { length: 254 }).notNull(),
+  senhaCifrada: text("senha_cifrada").notNull(),
+  pasta: varchar("pasta", { length: 120 }).default("INBOX").notNull(),
+  ultimoUidProcessado: bigint("ultimo_uid_processado", { mode: "number" }),
+  ativo: boolean("ativo").default(true).notNull(),
+  ...timestamps,
+});
+
+export type EmailCredencial = typeof emailCredenciais.$inferSelect;
+export type NovaEmailCredencial = typeof emailCredenciais.$inferInsert;
 
 export const departamentosRelations = relations(departamentos, ({ many }) => ({
   cargos: many(cargos),

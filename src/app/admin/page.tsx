@@ -6,11 +6,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
+import { emailCredencialRepository } from "~/server/db/repositories/email-credencial";
 import { getProviderLabel, getModelsForProvider } from "~/lib/agents/provider-catalog";
 
 import { CreateCredencialForm } from "./credenciais/_components/create-credencial-form";
 import { DeactivateCredencialButton } from "./credenciais/_components/deactivate-credencial-button";
 import { DeleteCredencialButton } from "./credenciais/_components/delete-credencial-button";
+import { CreateEmailCredencialForm } from "./email/_components/create-email-credencial-form";
+import { DeactivateEmailCredencialButton } from "./email/_components/deactivate-email-credencial-button";
+import { DeleteEmailCredencialButton } from "./email/_components/delete-email-credencial-button";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +23,10 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
-  const [agentes, credenciais] = await Promise.all([
+  const [agentes, credenciais, emailCredenciais] = await Promise.all([
     agenteConfigRepository.findAll(),
     llmCredencialRepository.findAll(),
+    emailCredencialRepository.findAll(),
   ]);
 
   return (
@@ -35,6 +40,7 @@ export default async function AdminPage() {
         <TabsList>
           <TabsTrigger value="agentes">Agentes</TabsTrigger>
           <TabsTrigger value="credenciais">Credenciais</TabsTrigger>
+          <TabsTrigger value="email">Captação de E-mail</TabsTrigger>
           <TabsTrigger value="configuracoes">Configurações Gerais</TabsTrigger>
         </TabsList>
 
@@ -92,6 +98,39 @@ export default async function AdminPage() {
 
           <div className="flex justify-center">
             <CreateCredencialForm />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="email" className="mt-6 space-y-8">
+          <div className="space-y-3">
+            {emailCredenciais.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma credencial cadastrada.</p>
+            ) : (
+              emailCredenciais.map((c) => (
+                <Card key={c.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div>
+                      <div className="font-medium">
+                        {c.usuario} · {c.host}:{c.porta}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Pasta: {c.pasta} · {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
+                        {new Date(c.createdAt).toLocaleDateString("pt-BR")}
+                      </div>
+                    </div>
+                    {c.ativo ? (
+                      <DeactivateEmailCredencialButton credencialId={c.id} />
+                    ) : (
+                      <DeleteEmailCredencialButton credencialId={c.id} />
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          <div className="flex justify-center">
+            <CreateEmailCredencialForm />
           </div>
         </TabsContent>
 

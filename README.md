@@ -20,6 +20,8 @@ não duplicado aqui.
 - **UI**: Tailwind CSS 4 + shadcn/ui + lucide-react
 - **IA**: `@google/genai` (Gemini via Google AI Studio) por trás de um motor
   de agentes próprio — ver [Motor de Agentes IA](#motor-de-agentes-ia)
+- **E-mail**: `imapflow` (cliente IMAP) + `mailparser` (parsing MIME/anexos) —
+  ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail)
 - **Testes**: Vitest
 
 Não usa tRPC, Auth.js/NextAuth ou Prisma (T3 App foi usado só como
@@ -50,7 +52,8 @@ diretamente em código de servidor, sempre importe `env` de `~/env`.
    | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | Credenciais usadas pelo `docker-compose.yml` para subir o Postgres local. |
    | `DATABASE_URL` | String de conexão do Postgres, consumida pelo Drizzle. Deve casar com as variáveis `POSTGRES_*` acima. |
    | `STORAGE_ROOT` | Caminho absoluto (ou relativo ao cwd) do diretório de armazenamento local de arquivos (currículos). |
-   | `AGENT_CREDENTIALS_ENCRYPTION_KEY` | Chave mestra (mín. 32 chars) usada para cifrar/decifrar em repouso (AES-256-GCM) as credenciais de provedor de LLM cadastradas via admin. Gere uma vez com `openssl rand -base64 32` — **nunca rotacione sem um plano de re-cifragem** das credenciais já salvas (ver comentário em [.env.example](.env.example)). |
+   | `AGENT_CREDENTIALS_ENCRYPTION_KEY` | Chave mestra (mín. 32 chars) usada para cifrar/decifrar em repouso (AES-256-GCM) as credenciais de provedor de LLM **e** de e-mail (IMAP) cadastradas via admin. Gere uma vez com `openssl rand -base64 32` — **nunca rotacione sem um plano de re-cifragem** das credenciais já salvas (ver comentário em [.env.example](.env.example)). |
+   | `EMAIL_CAPTURA_INTERVALO_MS` | Opcional (default `60000`). Intervalo em ms entre ciclos do loop de captação de currículo por e-mail — ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail). |
 
    Detalhes adicionais de cada variável: [docs/specs/environment.md](docs/specs/environment.md).
 
@@ -155,13 +158,43 @@ planejada originalmente — ver
 - **Formatos de currículo suportados**: PDF, DOCX (via `mammoth`, sem serviço
   de conversão externo), PNG, JPEG.
 - **Ingestão**: upload manual pelo recrutador (individual ou em lote, ver
-  `src/app/(rh)/candidatos/upload-lote/`). Captação automática via provedor de
-  e-mail (Zimbra/Microsoft 365/Google Workspace) está descrita no ADR-0007
-  como direção de produto, mas ainda não está implementada em código.
+  `src/app/(rh)/candidatos/upload-lote/`) ou captação automática por e-mail
+  (ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail)).
 - **Orquestração** (extração → classificação → avaliação) vive em
   [src/server/agents/orquestracao.ts](src/server/agents/orquestracao.ts), com
   concorrência limitada via `runWithLimit`
   ([src/lib/concurrency/run-with-limit.ts](src/lib/concurrency/run-with-limit.ts)).
+
+## Captação de Currículo via E-mail
+
+Além do upload manual, currículos podem ser captados automaticamente de uma
+caixa de e-mail via **IMAP genérico** — cobre Zimbra, Google Workspace e M365
+com IMAP habilitado, sem SDK proprietário por provedor (ver
+[ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md)).
+
+- **Aba admin "Captação de E-mail"** (`/admin`): cadastra host, porta,
+  usuário, senha e pasta monitorada de uma única caixa por vez. A senha é
+  cifrada em repouso com a mesma chave `AGENT_CREDENTIALS_ENCRYPTION_KEY` das
+  credenciais de LLM (ver
+  [src/lib/agents/crypto.ts](src/lib/agents/crypto.ts)) e nunca é reexibida;
+  cadastrar uma nova credencial desativa a anterior automaticamente.
+- **Loop interno** no processo Next.js, iniciado via `instrumentation.ts`
+  (convenção oficial do Next.js) — não depende de cron externo. Intervalo
+  configurável por `EMAIL_CAPTURA_INTERVALO_MS` (default 60s).
+- **Idempotência via watermark de UID IMAP** (`ultimoUidProcessado`),
+  monotônico e por-mailbox: cada ciclo busca só mensagens com UID maior que o
+  último processado, e o watermark só avança depois que o ciclo inteiro
+  termina com sucesso.
+- Anexos elegíveis (mesmos mimetypes/tamanho aceitos no upload manual: PDF,
+  DOCX, PNG, JPEG, até 5MB) são extraídos com `imapflow` + `mailparser` e
+  processados pelo mesmo pipeline do upload em lote
+  ([src/server/candidatos/processar-curriculo-recebido.ts](src/server/candidatos/processar-curriculo-recebido.ts)),
+  só mudando `origem` para `"email"`.
+- **Nota de teste**: contas Gmail exigem uma **Senha de App**
+  (`myaccount.google.com/apppasswords`) em vez da senha normal desde 2022 —
+  usado para validar a feature em desenvolvimento. Em produção (Zimbra), a
+  senha normal da conta dedicada de captação funciona via IMAP sem essa
+  exigência; não há nenhum código específico de provedor.
 
 ## Testes
 
@@ -172,8 +205,9 @@ npm run test:run   # Vitest single-run (usado pelo gate `check`)
 
 Vitest roda em ambiente Node, sem depender de um Postgres real (ver
 [vitest.config.ts](vitest.config.ts)) — testes de repositório e ações usam
-duplos/mocks em vez do banco. Suíte atual: 48 arquivos de teste cobrindo
-validação, repositórios, agentes de IA, storage, server actions e páginas.
+duplos/mocks em vez do banco. Suíte atual: 54 arquivos de teste cobrindo
+validação, repositórios, agentes de IA, storage, server actions, captação de
+e-mail e páginas.
 
 ## Quality gates (npm scripts)
 
@@ -225,12 +259,16 @@ src/
   lib/
     agents/             # cliente Gemini, catálogo de provedores, cripto de credenciais, templates de prompt
     concurrency/        # utilitário de limite de concorrência
+    email/              # cliente IMAP (imapflow + mailparser)
     storage/            # StorageProvider e implementação local
     validation/         # schemas Zod compartilhados entre actions e forms
   server/
     agents/             # pipeline de orquestração da IA (extração, classificação, avaliação)
+    candidatos/         # processamento de currículo recebido, compartilhado entre upload em lote e captação por e-mail
     db/                 # schema Drizzle, client, query-helpers, repositórios, seed
+    email/              # ciclo e loop de captação de currículo por e-mail
   env.js                # validação de env vars (@t3-oss/env-nextjs)
+  instrumentation.ts    # bootstrap do loop de captação de e-mail (hook oficial do Next.js)
 drizzle/                 # migrations SQL geradas + snapshots
 docs/                    # produto, arquitetura, ADRs, specs, harness — memória do projeto
 infra/postgres/init/     # scripts de init do Postgres (extensão unaccent)
@@ -246,8 +284,6 @@ storage/                  # arquivos armazenados localmente (gitignored)
 - Deleções físicas (hard delete) — tudo é soft delete via `deleted_at`.
 - Escritas diretas de serviços externos no banco — toda mutação passa por
   Server Actions/Route Handlers da aplicação.
-- Captação automática de currículos por e-mail (planejada no ADR-0007, ainda
-  não implementada).
 
 Ver [docs/PRODUCT.md](docs/PRODUCT.md) para a lista completa e o racional de
 produto.

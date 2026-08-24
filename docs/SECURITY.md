@@ -27,6 +27,22 @@ já registradas em ADR — linka para elas.
   criação/uso de credencial (`src/actions/credenciais.ts`,
   `src/lib/agents/gemini-client.ts`).
 
+## Credenciais de e-mail (IMAP) em repouso
+
+- A senha da caixa de e-mail monitorada (`senhaCifrada` em
+  `wgotalent_email_credenciais`) segue exatamente o mesmo padrão das
+  credenciais de LLM: cifrada em repouso com AES-256-GCM
+  ([src/lib/agents/crypto.ts](../src/lib/agents/crypto.ts)), usando a mesma
+  chave mestra `AGENT_CREDENTIALS_ENCRYPTION_KEY` — não há uma segunda chave
+  nem uma segunda variável de ambiente para isso.
+- `senhaCifrada` nunca deve ser exposta fora da camada de
+  repository/`lib/email` — o type de retorno de `createEmailCredencial`
+  (`EmailCredencialSummary`) não a inclui, e o formulário admin não a
+  reexibe após salvar.
+- Nenhum log do ciclo de captura (`src/server/email/captura-curriculos.ts`)
+  deve imprimir a senha decifrada nem a cifrada — em falha de conexão IMAP,
+  o log inclui apenas o host e a mensagem de erro.
+
 ## PII de candidatos
 
 O `Candidato` concentra dados pessoais sensíveis: nome, e-mail, celular,
@@ -39,6 +55,13 @@ Como o MVP roda **sem autenticação** (próxima seção), qualquer PII persisti
 é acessível a quem tiver acesso à rede/instância — trate o ambiente como
 "segredo é a borda de rede", não a aplicação. Não exponha uma instância deste
 projeto na internet pública nesta fase.
+
+Na captação de currículo por e-mail, o corpo e o assunto da mensagem
+**nunca são persistidos nem logados** — o ciclo de captura
+(`src/server/email/captura-curriculos.ts`) extrai só os bytes dos anexos
+elegíveis (mesma lista de mimetypes/tamanho do upload manual) e descarta o
+resto da mensagem assim que os anexos são processados, exatamente como no
+upload manual.
 
 ## Currículo (arquivo)
 

@@ -113,6 +113,20 @@
       "when": 1787253117516,
       "tag": "0015_mushy_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1787587609865,
+      "tag": "0016_candidatos_email_celular_nullable_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787587632128,
+      "tag": "0017_email_captacao_credenciais",
+      "breakpoints": true
     }
   ]
 }
