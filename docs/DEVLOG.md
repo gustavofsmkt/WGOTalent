@@ -142,3 +142,32 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Design totalmente responsivo (mobile, tablet e desktop), acessível e sem dependência de bibliotecas adicionais de gráficos.
 - Cobertura de testes unitários e de agregação em `src/app/(rh)/dashboard/page.test.ts`.
 - Validados todos os 46 arquivos de teste e 359 testes no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e build de produção Next.js executado com sucesso.
+
+## Marco: Restauração e Mesclagem de Candidato Duplicado (ADR-0008)
+*Data: 2026-08-20*
+
+- Substituída a rejeição por conflito de e-mail (ADR-0002) por restauração/mesclagem: cadastro manual ou upload em lote com e-mail já existente agora restaura o candidato se ele estiver soft-deleted, ou mescla os dados novos/diferentes se estiver ativo, devolvendo-o ao fluxo de triagem quando aplicável.
+- Implementados `restoreAggregate`/`mergeAggregate` em `candidatoRepository`, com mesclagem aditiva de campos escalares e de filhos (nunca sobrescreve dado já preenchido com vazio).
+- Mesclagem com dado novo exclui (soft delete) as triagens ainda na etapa `curriculo` do candidato e reenvia o candidato pelo motor de matching (`classificador_aderencia`).
+- Corrigidos `existsForPar` e o índice único parcial de triagens para considerar `deleted_at` (migration 0013), que bloqueava indevidamente a recriação de triagens para pares candidato/vaga já vistos antes.
+- ADR-0008 registrada e substitui a ADR-0002.
+
+## Marco: TASK-117 a TASK-120 — Auditorias de Produto (Design, Performance, Formulários, Soft Delete)
+*Data: 2026-08-22 a 2026-08-23*
+
+- **TASK-117 (design/Impeccable):** padronizado o cabeçalho de páginas de detalhe (`vagas/[id]`, `cargos/[id]`, `triagens/[id]`) para `PageHeader` + botão de voltar com `ArrowLeft`, substituindo cabeçalhos custom e `ChevronRight` como breadcrumb; estados vazios migrados para `DataEmptyState`; removidos imports não utilizados.
+- **TASK-118 (performance React/Next):** eliminado round-trip redundante de banco em `vagas/[id]` (campo `descricao` incorporado à projeção existente); paralelizadas buscas independentes em `vagas/[id]/editar` e `candidatos/[id]/editar` via `Promise.all`; `TriagemDetailEditor` dividido para reduzir o payload RSC serializado (cartões de contato e avaliação de IA passam a ser Server Components); troca do dirty-check por `JSON.stringify` (rodava a cada tecla) por comparação campo a campo; `UploadProgressPopup` convertido para `next/dynamic`; adicionado `(rh)/loading.tsx`.
+- **TASK-119 (formulários):** corrigido bug real em que um validador de schema no nível do formulário escrevia erros em todos os campos registrados no `onBlur`, fazendo campos obrigatórios ainda não tocados piscarem como inválidos; removida duplicação de regra de `motivo` entre `triagem-form` e `triagemSchema.superRefine`; removidos validadores `onChange` redundantes em `vaga-form`; tipado `candidato-form` com o `ReactFormExtendedApi` real (removendo `any`), o que revelou um bug real de `Input value` não protegido contra `null` após `email`/`celular` se tornarem nullable.
+- **TASK-120 (soft delete):** corrigidos cinco caminhos de leitura que usavam `.where(isNull(...))` inline em vez do helper `notDeleted()` (`dashboardRepository.getMediaScoreIa`, `getVagasComMaisCandidatos`, `getAtividadeRecente`, `departamentoRepository.findAllWithActiveCargosCount`) e dois métodos de `agenteConfigRepository` sem filtro de soft delete algum (`findAll`/`findBySlot`); adicionados testes de regressão que espionam `notDeleted()` e cobertura de cascata para `candidatoRepository.softDelete` (antes sem testes).
+- Falha/correção comum às quatro auditorias: nenhuma regressão funcional introduzida; todas as correções foram desvios objetivos encontrados durante a auditoria, não features novas.
+
+## Marco: TASK-121 a TASK-126 — Limpeza Final e Documentação Operacional
+*Data: 2026-08-23*
+
+- **TASK-121:** removidos componentes shadcn sem uso (`skeleton.tsx`, `toast.tsx`, 247 linhas).
+- **TASK-122:** auditoria completa do repositório versionado; removido `WGOTalent_ROTEIRO_CORRECAO_MIGRACAO_IA.md` (CORR-01 a CORR-14 já executados e superseded pela ADR-0007); consolidado `docs/DESIGN_DECISIONS.md` na sequência canônica de ADRs como `docs/decisions/0009-icon-system-lucide-react.md`, eliminando uma fonte de verdade duplicada; corrigido `.github/instructions/integrations.instructions.md`, que ainda descrevia o motor de agentes nativo como baseado no Vercel AI SDK com placeholders `TODO` — a Fase 14 (TASK-137 a TASK-153) já estava implementada usando `@google/genai` diretamente.
+- **TASK-123:** normalizados os scripts npm (`lint`, `build`, `test`, `test:run`, `db:generate`, `db:migrate`, `db:seed`, `db:smoke`) e criados os gates padrão `check` (lint + test:run + build) e `check:integration` (db:migrate + db:smoke). Introduzido ESLint (`eslint-config-next`, flat config) pela primeira vez no projeto, o que revelou 99 erros pré-existentes de `@typescript-eslint/no-explicit-any` em actions, repositories e seus testes; todos corrigidos com tipos reais (`Candidato`, `CandidatoDetailCompleto`, `Triagem`, `NovaTriagem`, `UploadLoteItem`, export default de `postgres` para `PostgresError`, `TriagemFiltros` restrito às uniões literais do `pgEnum`) em vez de afrouxar a regra.
+- **TASK-124:** README reescrito com produto, stack, requisitos, variáveis de ambiente, Postgres via Docker, instalação, migrations, seed, storage, motor de agentes de IA, testes e harness/skills.
+- **TASK-125:** criado `docs/SECURITY.md` cobrindo credenciais/chaves de IA em repouso, PII, currículo, path de storage, logs, variáveis de ambiente, ausência de autenticação no MVP e o fato de que soft delete não é anonimização.
+- **TASK-126:** criado `TECHNICAL_WALKTHROUGH.md` em português explicando a arquitetura completa (T3 como scaffolder, App Router, Server Components/Actions, Drizzle/migrations, soft delete, TanStack Form, Zod, shadcn/Tailwind, StorageProvider, motor de agentes nativo conforme ADR-0007, fluxo candidato→triagem→IA e o harness/skills).
+- Falha/correção: nenhuma pendência bloqueadora restante; os únicos "erros" corrigidos nesta fase foram os 99 achados do ESLint recém-introduzido (TASK-123), tratados como dívida técnica pré-existente e sanados na mesma tarefa.
