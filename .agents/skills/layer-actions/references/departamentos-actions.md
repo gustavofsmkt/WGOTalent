@@ -26,8 +26,8 @@ No sub-artifacts.
 
 ```ts
 'use server';
-import { departamentoRepository } from '@/server/db/repositories/departamento';
-import { criarDepartamentoSchema, editarDepartamentoSchema } from '@/lib/validation/departamento';
+import { departamentoRepository } from '~/server/db/repositories/departamento';
+import { criarDepartamentoSchema, editarDepartamentoSchema } from '~/lib/validation/departamento';
 import { revalidatePath } from 'next/cache';
 
 export async function criarDepartamento(formData: FormData) {

@@ -25,8 +25,8 @@ No sub-artifacts.
 
 ```ts
 'use server';
-import { vagaRepository } from '@/server/db/repositories/vaga';
-import { criarVagaSchema, editarVagaSchema } from '@/lib/validation/vaga';
+import { vagaRepository } from '~/server/db/repositories/vaga';
+import { criarVagaSchema, editarVagaSchema } from '~/lib/validation/vaga';
 import { revalidatePath } from 'next/cache';
 
 export async function criarVaga(formData: FormData) {

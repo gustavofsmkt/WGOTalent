@@ -59,7 +59,7 @@ Entity-specific component (stays in route `_components/`):
 // src/app/(rh)/triagens/[id]/_components/edit-form.tsx
 'use client';
 import { useState } from 'react';
-import { FormCard } from '@/components/domain/form-card'; // base primitive
+import { FormCard } from '~/components/domain/form-card'; // base primitive
 
 const MOTIVO_REPROVADO = ['curriculo', 'fit_cultural', 'testes', 'rh', 'gestor'] as const;
 const MOTIVO_DESISTENTE = [
@@ -95,8 +95,8 @@ export function EditTriagemForm({ action }: { action: (fd: FormData) => Promise<
 Shared base primitive (lives in `src/components/domain/`):
 ```tsx
 // components/domain/form-card.tsx
-import { Card, CardContent } from '@/components/ui/card'; // shadcn source
-import { cn } from '@/lib/utils';
+import { Card, CardContent } from '~/components/ui/card'; // shadcn source
+import { cn } from '~/lib/utils';
 
 export function FormCard({ className, children }: React.PropsWithChildren<{ className?: string }>) {
   return (

@@ -38,11 +38,11 @@ No sub-artifacts. Related: [DomainComponents](domain-components.md).
 
 ```tsx
 // src/app/(rh)/departamentos/page.tsx
-import { db } from '@/server/db';
-import { departamentos } from '@/server/db/schema';
-import { notDeleted } from '@/server/db/query-helpers';
+import { db } from '~/server/db';
+import { departamentos } from '~/server/db/schema';
+import { notDeleted } from '~/server/db/query-helpers';
 import { DepartamentosTable } from './_components/table';
-import { criarDepartamento } from '@/actions/departamentos';
+import { criarDepartamento } from '~/actions/departamentos';
 
 export default async function DepartamentosPage() {
   const rows = await notDeleted(db.select().from(departamentos), departamentos);

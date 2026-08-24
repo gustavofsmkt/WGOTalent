@@ -34,7 +34,7 @@ Standard entity — derive from Drizzle table, pick user fields:
 ```ts
 import { createInsertSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
-import { departamentos } from '@/server/db/schema';
+import { departamentos } from '~/server/db/schema';
 
 const base = createInsertSchema(departamentos);
 
@@ -50,7 +50,7 @@ Triagem — derive base, then add the motivo coupling rule via `.superRefine()`:
 ```ts
 import { createInsertSchema } from 'drizzle-orm/zod';
 import { z } from 'zod';
-import { triagens } from '@/server/db/schema';
+import { triagens } from '~/server/db/schema';
 
 const MOTIVO_REPROVADO = ['curriculo', 'fit_cultural', 'testes', 'rh', 'gestor'] as const;
 const MOTIVO_DESISTENTE = ['incompatibilidade_salarial', 'aceitou_outra_proposta',
@@ -127,7 +127,7 @@ export type CriarTriagemClientInput = z.infer<typeof criarTriagemClientSchema>;
 
 Use the client schema in TanStack Form:
 ```tsx
-import { criarDepartamentoClientSchema } from '@/lib/validation/departamento.client'
+import { criarDepartamentoClientSchema } from '~/lib/validation/departamento.client'
 
 const form = useForm({
   defaultValues: { nome: '', descricao: '' },
@@ -154,7 +154,7 @@ const form = useForm({
 
 Add or update a schema when adding a new entity or changing a form field.
 
-1. Import the Drizzle table from `@/server/db/schema`.
+1. Import the Drizzle table from `~/server/db/schema`.
 2. Call `createInsertSchema(table)` from `drizzle-zod` to get the base schema.
 3. `.pick()` only user-submittable fields (exclude `id`, timestamps).
 4. Add business constraints with `.extend()` or `.superRefine()` as needed.

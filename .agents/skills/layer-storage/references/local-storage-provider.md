@@ -28,7 +28,7 @@ No sub-artifacts. Related: [StorageProvider](storage-provider.md).
 ```ts
 import fs from 'fs/promises';
 import path from 'path';
-import { env } from '@/env';
+import { env } from '~/env';
 import type { StorageProvider, StorageKey } from './storage';
 
 const STORAGE_ROOT = env.STORAGE_ROOT;

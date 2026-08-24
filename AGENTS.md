@@ -48,7 +48,7 @@ Validated via `src/env.js` (`@t3-oss/env-nextjs`). Key server-side vars:
 - `DATABASE_URL` — PostgreSQL connection string
 - `STORAGE_ROOT` — absolute path to the file storage directory
 
-Import in server code as `import { env } from '@/env'` — never use `process.env.*` directly.
+Import in server code as `import { env } from '~/env'` — never use `process.env.*` directly.
 
 ## Stack restrictions
 

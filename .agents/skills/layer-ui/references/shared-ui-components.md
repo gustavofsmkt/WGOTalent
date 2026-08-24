@@ -26,8 +26,8 @@ No sub-artifacts. Related: [DomainComponents](domain-components.md).
 
 ```tsx
 // components/domain/shared/resultado-badge.tsx
-import { Badge } from '@/components/ui/badge'; // shadcn source — read-only
-import { cn } from '@/lib/utils';
+import { Badge } from '~/components/ui/badge'; // shadcn source — read-only
+import { cn } from '~/lib/utils';
 
 type Resultado = 'em_andamento' | 'aprovado' | 'reprovado' | 'desistente' | 'banco_talentos';
 

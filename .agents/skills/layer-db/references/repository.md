@@ -44,9 +44,9 @@ No sub-artifacts. Related: [QueryHelpers](query-helpers.md), [DrizzleSchema](dri
 
 ```ts
 // src/server/db/repositories/departamento.ts
-import { db } from '@/server/db';
-import { departamentos, type Departamento, type NovoDepartamento } from '@/server/db/schema';
-import { notDeleted } from '@/server/db/query-helpers';
+import { db } from '~/server/db';
+import { departamentos, type Departamento, type NovoDepartamento } from '~/server/db/schema';
+import { notDeleted } from '~/server/db/query-helpers';
 import { eq } from 'drizzle-orm';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -119,7 +119,7 @@ await db.transaction(async tx => {
 Add or update a repository when adding a new entity or a new query for an existing entity.
 
 1. Create `src/server/db/repositories/<entity>.ts`.
-2. Import the table and types from `@/server/db/schema`.
+2. Import the table and types from `~/server/db/schema`.
 3. Implement standard methods (`findAll`, `findById`, `create`, `update`, `softDelete`).
 4. For sub-entities, add `softDeleteBy<Parent>Id(parentId, dbOrTx?)` to support cascade.
 5. Export the repository as a named `const` object.

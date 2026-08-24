@@ -25,8 +25,8 @@ No sub-artifacts.
 
 ```ts
 'use server';
-import { cargoRepository } from '@/server/db/repositories/cargo';
-import { criarCargoSchema } from '@/lib/validation/cargo';
+import { cargoRepository } from '~/server/db/repositories/cargo';
+import { criarCargoSchema } from '~/lib/validation/cargo';
 import { revalidatePath } from 'next/cache';
 
 export async function criarCargo(formData: FormData) {

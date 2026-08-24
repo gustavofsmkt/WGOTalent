@@ -36,69 +36,81 @@ const timestamps = {
 
 ## Project structure
 
+Todo o código de aplicação vive sob `src/` (convenção herdada do scaffold
+`create-t3-app`, mantida — ver README.md e `docs/HARNESS.md`). O alias de
+import é `~/*` → `./src/*` (ver `tsconfig.json`), nunca `@/*`.
+
 ```
-app/
-  (rh)/
-    departamentos/
-      page.tsx                  # Server Component: list + link to create
-      [id]/page.tsx              # detail + edit form
-    cargos/
-      page.tsx
-      [id]/page.tsx
-    vagas/
-      page.tsx
-      [id]/page.tsx
-    candidatos/
-      page.tsx
-      [id]/page.tsx              # includes formacoes, experiencias, certificacoes, triagens
-    triagens/
-      page.tsx                   # pipeline view, filterable by etapa/resultado/motivo
-      [id]/page.tsx               # triagem detail + linked avaliacao_ia (1:1, shown inline, not a separate CRUD)
-  api/
-    files/
-      [...path]/route.ts         # GET — streams resume files from local storage (auth-gated later)
+src/
+  app/
+    (rh)/
+      departamentos/
+        page.tsx                  # Server Component: list + link to create
+        [id]/page.tsx              # detail + edit form
+      cargos/
+        page.tsx
+        [id]/page.tsx
+      vagas/
+        page.tsx
+        [id]/page.tsx
+      candidatos/
+        page.tsx
+        [id]/page.tsx              # includes formacoes, experiencias, certificacoes, triagens
+      triagens/
+        page.tsx                   # pipeline view, filterable by etapa/resultado/motivo
+        [id]/page.tsx               # triagem detail + linked avaliacao_ia (1:1, shown inline, not a separate CRUD)
+    api/
+      files/
+        [...path]/route.ts         # GET — streams resume files from local storage (auth-gated later)
 
-actions/                         # 'use server' — all mutations live here
-  departamentos.ts
-  cargos.ts
-  vagas.ts
-  candidatos.ts                  # includes formacao/experiencia/certificacao sub-mutations
-  triagens.ts
+  actions/                         # 'use server' — all mutations live here
+    departamentos.ts
+    cargos.ts
+    vagas.ts
+    candidatos.ts                  # includes formacao/experiencia/certificacao sub-mutations
+    triagens.ts
 
-lib/
-  db/
-    schema.ts                    # Drizzle schema — see schema reference above
-    index.ts                     # Drizzle client singleton
-    query-helpers.ts             # notDeleted() and other shared query builders
-  storage/
-    storage.ts                   # StorageProvider interface
-    local-storage-provider.ts    # fs-based implementation for MVP
-  validation/
-    departamento.ts               # Zod schemas, reused by actions + webhook route
-    cargo.ts
-    vaga.ts
-    candidato.ts
-    triagem.ts
+  server/
+    db/
+      schema.ts                    # Drizzle schema — see schema reference above
+      index.ts                     # Drizzle client singleton
+      query-helpers.ts             # notDeleted() and other shared query builders
+      repositories/                # one module per entity — the only place raw Drizzle queries are written
 
-components/
-  ui/                            # shared table, form, badge, etc.
-  departamentos/ (form.tsx, table.tsx)
-  cargos/
-  vagas/
-  candidatos/
-  triagens/
+  lib/
+    storage/
+      storage.ts                   # StorageProvider interface
+      local-storage-provider.ts    # fs-based implementation for MVP
+    validation/
+      departamento.ts               # Zod schemas, reused by actions + webhook route
+      cargo.ts
+      vaga.ts
+      candidato.ts
+      triagem.ts
+
+  components/
+    ui/                            # shadcn source files — never modify
+    domain/                        # shared base primitives (DataTable, FormCard) — promote here only on 2nd use
+      shared/                      # cross-entity display wrappers (ResultadoBadge, EtapaBadge)
+
+  env.js                           # typed environment validation (@t3-oss/env-nextjs)
 ```
+
+Componentes específicos de cada entidade (form, table) ficam colocados em
+`_components/` dentro do próprio segmento de rota (ex.:
+`src/app/(rh)/candidatos/_components/`), não em uma pasta `components/<entidade>/`
+plana — ver `.agents/skills/layer-ui/SKILL.md`.
 
 ## Patterns to follow
 
-1. **Reads = Server Components.** Every `page.tsx` under `(rh)/` fetches its own data directly from `lib/db` (Drizzle) inside the Server Component, always through `notDeleted()`. No client-side fetching, no route handlers for internal reads.
-2. **Writes = Server Actions.** All create/edit/soft-delete for the 5 top-level entities go through `'use server'` functions in `actions/*.ts`, called from forms via `<form action={...}>` or `useTransition`. Each action:
-   - validates input with the matching Zod schema from `lib/validation`
+1. **Reads = Server Components.** Every `page.tsx` under `(rh)/` fetches its own data directly from `src/server/db` (Drizzle) inside the Server Component, always through `notDeleted()`. No client-side fetching, no route handlers for internal reads.
+2. **Writes = Server Actions.** All create/edit/soft-delete for the 5 top-level entities go through `'use server'` functions in `src/actions/*.ts`, called from forms via `<form action={...}>` or `useTransition`. Each action:
+   - validates input with the matching Zod schema from `src/lib/validation`
    - performs the Drizzle mutation (insert/update/soft-delete)
    - calls `revalidatePath` for the relevant list/detail routes
    - returns a typed `{ success: true, data } | { success: false, error }` result
 3. **External write = Route Handlers.** (Reservado para integrações de email / file handlers futuros).
-4. **Storage abstraction.** `StorageProvider` exposes `save()`, `getUrl()`, `delete()`. Files live outside `public/`, served through `app/api/files/[...path]/route.ts` so access can be gated later.
+4. **Storage abstraction.** `StorageProvider` exposes `save()`, `getUrl()`, `delete()`. Files live outside `public/`, served through `src/app/api/files/[...path]/route.ts` so access can be gated later.
 5. **Foreign key integrity in the UI.** Cargo form selects an existing Departamento. Vaga form selects an existing Cargo. Triagem form selects an existing Candidato and Vaga. Candidato's `cargo_interesse_id` / `area_interesse_id` are optional selects. Use server-fetched option lists (already filtered through `notDeleted`), not client fetches.
 6. **Triagem status is two fields, not one.** UI must drive `etapa` and `resultado` as separate controls (e.g. a stage stepper + an outcome selector), with `motivo` only shown/required when `resultado` is `reprovado` or `desistente`, and constrained to the matching subset of motivo values (reprovado vs. desistente) — see schema comments for the split. Enforce this pairing in the Zod schema, not just the UI.
 7. **No premature complexity.** Skip parallel routes, intercepting routes/modals, and auth for this MVP pass — plain nested pages with Suspense boundaries around any slower list (e.g. triagens with joins across candidato/vaga/avaliacao_ia) is enough.

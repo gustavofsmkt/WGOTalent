@@ -28,15 +28,15 @@ No sub-artifacts.
 Cascade soft-delete (the most complex action in the codebase):
 ```ts
 'use server';
-import { db } from '@/server/db';
-import { candidatoRepository } from '@/server/db/repositories/candidato';
-import { candidatoFormacaoRepository } from '@/server/db/repositories/candidato-formacao';
-import { candidatoExperienciaRepository } from '@/server/db/repositories/candidato-experiencia';
-import { candidatoCertificacaoRepository } from '@/server/db/repositories/candidato-certificacao';
-import { triagemRepository } from '@/server/db/repositories/triagem';
-import { avaliacaoIaRepository } from '@/server/db/repositories/avaliacao-ia';
-import { criarCandidatoSchema, editarCandidatoSchema } from '@/lib/validation/candidato';
-import { storage } from '@/lib/storage/local-storage-provider';
+import { db } from '~/server/db';
+import { candidatoRepository } from '~/server/db/repositories/candidato';
+import { candidatoFormacaoRepository } from '~/server/db/repositories/candidato-formacao';
+import { candidatoExperienciaRepository } from '~/server/db/repositories/candidato-experiencia';
+import { candidatoCertificacaoRepository } from '~/server/db/repositories/candidato-certificacao';
+import { triagemRepository } from '~/server/db/repositories/triagem';
+import { avaliacaoIaRepository } from '~/server/db/repositories/avaliacao-ia';
+import { criarCandidatoSchema, editarCandidatoSchema } from '~/lib/validation/candidato';
+import { storage } from '~/lib/storage/local-storage-provider';
 import { revalidatePath } from 'next/cache';
 
 export async function criarCandidato(formData: FormData) {

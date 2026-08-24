@@ -27,8 +27,8 @@ No sub-artifacts.
 
 ```ts
 'use server';
-import { triagemRepository } from '@/server/db/repositories/triagem';
-import { criarTriagemSchema, editarTriagemSchema } from '@/lib/validation/triagem';
+import { triagemRepository } from '~/server/db/repositories/triagem';
+import { criarTriagemSchema, editarTriagemSchema } from '~/lib/validation/triagem';
 import { revalidatePath } from 'next/cache';
 
 export async function criarTriagem(formData: FormData) {

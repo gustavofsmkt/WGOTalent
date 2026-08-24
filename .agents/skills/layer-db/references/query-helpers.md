@@ -38,9 +38,9 @@ export function notDeleted<TTable extends { deletedAt: unknown }>(
 
 Usage in a Server Component:
 ```ts
-import { db } from '@/server/db';
-import { departamentos } from '@/server/db/schema';
-import { notDeleted } from '@/server/db/query-helpers';
+import { db } from '~/server/db';
+import { departamentos } from '~/server/db/schema';
+import { notDeleted } from '~/server/db/query-helpers';
 
 const rows = await notDeleted(db.select().from(departamentos), departamentos);
 ```

@@ -60,7 +60,7 @@ endpoints (→ layer-api), or UI rendering (→ layer-ui).
 - Repository methods that need to participate in a caller's transaction accept an optional `tx` parameter that defaults to `db`.
 - Unique constraints on `Departamento.nome` and `Candidato.email` are plain `UNIQUE` (not partial) — a soft-deleted row still blocks reuse.
 - Every table must spread `...timestamps`.
-- Only `layer-db` imports from `drizzle-orm` directly. All other layers import from `@/server/db` or `@/server/db/repositories/`.
+- Only `layer-db` imports from `drizzle-orm` directly. All other layers import from `~/server/db` or `~/server/db/repositories/`.
 
 ---
 

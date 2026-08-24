@@ -56,7 +56,7 @@ Client schemas (used by TanStack Form; extend server schemas with Portuguese err
 - Then `.pick()` only the user-submittable fields (exclude `id`, `createdAt`, `updatedAt`, `deletedAt`).
 - Extend or refine the picked schema to add any business constraints not derivable from the column definition (e.g. `.superRefine()` for the triagem motivo coupling rule).
 - The `triagem` schema must enforce: `motivo` constrained to the reprovado-subset when `resultado === 'reprovado'`; to the desistente-subset when `resultado === 'desistente'`; `null` otherwise.
-- Never import from `drizzle-orm` directly — import tables from `@/server/db/schema` and schema helpers from `'drizzle-orm/zod'`.
+- Never import from `drizzle-orm` directly — import tables from `~/server/db/schema` and schema helpers from `'drizzle-orm/zod'`.
 - These schemas are the shared contract between Server Actions and Route Handlers — do not duplicate validation logic inline in either.
 - Always export both the schema constant and its inferred TypeScript type.
 - Client schemas (`*.client.ts`) **extend** the server schema using `.extend()` (for standard entities) or re-apply the coupling rule on `triagemPickedBase` (for triagem). They are **only** imported by TanStack Form components — never by Server Actions or Route Handlers.
@@ -68,7 +68,7 @@ Client schemas (used by TanStack Form; extend server schemas with Portuguese err
 
 Work here when adding a new entity or changing field constraints.
 
-1. Import the Drizzle table from `@/server/db/schema`.
+1. Import the Drizzle table from `~/server/db/schema`.
 2. Call `createInsertSchema(table)` from `drizzle-zod` to get the base schema.
 3. `.pick()` the user-submittable fields, then add any business constraints with `.extend()` or `.superRefine()`. See [EntitySchema](references/entity-schema.md).
 4. Export a named schema (e.g. `criarDepartamentoSchema`) and its inferred TypeScript type.
