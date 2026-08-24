@@ -13,6 +13,9 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 - [0007: Encerramento da Integração via n8n e Adoção de Motor de Agentes Nativo](./0007-encerramento-integracao-n8n.md)
 - [0008: Candidato Duplicado por E-mail — Restaurar e Mesclar em Vez de Rejeitar](./0008-candidato-duplicado-restaurar-e-mesclar.md)
 - [0009: Sistema de Ícones Padrão](./0009-icon-system-lucide-react.md)
+- [0010: Captação de Currículo via E-mail (IMAP)](./0010-captacao-curriculo-via-email.md)
+- [0011: Suporte a Múltiplos Provedores de LLM (Roteiro Pós-MVP)](./0011-multiplos-provedores-llm.md)
+- [0012: Autenticação e Autorização (Roteiro Pós-MVP, Última Prioridade)](./0012-autenticacao-autorizacao.md)
 
 ---
 
