@@ -1,5 +1,11 @@
 # Estado do Projeto
 
+## Marco Atual
+**MVP v1** — marco greenfield congelado em 2026-08-24 (TASK-130, tag local
+`wgo-greenfield-v1`). Ver [RELEASE_SUMMARY.md](RELEASE_SUMMARY.md) para o
+resumo completo do escopo entregue e [FINAL_VALIDATION.md](FINAL_VALIDATION.md)
+para a validação de ponta a ponta contra banco vazio.
+
 ## Natureza do Projeto
 **Greenfield** (Novo projeto construído do zero, focado em MVP rápido)
 
