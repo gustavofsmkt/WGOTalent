@@ -1,4 +1,4 @@
-import { eq, and, sql, isNull, asc, desc } from "drizzle-orm";
+import { eq, and, sql, isNull, asc, desc, gte } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   vagas,
@@ -327,6 +327,34 @@ export const vagaRepository = {
         },
       },
     }));
+  },
+
+  existsRecentDuplicate: async (
+    data: {
+      cargoId: string;
+      cidade: string;
+      uf: string;
+      status: string;
+      posicoesDisponiveis: number;
+      remuneracaoOferecida?: string | null;
+    },
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    // Guard contra duplo-submit: mesma vaga (todos os campos do payload) criada nos últimos 10s.
+    const rows = await notDeleted(
+      dbOrTx.select({ id: vagas.id }).from(vagas),
+      vagas,
+      eq(vagas.cargoId, data.cargoId),
+      eq(vagas.cidade, data.cidade),
+      eq(vagas.uf, data.uf),
+      eq(vagas.status, data.status as Vaga["status"]),
+      eq(vagas.posicoesDisponiveis, data.posicoesDisponiveis),
+      data.remuneracaoOferecida
+        ? eq(vagas.remuneracaoOferecida, data.remuneracaoOferecida)
+        : isNull(vagas.remuneracaoOferecida),
+      gte(vagas.createdAt, sql`now() - interval '10 seconds'`),
+    ).limit(1);
+    return rows.length > 0;
   },
 
   create: async (

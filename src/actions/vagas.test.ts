@@ -78,6 +78,9 @@ describe("vagas server actions", () => {
         deletedAt: null,
       });
 
+      vi.spyOn(vagaRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
 
       const result = await createVaga({
@@ -127,6 +130,9 @@ describe("vagas server actions", () => {
         deletedAt: null,
       });
 
+      vi.spyOn(vagaRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
 
       const result = await createVaga({
@@ -138,6 +144,42 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(true);
+    });
+
+    it("blocks creation when a recent duplicate submission is detected", async () => {
+      vi.spyOn(cargoRepository, "findById").mockResolvedValueOnce({
+        id: validCargoId,
+        departamentoId: "dept-1",
+        titulo: "Desenvolvedor",
+        descricao: "Descrição",
+        ativo: true,
+        faixaSalarial: "5000.00",
+        requisitos: "TypeScript",
+        requisitosDesejaveis: "",
+        criteriosEliminatorios: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+      vi.spyOn(vagaRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        true,
+      );
+      vi.spyOn(vagaRepository, "create");
+
+      const result = await createVaga({
+        cargoId: validCargoId,
+        status: "aberta",
+        posicoesDisponiveis: 2,
+        remuneracaoOferecida: "5000.00",
+        cidade: "São Paulo",
+        uf: "SP",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe(
+        "Esta vaga já foi cadastrada (envio duplicado detectado).",
+      );
+      expect(vagaRepository.create).not.toHaveBeenCalled();
     });
 
     it("returns error when cargo is inactive", async () => {

@@ -53,6 +53,9 @@ describe("cargos server actions", () => {
         deletedAt: null,
       });
 
+      vi.spyOn(cargoRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(cargoRepository, "create").mockResolvedValueOnce(
         mockCreated as unknown as Cargo,
       );
@@ -74,6 +77,37 @@ describe("cargos server actions", () => {
       }
       expect(cargoRepository.create).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/cargos");
+    });
+
+    it("blocks creation when a recent duplicate submission is detected", async () => {
+      vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce({
+        id: "dept-1",
+        nome: "TI",
+        descricao: "Tecnologia",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+      vi.spyOn(cargoRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        true,
+      );
+      vi.spyOn(cargoRepository, "create");
+
+      const result = await createCargo({
+        departamentoId: "550e8400-e29b-41d4-a716-446655440000",
+        titulo: "Desenvolvedor Backend",
+        descricao: "Desenvolvimento de APIs e integraÃ§Ãµes.",
+        requisitos: "Node.js, PostgreSQL",
+        requisitosDesejaveis: "Docker, AWS",
+        criteriosEliminatorios: "Inglês nível C1 ou superior",
+        ativo: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe(
+        "Este cargo já foi cadastrado (envio duplicado detectado).",
+      );
+      expect(cargoRepository.create).not.toHaveBeenCalled();
     });
 
     it("returns error when department is inactive or not found", async () => {
