@@ -149,6 +149,7 @@ export interface CandidatoSummary {
   cidade: string;
   uf: string;
   origem: "email" | "manual" | "indicacao";
+  emBancoTalentos: boolean;
   cargoInteresse: string | null;
   createdAt: string;
 }
@@ -192,6 +193,7 @@ export const candidatoRepository = {
           cidade: candidatos.cidade,
           uf: candidatos.uf,
           origem: candidatos.origem,
+          emBancoTalentos: candidatos.emBancoTalentos,
           createdAt: candidatos.createdAt,
           cargoInteresseTitulo: cargos.titulo,
         })
@@ -208,6 +210,7 @@ export const candidatoRepository = {
       cidade: r.cidade,
       uf: r.uf,
       origem: r.origem,
+      emBancoTalentos: r.emBancoTalentos,
       createdAt: r.createdAt,
       cargoInteresse: r.cargoInteresseTitulo,
     }));
@@ -741,5 +744,13 @@ export const candidatoRepository = {
           .where(eq(triagens.candidatoId, id));
       }
     });
+  },
+
+  marcarBancoTalentos: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
+    await dbOrTx.update(candidatos).set({ emBancoTalentos: true }).where(eq(candidatos.id, id));
+  },
+
+  desmarcarBancoTalentos: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
+    await dbOrTx.update(candidatos).set({ emBancoTalentos: false }).where(eq(candidatos.id, id));
   },
 };

@@ -134,6 +134,13 @@
       "when": 1787598628271,
       "tag": "0018_email_capturar_desde",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787628504005,
+      "tag": "0019_candidatos_banco_talentos",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,8 @@ const {
   gravarAvaliacaoIAMock,
   executarClassificadorAderenciaMock,
   executarAvaliadorTriagemMock,
+  marcarBancoTalentosMock,
+  desmarcarBancoTalentosMock,
 } = vi.hoisted(() => ({
   findByIdMock: vi.fn(),
   findOpenByCidadeMock: vi.fn(),
@@ -22,10 +24,17 @@ const {
   gravarAvaliacaoIAMock: vi.fn(),
   executarClassificadorAderenciaMock: vi.fn(),
   executarAvaliadorTriagemMock: vi.fn(),
+  marcarBancoTalentosMock: vi.fn(),
+  desmarcarBancoTalentosMock: vi.fn(),
 }));
 
 vi.mock("~/server/db/repositories/candidato", () => ({
-  candidatoRepository: { findById: findByIdMock, findActiveByCidade: findActiveByCidadeMock },
+  candidatoRepository: {
+    findById: findByIdMock,
+    findActiveByCidade: findActiveByCidadeMock,
+    marcarBancoTalentos: marcarBancoTalentosMock,
+    desmarcarBancoTalentos: desmarcarBancoTalentosMock,
+  },
 }));
 vi.mock("~/server/db/repositories/vaga", () => ({
   vagaRepository: {
@@ -65,13 +74,26 @@ describe("orquestrarParaCandidatoNovo", () => {
     vi.clearAllMocks();
   });
 
-  it("does nothing when there are no open vagas in the same city", async () => {
+  it("marks candidato as banco de talentos when there are no open vagas in the same city", async () => {
     findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
     findOpenByCidadeMock.mockResolvedValueOnce([]);
 
     await orquestrarParaCandidatoNovo("c1");
 
     expect(executarClassificadorAderenciaMock).not.toHaveBeenCalled();
+    expect(marcarBancoTalentosMock).toHaveBeenCalledWith("c1");
+  });
+
+  it("marks candidato as banco de talentos when no vaga passes the threshold", async () => {
+    findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
+    findOpenByCidadeMock.mockResolvedValueOnce([{ id: "v1", cargo: cargoBase }]);
+    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
+    executarClassificadorAderenciaMock.mockResolvedValueOnce([{ id: "v1", score: 40 }]);
+
+    await orquestrarParaCandidatoNovo("c1");
+
+    expect(createTriagemMock).not.toHaveBeenCalled();
+    expect(marcarBancoTalentosMock).toHaveBeenCalledWith("c1");
   });
 
   it("creates a triagem and runs phase 2 only for scores at or above the threshold", async () => {
@@ -98,6 +120,7 @@ describe("orquestrarParaCandidatoNovo", () => {
     );
     expect(executarAvaliadorTriagemMock).toHaveBeenCalledWith("t1");
     expect(gravarAvaliacaoIAMock).toHaveBeenCalledWith({ triagemId: "t1", scoreIa: "80" });
+    expect(desmarcarBancoTalentosMock).toHaveBeenCalledWith("c1");
   });
 
   it("skips creating a triagem when one already exists for the pair", async () => {
@@ -137,5 +160,6 @@ describe("orquestrarParaVagaNova", () => {
     expect(createTriagemMock).toHaveBeenCalledWith(
       expect.objectContaining({ candidatoId: "c1", vagaId: "v1" }),
     );
+    expect(desmarcarBancoTalentosMock).toHaveBeenCalledWith("c1");
   });
 });

@@ -20,6 +20,11 @@ const ORIGEM_FILTER_OPTIONS = [
   { value: "indicacao", label: "Indicação" },
 ];
 
+const POOL_FILTER_OPTIONS = [
+  { value: "todos", label: "Todos os candidatos" },
+  { value: "banco_talentos", label: "Banco de Talentos" },
+];
+
 export function CandidatosFilter() {
   const router = useRouter();
   const pathname = usePathname();
@@ -28,13 +33,14 @@ export function CandidatosFilter() {
 
   const currentQuery = searchParams.get("q") ?? "";
   const currentOrigem = searchParams.get("origem") ?? "todas";
+  const currentPool = searchParams.get("pool") ?? "todos";
   const [searchTerm, setSearchTerm] = React.useState(currentQuery);
 
   React.useEffect(() => {
     setSearchTerm(currentQuery);
   }, [currentQuery]);
 
-  const updateFilters = (query: string, origem: string) => {
+  const updateFilters = (query: string, origem: string, pool: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (query.trim()) {
       params.set("q", query.trim());
@@ -48,22 +54,32 @@ export function CandidatosFilter() {
       params.delete("origem");
     }
 
+    if (pool && pool !== "todos") {
+      params.set("pool", pool);
+    } else {
+      params.delete("pool");
+    }
+
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`);
     });
   };
 
   const handleSearch = (term: string) => {
-    updateFilters(term, currentOrigem);
+    updateFilters(term, currentOrigem, currentPool);
   };
 
   const handleOrigemChange = (origem: string | null) => {
-    updateFilters(searchTerm, origem ?? "todas");
+    updateFilters(searchTerm, origem ?? "todas", currentPool);
+  };
+
+  const handlePoolChange = (pool: string | null) => {
+    updateFilters(searchTerm, currentOrigem, pool ?? "todos");
   };
 
   const handleClear = () => {
     setSearchTerm("");
-    updateFilters("", currentOrigem);
+    updateFilters("", currentOrigem, currentPool);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,6 +131,24 @@ export function CandidatosFilter() {
           </SelectTrigger>
           <SelectContent>
             {ORIGEM_FILTER_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="w-full sm:w-48">
+        <Select
+          value={currentPool}
+          onValueChange={handlePoolChange}
+        >
+          <SelectTrigger className="h-9 text-xs bg-background shadow-xs">
+            <SelectValue placeholder="Banco de Talentos" />
+          </SelectTrigger>
+          <SelectContent>
+            {POOL_FILTER_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value} className="text-xs">
                 {opt.label}
               </SelectItem>

@@ -76,6 +76,12 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
                 label={origemBadge.label}
                 className="text-xs font-medium"
               />
+              {candidato.emBancoTalentos && (
+                <StatusBadge
+                  status="banco_talentos"
+                  className="text-xs font-medium"
+                />
+              )}
             </div>
 
             {candidato.nomeSocial && (

@@ -1,0 +1,1 @@
+ALTER TABLE "wgotalent_candidatos" ADD COLUMN "em_banco_talentos" boolean DEFAULT false NOT NULL;

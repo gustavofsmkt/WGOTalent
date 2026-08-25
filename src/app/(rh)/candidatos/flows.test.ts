@@ -78,6 +78,7 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       disponivelMudanca: false,
       inicioImediato: true,
       origem: "manual",
+      emBancoTalentos: false,
       curriculoArquivoKey: null,
       textoCurriculoExtraido: null,
       dadosPendentes: null,

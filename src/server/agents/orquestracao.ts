@@ -18,6 +18,11 @@ async function processarParAprovado(candidatoId: string, vagaId: string): Promis
   const jaExiste = await triagemRepository.existsForPar(candidatoId, vagaId);
   if (jaExiste) return;
 
+  // Uma triagem nova está de fato sendo criada para este candidato: se ele
+  // estava no banco de talentos (ADR-0013), deixa de estar — ponto único
+  // compartilhado pelos dois sentidos de orquestração (candidato novo e vaga nova).
+  await candidatoRepository.desmarcarBancoTalentos(candidatoId);
+
   const triagem = await triagemRepository.create({
     candidatoId,
     vagaId,
@@ -34,7 +39,12 @@ export async function orquestrarParaCandidatoNovo(candidatoId: string): Promise<
   if (!candidato) return;
 
   const vagasAbertas = await vagaRepository.findOpenByCidade(candidato.cidade);
-  if (vagasAbertas.length === 0) return;
+  if (vagasAbertas.length === 0) {
+    // Nenhuma vaga aberta na cidade do candidato: sem par possível para
+    // triagem, então vai para o banco de talentos (ADR-0013).
+    await candidatoRepository.marcarBancoTalentos(candidato.id);
+    return;
+  }
 
   const itensComparacao: ItemAderencia[] = vagasAbertas.map((v) => ({
     id: v.id,
@@ -50,6 +60,13 @@ export async function orquestrarParaCandidatoNovo(candidatoId: string): Promise<
   );
 
   const aprovados = scores.filter((s) => s.score >= threshold);
+
+  if (aprovados.length === 0) {
+    // Vagas abertas existem, mas nenhuma passou no threshold de aderência:
+    // também vai para o banco de talentos (ADR-0013).
+    await candidatoRepository.marcarBancoTalentos(candidato.id);
+    return;
+  }
 
   await runWithLimit(aprovados, CONCORRENCIA_FASE2, (item) =>
     processarParAprovado(candidato.id, item.id),

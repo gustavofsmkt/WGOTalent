@@ -181,6 +181,7 @@ export const candidatos = createTable(
     linkedin: varchar("linkedin", { length: 255 }),
     portfolio: varchar("portfolio", { length: 255 }),
     origem: origemEnum("origem").default("manual").notNull(),
+    emBancoTalentos: boolean("em_banco_talentos").default(false).notNull(),
     curriculoArquivoKey: text("curriculo_arquivo_key"),
     textoCurriculoExtraido: text("texto_curriculo_extraido"),
     ...timestamps,

@@ -98,6 +98,7 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
         disponivelMudanca: false,
         inicioImediato: true,
         origem: "manual",
+        emBancoTalentos: false,
         curriculoArquivoKey: null,
         textoCurriculoExtraido: null,
         dadosPendentes: null,

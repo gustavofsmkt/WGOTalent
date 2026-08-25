@@ -43,6 +43,7 @@ describe("CandidatoDetailPage - Server Logic", () => {
     disponivelMudanca: false,
     inicioImediato: true,
     origem: "manual",
+    emBancoTalentos: false,
     curriculoArquivoKey: "resumes/marina_cv.pdf",
     textoCurriculoExtraido: null,
     dadosPendentes: null,

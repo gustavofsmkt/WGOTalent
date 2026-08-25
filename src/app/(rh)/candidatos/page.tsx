@@ -22,13 +22,14 @@ import { getWhatsAppUrl } from "~/lib/whatsapp";
 export const dynamic = "force-dynamic";
 
 interface CandidatosPageProps {
-  searchParams?: Promise<{ q?: string; origem?: string }>;
+  searchParams?: Promise<{ q?: string; origem?: string; pool?: string }>;
 }
 
 export default async function CandidatosPage(props: CandidatosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const query = (searchParams.q ?? "").trim().toLowerCase();
   const origemFilter = (searchParams.origem ?? "").trim().toLowerCase();
+  const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
 
   const allCandidatos = await candidatoRepository.findAllActiveSummary();
 
@@ -47,7 +48,10 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     const matchesOrigem =
       !origemFilter || origemFilter === "todas" || candidato.origem === origemFilter;
 
-    return matchesQuery && matchesOrigem;
+    const matchesPool =
+      !poolFilter || poolFilter === "todos" || candidato.emBancoTalentos;
+
+    return matchesQuery && matchesOrigem && matchesPool;
   });
 
   const formatDate = (date: Date | string) => {
@@ -293,10 +297,15 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                             )}
                           </TableCell>
                           <TableCell>
-                            <StatusBadge
-                              tone={origemConfig.tone}
-                              label={origemConfig.label}
-                            />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <StatusBadge
+                                tone={origemConfig.tone}
+                                label={origemConfig.label}
+                              />
+                              {candidato.emBancoTalentos && (
+                                <StatusBadge status="banco_talentos" />
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(candidato.createdAt)}
@@ -355,10 +364,15 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                               </span>
                             </div>
                           </div>
-                          <StatusBadge
-                            tone={origemConfig.tone}
-                            label={origemConfig.label}
-                          />
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
+                            <StatusBadge
+                              tone={origemConfig.tone}
+                              label={origemConfig.label}
+                            />
+                            {candidato.emBancoTalentos && (
+                              <StatusBadge status="banco_talentos" />
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-1.5 text-xs text-muted-foreground pt-1 border-t border-border/40">
