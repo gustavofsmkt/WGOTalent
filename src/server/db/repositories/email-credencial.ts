@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   emailCredenciais,
@@ -27,21 +27,45 @@ export const emailCredencialRepository = {
     return rows[0] ?? null;
   },
 
+  existsRecentDuplicate: async (
+    data: { host: string; porta: number; usuario: string; pasta: string },
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    // Guard contra duplo-submit: mesma caixa (host+porta+usuario+pasta)
+    // cadastrada nos últimos 10s. A senha não entra na comparação (é cifrada
+    // com IV aleatório, então duas cifragens da mesma senha nunca são iguais).
+    const rows = await notDeleted(
+      dbOrTx.select({ id: emailCredenciais.id }).from(emailCredenciais),
+      emailCredenciais,
+      eq(emailCredenciais.host, data.host),
+      eq(emailCredenciais.porta, data.porta),
+      eq(emailCredenciais.usuario, data.usuario),
+      eq(emailCredenciais.pasta, data.pasta),
+      gte(emailCredenciais.createdAt, sql`now() - interval '10 seconds'`),
+    ).limit(1);
+    return rows.length > 0;
+  },
+
   create: async (
     data: NovaEmailCredencial,
     dbOrTx: DbOrTx = db,
   ): Promise<EmailCredencial> => {
-    await dbOrTx
-      .update(emailCredenciais)
-      .set({ ativo: false, updatedAt: sql`now()` })
-      .where(eq(emailCredenciais.ativo, true));
+    // Desativar a credencial ativa e inserir a nova precisa ser atômico:
+    // dois creates concorrentes fora de uma transação podiam terminar com
+    // duas linhas ativo=true simultâneas (dois pollers IMAP na mesma caixa).
+    return dbOrTx.transaction(async (tx) => {
+      await tx
+        .update(emailCredenciais)
+        .set({ ativo: false, updatedAt: sql`now()` })
+        .where(eq(emailCredenciais.ativo, true));
 
-    const rows = await dbOrTx.insert(emailCredenciais).values(data).returning();
-    const created = rows[0];
-    if (!created) {
-      throw new Error("Falha ao criar credencial de e-mail.");
-    }
-    return created;
+      const rows = await tx.insert(emailCredenciais).values(data).returning();
+      const created = rows[0];
+      if (!created) {
+        throw new Error("Falha ao criar credencial de e-mail.");
+      }
+      return created;
+    });
   },
 
   deactivate: async (

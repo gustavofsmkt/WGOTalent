@@ -152,6 +152,7 @@ export function VagaForm({
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (form.state.isSubmitting) return;
           void form.handleSubmit();
         }}
         noValidate

@@ -30,6 +30,16 @@ export async function createCredencial(
   }
 
   try {
+    const isDuplicate = await llmCredencialRepository.existsRecentDuplicate({
+      provider: parsed.data.provider,
+    });
+    if (isDuplicate) {
+      return {
+        success: false,
+        message: "Esta credencial já foi cadastrada (envio duplicado detectado).",
+      };
+    }
+
     const created = await llmCredencialRepository.create({
       provider: parsed.data.provider,
       apiKeyCifrada: encryptCredential(parsed.data.apiKey),

@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   llmCredenciais,
@@ -29,6 +29,22 @@ export const llmCredencialRepository = {
       eq(llmCredenciais.ativo, true),
     ).orderBy(desc(llmCredenciais.createdAt));
     return rows[0] ?? null;
+  },
+
+  existsRecentDuplicate: async (
+    data: { provider: string },
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    // Guard contra duplo-submit: mesmo provider cadastrado nos últimos 10s.
+    // A API key não entra na comparação (é cifrada com IV aleatório, então
+    // duas cifragens do mesmo texto nunca são iguais).
+    const rows = await notDeleted(
+      dbOrTx.select({ id: llmCredenciais.id }).from(llmCredenciais),
+      llmCredenciais,
+      eq(llmCredenciais.provider, data.provider),
+      gte(llmCredenciais.createdAt, sql`now() - interval '10 seconds'`),
+    ).limit(1);
+    return rows.length > 0;
   },
 
   create: async (

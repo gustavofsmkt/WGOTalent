@@ -32,6 +32,17 @@ export async function createCargo(
       };
     }
 
+    const isDuplicate = await cargoRepository.existsRecentDuplicate({
+      departamentoId: parsed.data.departamentoId,
+      titulo: parsed.data.titulo,
+    });
+    if (isDuplicate) {
+      return {
+        success: false,
+        message: "Este cargo já foi cadastrado (envio duplicado detectado).",
+      };
+    }
+
     const cargo = await cargoRepository.create(parsed.data);
     revalidatePath("/cargos");
     return {

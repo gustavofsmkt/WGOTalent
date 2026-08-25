@@ -18,8 +18,9 @@ não duplicado aqui.
 - **Validação**: Zod + `@t3-oss/env-nextjs` (env), Zod (formulários/ações)
 - **Formulários**: TanStack Form
 - **UI**: Tailwind CSS 4 + shadcn/ui + lucide-react
-- **IA**: `@google/genai` (Gemini via Google AI Studio) por trás de um motor
-  de agentes próprio — ver [Motor de Agentes IA](#motor-de-agentes-ia)
+- **IA**: motor de agentes próprio com 2 provedores implementados — Gemini
+  via Google AI Studio (`@google/genai`) e OpenAI (Responses API, fetch
+  nativo) — ver [Motor de Agentes IA](#motor-de-agentes-ia)
 - **E-mail**: `imapflow` (cliente IMAP) + `mailparser` (parsing MIME/anexos) —
   ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail)
 - **Testes**: Vitest
@@ -147,11 +148,17 @@ planejada originalmente — ver
   por slot, editáveis em `/admin/agentes/[slot]`):
   `extracao_curriculo`, `classificador_aderencia`, `avaliador_triagem`
   (ver enum em [src/server/db/schema.ts](src/server/db/schema.ts)).
-- **Provedor implementado**: Gemini via Google AI Studio
-  ([src/lib/agents/gemini-client.ts](src/lib/agents/gemini-client.ts)); o
-  catálogo em [src/lib/agents/provider-catalog.ts](src/lib/agents/provider-catalog.ts)
-  já lista outros provedores como opção de UI, mas eles só ficam disponíveis
-  quando ganharem implementação real.
+- **Provedores implementados**: Gemini via Google AI Studio
+  ([src/lib/agents/gemini-client.ts](src/lib/agents/gemini-client.ts)) e
+  OpenAI ([src/lib/agents/openai-client.ts](src/lib/agents/openai-client.ts),
+  via Responses API com `fetch` nativo — sem dependência nova). Cada slot lê
+  o provedor configurado (`agenteConfig.provider`) e
+  [src/lib/agents/agent-client.ts](src/lib/agents/agent-client.ts) despacha
+  para o client correto — os 3 agentes nunca importam um client de provedor
+  diretamente. O catálogo em
+  [src/lib/agents/provider-catalog.ts](src/lib/agents/provider-catalog.ts)
+  só lista um provedor como opção de UI quando ele já tem client real
+  implementado (ver [ADR-0011](docs/decisions/0011-multiplos-provedores-llm.md)).
 - **Credenciais de LLM** são cadastradas via `/admin/credenciais` e cifradas em
   repouso com `AGENT_CREDENTIALS_ENCRYPTION_KEY` (ver
   [src/lib/agents/crypto.ts](src/lib/agents/crypto.ts)).
@@ -164,6 +171,13 @@ planejada originalmente — ver
   [src/server/agents/orquestracao.ts](src/server/agents/orquestracao.ts), com
   concorrência limitada via `runWithLimit`
   ([src/lib/concurrency/run-with-limit.ts](src/lib/concurrency/run-with-limit.ts)).
+- **Banco de talentos automático**: candidato sem nenhuma vaga aberta
+  compatível na cidade, ou sem nenhuma vaga passando no threshold do
+  classificador, é marcado automaticamente (`candidatos.em_banco_talentos`)
+  em vez de ficar invisível para o RH; volta a ficar ativo assim que uma
+  `Triagem` é criada para ele — inclusive quando surge uma vaga nova
+  compatível depois (ver
+  [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md)).
 
 ## Captação de Currículo via E-mail
 
@@ -225,9 +239,9 @@ npm run test:run   # Vitest single-run (usado pelo gate `check`)
 
 Vitest roda em ambiente Node, sem depender de um Postgres real (ver
 [vitest.config.ts](vitest.config.ts)) — testes de repositório e ações usam
-duplos/mocks em vez do banco. Suíte atual: 54 arquivos / 440 testes cobrindo
-validação, repositórios, agentes de IA, storage, server actions, captação de
-e-mail e páginas.
+duplos/mocks em vez do banco. Suíte atual: 56 arquivos / 456 testes cobrindo
+validação, repositórios, agentes de IA (Gemini e OpenAI), storage, server
+actions, captação de e-mail e páginas.
 
 ## Quality gates (npm scripts)
 

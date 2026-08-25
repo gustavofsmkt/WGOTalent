@@ -1,4 +1,4 @@
-import { eq, and, sql, isNull, asc } from "drizzle-orm";
+import { eq, and, sql, isNull, asc, gte } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   cargos,
@@ -119,6 +119,21 @@ export const cargoRepository = {
         .from(departamentos),
       departamentos,
     ).orderBy(asc(departamentos.nome));
+  },
+
+  existsRecentDuplicate: async (
+    data: { departamentoId: string; titulo: string },
+    dbOrTx: DbOrTx = db,
+  ): Promise<boolean> => {
+    // Guard contra duplo-submit: mesmo departamento + título criado nos últimos 10s.
+    const rows = await notDeleted(
+      dbOrTx.select({ id: cargos.id }).from(cargos),
+      cargos,
+      eq(cargos.departamentoId, data.departamentoId),
+      eq(cargos.titulo, data.titulo),
+      gte(cargos.createdAt, sql`now() - interval '10 seconds'`),
+    ).limit(1);
+    return rows.length > 0;
   },
 
   create: async (

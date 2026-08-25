@@ -30,6 +30,19 @@ export async function createEmailCredencial(
   }
 
   try {
+    const isDuplicate = await emailCredencialRepository.existsRecentDuplicate({
+      host: parsed.data.host,
+      porta: parsed.data.porta,
+      usuario: parsed.data.usuario,
+      pasta: parsed.data.pasta,
+    });
+    if (isDuplicate) {
+      return {
+        success: false,
+        message: "Esta credencial de e-mail já foi cadastrada (envio duplicado detectado).",
+      };
+    }
+
     const created = await emailCredencialRepository.create({
       host: parsed.data.host,
       porta: parsed.data.porta,

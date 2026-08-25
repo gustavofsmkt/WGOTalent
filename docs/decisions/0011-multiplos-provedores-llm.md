@@ -1,8 +1,21 @@
 # 11. Suporte a Múltiplos Provedores de LLM (Roteiro Pós-MVP)
 
+> **Nota de implementação (2026-08-25):** esta extensão, descrita abaixo
+> como roadmap pós-MVP, foi antecipada e implementada — mesmo racional da
+> captação por e-mail (ADR-0010): decisão de produto, não uma revisão desta
+> ADR. A interface comum e os dois adaptadores descritos na seção Decisão
+> foram construídos como planejado:
+> [src/lib/agents/agent-client.ts](../../src/lib/agents/agent-client.ts)
+> (dispatcher), [src/lib/agents/shared.ts](../../src/lib/agents/shared.ts)
+> (contrato + retry + parse comuns) e
+> [src/lib/agents/openai-client.ts](../../src/lib/agents/openai-client.ts)
+> (OpenAI via Responses API, `fetch` nativo, sem dependência nova). O
+> restante deste documento (Contexto, Alternativas) permanece como registro
+> histórico da decisão original.
+
 ## Status
 
-Proposta
+Aceita
 
 * **Relacionado a:** [ADR-0007: Encerramento da Integração via n8n e Adoção de Motor de Agentes Nativo](./0007-encerramento-integracao-n8n.md)
 

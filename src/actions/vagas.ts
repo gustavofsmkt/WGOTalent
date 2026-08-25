@@ -33,6 +33,21 @@ export async function createVaga(
       };
     }
 
+    const isDuplicate = await vagaRepository.existsRecentDuplicate({
+      cargoId: parsed.data.cargoId,
+      cidade: parsed.data.cidade,
+      uf: parsed.data.uf,
+      status: parsed.data.status,
+      posicoesDisponiveis: parsed.data.posicoesDisponiveis,
+      remuneracaoOferecida: parsed.data.remuneracaoOferecida ?? null,
+    });
+    if (isDuplicate) {
+      return {
+        success: false,
+        message: "Esta vaga já foi cadastrada (envio duplicado detectado).",
+      };
+    }
+
     const vaga = await vagaRepository.create(parsed.data);
 
     // Dispara a fase 1 de matching (vaga -> candidatos ativos na mesma cidade). Fire-and-forget.
