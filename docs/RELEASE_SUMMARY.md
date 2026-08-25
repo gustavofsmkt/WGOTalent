@@ -11,8 +11,9 @@
 > um único documento o que o MVP entrega — a base entregue no fechamento
 > original está validada em [FINAL_VALIDATION.md](FINAL_VALIDATION.md) e
 > [PROJECT_STATE.md](PROJECT_STATE.md); as migrations `0017`–`0019` (as três
-> mudanças acima) ainda não passaram por essa validação de ponta a ponta
-> contra banco vazio.
+> mudanças acima) foram validadas de ponta a ponta contra banco vazio numa
+> segunda rodada em 2026-08-25 (ver
+> [Nota de re-execução em FINAL_VALIDATION.md](FINAL_VALIDATION.md#nota-de-re-execução-2026-08-25)).
 
 **Data do fechamento**: 2026-08-24
 **Tag local**: `wgo-greenfield-v1`
@@ -88,8 +89,7 @@ candidato para nullable+unique, a tabela de credenciais de e-mail e a coluna
 `em_banco_talentos`. Todas idempotentes; `0000`–`0016` validadas de ponta a
 ponta contra um volume Postgres vazio em `FINAL_VALIDATION.md` (fechamento
 original do greenfield) — `0017`–`0019` (captação por e-mail e banco de
-talentos) foram geradas e aplicadas localmente depois, mas ainda não
-passaram por essa mesma validação de ponta a ponta contra banco vazio (ver
+talentos) receberam a mesma validação numa segunda rodada em 2026-08-25 (ver
 [Captação de Currículo via E-mail no README](../README.md#captação-de-currículo-via-e-mail)).
 
 ## Formulários
