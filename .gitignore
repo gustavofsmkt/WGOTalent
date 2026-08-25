@@ -36,3 +36,6 @@ Thumbs.db
 *.swo
 *~
 .idea/
+
+# Backups locais (pg_dump + tar de storage) — off-host via rclone, nunca no git
+backups/

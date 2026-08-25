@@ -6,6 +6,9 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  // Produção em Docker: gera .next/standalone (server.js + node_modules
+  // podados por tracing), consumido pelo estágio `runner` do Dockerfile.
+  output: "standalone",
   experimental: {
     serverActions: {
       // Default do Next é 1MB, insuficiente até para 1 currículo (limite de

@@ -295,6 +295,16 @@ infra/postgres/init/     # scripts de init do Postgres (extensão unaccent)
 storage/                  # arquivos armazenados localmente (gitignored)
 ```
 
+## Deploy em produção (VPS + Docker Compose)
+
+Stack de produção: `Dockerfile` multi-stage (Next.js standalone, non-root) +
+`docker-compose.prod.yml` (app + postgres:16). TLS e roteamento ficam com o
+**Nginx Proxy Manager (NPM)** da VPS. O `docker-compose.yml` sem sufixo
+continua sendo só o Postgres de dev.
+
+Guia completo — primeiro deploy, migrações, upgrade de Postgres,
+backup/restore e rollback: [`scripts/deploy-tutorial.md`](scripts/deploy-tutorial.md).
+
 ## Fora de escopo (MVP)
 
 - Autenticação, perfis de acesso e autorização — o sistema opera de forma

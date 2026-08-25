@@ -1,0 +1,142 @@
+# Produção — VPS única, imagens construídas no próprio servidor.
+# Uso:   docker compose -f docker-compose.prod.yml <cmd>
+# O docker-compose.yml (sem sufixo) continua sendo o ambiente de dev local.
+#
+# TLS/HTTPS: gerenciado pelo Nginx Proxy Manager (NPM) da VPS, que já detém
+# as portas 80/443. O NPM aponta para 127.0.0.1:${APP_PORT} (padrão 3000).
+# Este stack não sobe nenhum reverse proxy próprio.
+
+# Nome de projeto FIXO. Sem isso o Compose deriva o nome do diretório: mover
+# ou renomear a pasta do deploy mudaria os nomes de container/rede/volume e o
+# banco "sumiria" (o volume antigo continuaria existindo, órfão, sob outro
+# nome). Com `name:` + volumes external (abaixo), nem renomear o projeto nem
+# recriar o stack tocam nos dados.
+name: wgotalent
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    image: wgotalent-app:${GIT_SHA:-latest}
+    restart: unless-stopped
+    # Todo o env server-side entra em RUNTIME por aqui — nada é assado na
+    # imagem. No servidor: chmod 600 .env. DATABASE_URL deve apontar para o
+    # host `postgres` (nome do serviço na rede interna), STORAGE_ROOT para
+    # /app/storage (o volume abaixo).
+    env_file: .env
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 512m
+    volumes:
+      # Currículos são estado tão crítico quanto o banco: volume nomeado
+      # external, criado uma única vez com `docker volume create`.
+      - storage:/app/storage
+    ports:
+      # Vincula apenas ao loopback: o app não fica exposto publicamente —
+      # só o NPM (rodando no mesmo host) consegue alcançar esta porta.
+      # APP_PORT vem do .env (padrão 3000). Escolha uma porta livre na VPS.
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # A imagem standalone não tem curl/wget confiáveis — mas tem Node 22,
+      # e Node tem fetch nativo. Bate na rota real /api/health, que só
+      # devolve 200 se o Postgres responder (select 1).
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((r)=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *default-logging
+
+  postgres:
+    # Major FIXADO em 16: o formato on-disk do volume é do major 16 e um
+    # `postgres:17` apontado para este volume NÃO SOBE (ver README, seção de
+    # upgrade). Variante alpine fixada também: alternar alpine (musl) <->
+    # debian (glibc) sobre o mesmo volume corrompe índices de texto por
+    # diferença de collation.
+    image: postgres:16-alpine
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina no .env}
+    volumes:
+      # PGDATA da imagem postgres:16 — o mount precisa casar com esse path
+      # exato ou o Postgres inicializa um cluster novo/vazio fora do volume.
+      - pgdata:/var/lib/postgresql/data
+      # Roda apenas na PRIMEIRA inicialização do volume (cluster vazio):
+      # cria a extensão unaccent, exigida pelo app.
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    # Porta NÃO publicada: só a rede interna do compose enxerga o banco.
+    # Para acesso administrativo pontual:
+    #   docker compose -f docker-compose.prod.yml exec postgres psql -U $POSTGRES_USER $POSTGRES_DB
+    # ou um túnel SSH — nunca exponha 5432 na VPS.
+    shm_size: 256mb
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+
+  # One-off de migração — nunca sobe com `up` (profile tools); roda apenas
+  # no deploy, via:  docker compose -f docker-compose.prod.yml run --rm migrate
+  # Migração NUNCA roda em restart de container: container que reinicia às
+  # 3h da manhã não pode decidir alterar schema.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: wgotalent-migrate:${GIT_SHA:-latest}
+    profiles: ["tools"]
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    logging: *default-logging
+
+volumes:
+  # external: true = o Compose NUNCA cria nem remove estes volumes; eles
+  # precisam existir antes do primeiro `up`:
+  #   docker volume create wgotalent_pgdata
+  #   docker volume create wgotalent_storage
+  # Consequências (é essa a proteção):
+  #   - `docker compose down -v` não toca em externals;
+  #   - `docker volume prune` não remove volumes em uso por containers;
+  #   - renomear o projeto/pasta não muda o nome do volume, que é literal.
+  pgdata:
+    external: true
+    name: wgotalent_pgdata
+  storage:
+    external: true
+    name: wgotalent_storage

@@ -1,0 +1,34 @@
+# Nunca deixe o .env entrar no contexto de build: um COPY . . o levaria para
+# dentro de um layer da imagem e todo segredo (DATABASE_URL,
+# AGENT_CREDENTIALS_ENCRYPTION_KEY) ficaria recuperável via docker history /
+# docker save. O .env só existe no servidor, com chmod 600, e entra nos
+# containers via env_file em runtime.
+.env
+.env.*
+!.env.example
+
+# Artefatos que o build recria ou não usa
+node_modules
+.next
+out
+coverage
+*.tsbuildinfo
+*.log
+
+# Dados de runtime — jamais dentro de imagem
+storage
+backups
+volumes
+
+# VCS, editor, harness
+.git
+.idea
+.DS_Store
+.claude
+.agents
+.github
+
+# Documentação e infra de host (não afetam o build do app)
+docs
+*.md
+infra
