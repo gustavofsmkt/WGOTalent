@@ -21,6 +21,18 @@ export const origemSchema = z.enum(["email", "manual", "indicacao"], {
   required_error: "Origem é obrigatória",
 });
 
+/**
+ * Currículos costumam trazer o CEP com pontuação de milhar (ex: "75.709-400",
+ * 10 caracteres) em vez do formato padrão "75709-400" (9). O modelo de IA
+ * transcreve o texto-fonte fielmente — inclusive essa formatação — então a
+ * validação normaliza (remove tudo que não for dígito ou hífen) em vez de
+ * rejeitar, igual já é feito com URL abaixo.
+ */
+const cepSchema = z.preprocess(
+  (val) => (typeof val === "string" ? val.replace(/[^\d-]/g, "") : val),
+  nonEmptyString("O CEP é obrigatório").max(9, "O CEP deve ter no máximo 9 caracteres"),
+);
+
 const ABSOLUTE_URL_SCHEME_REGEX = /^https?:\/\//i;
 
 /**
@@ -154,10 +166,7 @@ export const candidatoSchema = z.object({
   pcd: trimmedString.optional().nullable(),
   email: emailSchema.max(254, "O e-mail deve ter no máximo 254 caracteres").optional().nullable(),
   celular: trimmedString.max(20, "O celular deve ter no máximo 20 caracteres").optional().nullable(),
-  cep: nonEmptyString("O CEP é obrigatório").max(
-    9,
-    "O CEP deve ter no máximo 9 caracteres"
-  ),
+  cep: cepSchema,
   uf: ufSchema,
   cidade: nonEmptyString("A cidade é obrigatória").max(
     100,

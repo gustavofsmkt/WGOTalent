@@ -111,6 +111,24 @@ describe("Validação de Candidato", () => {
       }
     });
 
+    it("deve normalizar CEP com ponto de milhar (ex: 75.709-400) removendo o ponto", () => {
+      const data = { ...validCandidato, cep: "75.709-400" };
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cep).toBe("75709-400");
+      }
+    });
+
+    it("deve rejeitar CEP que continua acima de 9 caracteres após normalizar", () => {
+      const data = { ...validCandidato, cep: "75.709-4000" };
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toContain("cep");
+      }
+    });
+
     it("deve transformar string vazia de linkedin em null", () => {
       const data = { ...validCandidato, linkedin: "" };
       const result = candidatoSchema.safeParse(data);

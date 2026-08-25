@@ -424,7 +424,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                 <FieldLabel htmlFor="candidato-cep">CEP *</FieldLabel>
                 <Input
                   id="candidato-cep"
-                  value={field.state.value}
+                  value={field.state.value as string}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
