@@ -171,3 +171,45 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - **TASK-125:** criado `docs/SECURITY.md` cobrindo credenciais/chaves de IA em repouso, PII, currículo, path de storage, logs, variáveis de ambiente, ausência de autenticação no MVP e o fato de que soft delete não é anonimização.
 - **TASK-126:** criado `TECHNICAL_WALKTHROUGH.md` em português explicando a arquitetura completa (T3 como scaffolder, App Router, Server Components/Actions, Drizzle/migrations, soft delete, TanStack Form, Zod, shadcn/Tailwind, StorageProvider, motor de agentes nativo conforme ADR-0007, fluxo candidato→triagem→IA e o harness/skills).
 - Falha/correção: nenhuma pendência bloqueadora restante; os únicos "erros" corrigidos nesta fase foram os 99 achados do ESLint recém-introduzido (TASK-123), tratados como dívida técnica pré-existente e sanados na mesma tarefa.
+
+## Marco: Captação Automática de Currículo por E-mail (ADR-0010)
+*Data: 2026-08-24*
+
+- Antecipada do roadmap pós-MVP para dentro do MVP atual por ser puramente aditiva — não toca em código já validado do motor de agentes ou dos CRUDs.
+- Implementado cliente IMAP genérico (`imapflow` + `mailparser`, únicas dependências novas do bloco) cobrindo Zimbra/Google Workspace/M365 sem SDK proprietário por provedor.
+- Loop de captura iniciado via `instrumentation.ts` (hook oficial do Next.js), guardado em `globalThis` para sobreviver ao HMR do `next dev` sem empilhar `setInterval`s; intervalo configurável por `EMAIL_CAPTURA_INTERVALO_MS`.
+- Idempotência via watermark de UID IMAP por mailbox (`ultimoUidProcessado`): cada ciclo processa só UID maior que o último, e o watermark avança apenas até o que o ciclo efetivamente cobriu.
+- Extração/dedup/merge do currículo compartilhada com o upload em lote via `processarCurriculoRecebido()`, extraída de `processarItemLote` nesta mesma mudança — os dois caminhos convergem no mesmo pipeline, só trocando `origem` para `"email"`.
+- Credencial de e-mail (host/porta/usuário/senha/pasta, só uma ativa por vez) cadastrada na aba "Captação de E-mail" em `/admin`, reaproveitando a cifra AES-256-GCM e o padrão de UI já usados pelas credenciais de LLM.
+- Corpo e assunto da mensagem nunca são persistidos nem logados — só os bytes dos anexos elegíveis (mesmos mimetypes/tamanho do upload manual) são extraídos.
+- Corrigido bug real encontrado no processo: candidatos criados via upload em lote nunca tinham `origem` setado explicitamente, caindo silenciosamente no default `"manual"` mesmo vindo do pipeline de IA.
+- Cota de IA excedida (`AgenteQuotaExcedidaError`) não descarta a mensagem — o watermark não avança sobre ela, ficando pendente para nova tentativa num ciclo seguinte.
+- Migrations `0017` (`email_captacao_credenciais`) e `0018` (`email_capturar_desde`, filtro opcional de backfill por data).
+- `RELEASE_SUMMARY.md` e `SECURITY.md` atualizados no mesmo bloco; `README.md` recebeu a seção "Captação de Currículo via E-mail".
+
+## Marco: Segundo Provedor de LLM — OpenAI (ADR-0011)
+*Data: 2026-08-25*
+
+- Extraído contrato comum (`GerarRespostaEstruturadaInput<T>`), retry com backoff exponencial e parse+validação Zod da resposta de `gemini-client.ts` para `src/lib/agents/shared.ts`, compartilhado agora pelos dois clients de provedor.
+- Adicionado `src/lib/agents/openai-client.ts`, chamando a Responses API da OpenAI (`/v1/responses`) via `fetch` nativo — sem SDK, sem dependência nova.
+- Adicionado `src/lib/agents/agent-client.ts` como ponto único de despacho: os 3 agentes (extração, classificador, avaliador) deixaram de importar `gemini-client.ts` diretamente e hardcodar o provedor — agora leem `agenteConfig.provider` (campo que já existia no schema mas era ignorado) e o dispatcher escolhe o client certo.
+- Schemas JSON de resposta dos 3 agentes reescritos para satisfazer o modo strict de Structured Outputs da OpenAI (todo campo em `required`, `additionalProperties: false`) permanecendo válidos para o Gemini — um único schema serve os dois provedores. Removido `format: "uri"` do schema de linkedin/portfólio, rejeitado pelo modo strict da OpenAI (validação de URL real já acontece depois, em `candidato.ts`).
+- `provider-catalog.ts` ganhou a entrada `openai` com modelos reais, já consumida por `/admin/agentes` (o formulário já resetava o campo `model` ao trocar de provedor, escrito antecipando um segundo provedor real).
+- Log de diagnóstico adicionado em falha de chamada nos dois clients — antes uma falha só surgia como "Falha ao chamar o provedor de LLM" sem nenhum rastro da causa real.
+- ADR-0011, que descrevia esta extensão como roadmap pós-MVP ("quando esta fase for iniciada"), teve o `Status` corrigido para `Aceita` e recebeu uma nota de implementação apontando para os arquivos reais.
+
+## Marco: Correção de normalização de CEP
+*Data: 2026-08-25*
+
+- Corrigido bug real de produção: currículos frequentemente grafam o CEP com ponto de milhar (ex. `"75.709-400"`, 10 caracteres) em vez do formato padrão (`"75709-400"`, 9) — o agente de extração transcreve o texto-fonte fielmente, incluindo o ponto, e o schema (`.max(9)`) rejeitava a extração inteira a cada tentativa, já que não era uma falha transiente.
+- `cepSchema` passou a fazer preprocessamento (remove tudo que não for dígito ou hífen antes de validar), no mesmo padrão já usado por `optionalUrlSchema` para normalizar URLs sem esquema — normalização em vez de rejeição.
+
+## Marco: Banco de Talentos Automático (ADR-0013)
+*Data: 2026-08-25*
+
+- Nova coluna booleana `candidatos.em_banco_talentos` (default `false`, migration `0019`): "banco de talentos" geral passou a ser propriedade do candidato, não da triagem — o enum `triagem_resultado` já tinha o valor `"banco_talentos"`, mas só se aplica a uma triagem já existente (`vaga_id` `NOT NULL`), não cobrindo o candidato que nunca teve nenhuma vaga compatível.
+- Dois gatilhos automáticos dentro de `orquestrarParaCandidatoNovo` (antes retornava em silêncio nesses casos): nenhuma vaga aberta na cidade do candidato, ou vagas existem mas nenhuma passa no threshold do classificador.
+- Reavaliação automática sem mudança de filtro: `orquestrarParaVagaNova` já varria todos os candidatos ativos da cidade, incluindo os do banco de talentos. Candidato sai do banco automaticamente em `processarParAprovado`, ponto único onde uma `Triagem` nova é de fato criada, compartilhado pelos dois sentidos de orquestração.
+- Sem UI de edição manual do campo — valor 100% derivado da orquestração automática; o RH continua podendo usar `resultado = banco_talentos` numa `Triagem` específica para "não segue para esta vaga, mas continua interessante" (os dois conceitos coexistem, um é do candidato em geral, o outro é do par candidato-vaga).
+- UI: badge de banco de talentos em `candidate-header.tsx` e nas listagens, novo filtro "Banco de Talentos" em `CandidatosFilter`, reaproveitando o tom já existente em `statusConfigMap`.
+- Não reavalia retroativamente candidatos cujas triagens antigas terminaram em reprovado/desistente sem vaga alternativa — só entram no banco se passarem de novo por `orquestrarParaCandidatoNovo` (ex. reprocessamento por duplicidade) ou tiverem sido capturados depois desta decisão; aceito para o escopo pedido, podendo virar job de reavaliação periódica no futuro.

@@ -82,14 +82,14 @@ proprietário nem um schema em DSL própria.
 Fluxo:
 
 - **Fonte da verdade**: [src/server/db/schema.ts](src/server/db/schema.ts) —
-  ~12 tabelas (`departamentos`, `cargos`, `vagas`, `candidatos`,
+  ~13 tabelas (`departamentos`, `cargos`, `vagas`, `candidatos`,
   `candidatoFormacoes`, `candidatoExperiencias`, `candidatoCertificacoes`,
   `uploadLoteItens`, `triagens`, `avaliacaoIA`, `llmCredenciais`,
-  `agenteConfig`), todas via `createTable()` (o `pgTableCreator` herdado do
-  T3, seção 1). O modelo de domínio canônico de referência (nomes de campos,
-  tipos, enums) é [docs/db_triagem_proposta.ts](docs/db_triagem_proposta.ts)
-  — qualquer mudança de schema é checada contra esse arquivo antes de virar
-  código.
+  `agenteConfig`, `emailCredenciais`), todas via `createTable()` (o
+  `pgTableCreator` herdado do T3, seção 1). O modelo de domínio canônico de
+  referência (nomes de campos, tipos, enums) é
+  [docs/db_triagem_proposta.ts](docs/db_triagem_proposta.ts) — qualquer
+  mudança de schema é checada contra esse arquivo antes de virar código.
 - **Geração de migration**: `npm run db:generate` (`drizzle-kit generate`)
   lê o schema TS e emite SQL versionado em `drizzle/`. Nenhuma migration é
   escrita à mão.
@@ -235,17 +235,35 @@ só prompt de sistema, prompt de usuário, provedor/modelo e parâmetros:
 
 Peças de suporte, todas em `src/lib/agents/`:
 
+- **`agent-client.ts`** — ponto único chamado pelos 3 agentes; lê
+  `agenteConfig.provider` e despacha para o client do provedor configurado.
+  Nenhum agente importa `gemini-client.ts`/`openai-client.ts` diretamente
+  (ver [ADR-0011](docs/decisions/0011-multiplos-provedores-llm.md)).
+- **`shared.ts`** — contrato comum (`GerarRespostaEstruturadaInput<T>`),
+  retry com backoff exponencial e parse+validação Zod da resposta,
+  compartilhados pelos dois clients — cada client só implementa a chamada
+  HTTP e a extração do texto de saída específicas do seu provedor.
 - **`gemini-client.ts`** — chama `@google/genai` (Gemini via Google AI
-  Studio) diretamente; é o único novo pacote de dependência aprovado
-  explicitamente para este bloco de trabalho (`AGENTS.md` exige aprovação
-  para qualquer dependência nova).
+  Studio); foi o único novo pacote de dependência aprovado no bloco original
+  do motor de agentes (`AGENTS.md` exige aprovação para qualquer dependência
+  nova).
+- **`openai-client.ts`** — chama a Responses API da OpenAI
+  (`/v1/responses`) via `fetch` nativo, sem SDK — não precisou de
+  dependência nova. Usa `text.format.type: "json_schema"` (strict mode) como
+  equivalente ao `responseJsonSchema` do Gemini; os schemas JSON dos 3
+  agentes foram ajustados para satisfazer as duas exigências do modo strict
+  da OpenAI (todo campo em `required`, `additionalProperties: false`) e
+  continuar válidos para o Gemini ao mesmo tempo — um schema serve os dois
+  provedores.
 - **`template.ts`** — resolve variáveis `{{nome}}` nos prompts a partir de um
   catálogo por slot; lança erro se o template referenciar uma variável fora
   do catálogo (nunca falha silenciosamente com string vazia).
-- **`crypto.ts`** — cifra/decifra as credenciais de LLM guardadas em
-  `llmCredenciais`, desacopladas da config de cada agente.
+- **`crypto.ts`** — cifra/decifra as credenciais de LLM (e, desde a
+  captação por e-mail, as credenciais IMAP) guardadas no banco, desacopladas
+  da config de cada agente.
 - **`provider-catalog.ts`** — lista os provedores/modelos disponíveis para a
-  UI de admin.
+  UI de admin; um provedor só vira opção real quando ganha um client
+  implementado — hoje `google_ai_studio` e `openai`, ambos com backend.
 
 O prompt de `classificador_aderencia` é **direção-agnóstico por design**:
 variáveis genéricas (`item_principal`, `itens_comparacao`,
@@ -317,10 +335,56 @@ implementação):
   antes de re-disparar a orquestração — o perfil atualizado é reavaliado do
   zero; etapas mais avançadas (testes, entrevistas, finalizado) não são
   tocadas por uma edição de cadastro.
+- **Candidato sem par aprovado vira banco de talentos automaticamente**
+  (`candidatos.em_banco_talentos`, [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md)):
+  se não há vaga aberta na cidade, ou nenhuma passa no threshold da fase 1,
+  `orquestrarParaCandidatoNovo` marca o candidato em vez de retornar em
+  silêncio como fazia antes dessa decisão. O candidato sai do banco
+  automaticamente no mesmo ponto único onde uma `Triagem` nova é de fato
+  criada (`processarParAprovado`) — compartilhado pelos dois sentidos de
+  orquestração, então uma vaga nova compatível reativa candidatos antigos do
+  banco sem código extra.
 
 ---
 
-## 10. Harness e skills — como o agente de IA trabalha neste repositório
+## 10. Captação automática de currículo por e-mail (ADR-0010)
+
+A captação por e-mail entrou no MVP depois do congelamento original —
+antecipada do roadmap pós-MVP porque, ao contrário de autenticação ou
+múltiplos provedores de LLM, é puramente aditiva: não toca em nenhum código
+já validado do motor de agentes ou dos CRUDs (ver
+[ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md)).
+
+- **IMAP genérico, não SDK por provedor.** Zimbra, Google Workspace e M365
+  todos falam IMAP — construir contra o protocolo em vez de 3 integrações
+  proprietárias cobre os três com um client só
+  ([src/lib/email/imap-client.ts](src/lib/email/imap-client.ts), `imapflow`
+  + `mailparser`, as únicas dependências novas deste bloco).
+- **Loop em processo, não cron externo.** `src/instrumentation.ts` (hook
+  oficial do Next.js, roda uma vez por processo) inicia o loop
+  ([src/server/email/captura-curriculos-loop.ts](src/server/email/captura-curriculos-loop.ts)),
+  guardado em `globalThis` (não uma variável de módulo) porque o HMR do
+  `next dev` recarregaria o módulo a cada save e reiniciaria o `setInterval`
+  — `globalThis` sobrevive ao HMR, mesmo truque já usado para cachear a
+  conexão do banco.
+- **Idempotência por watermark de UID IMAP**, não por conteúdo de mensagem:
+  cada ciclo busca só UID maior que `ultimoUidProcessado`, e o watermark só
+  avança até o que o ciclo realmente processou — nunca além, nunca
+  parcialmente, mesmo se o ciclo for interrompido no meio.
+- **Extração compartilhada com o upload em lote.** O e-mail não tem seu
+  próprio pipeline de extração/dedup/merge — reaproveita
+  [src/server/candidatos/processar-curriculo-recebido.ts](src/server/candidatos/processar-curriculo-recebido.ts),
+  extraído do upload em lote nesta mesma mudança, só trocando `origem` para
+  `"email"`. Mesma lista de mimetypes/tamanho aceitos do upload manual — sem
+  filtro adicional de "isso parece um currículo".
+- **Corpo/assunto do e-mail nunca são persistidos nem logados** — só os
+  bytes dos anexos elegíveis são extraídos; o resto da mensagem é descartado
+  assim que os anexos são processados (ver
+  [docs/SECURITY.md](docs/SECURITY.md#credenciais-de-e-mail-imap-em-repouso)).
+
+---
+
+## 11. Harness e skills — como o agente de IA trabalha neste repositório
 
 `docs/HARNESS.md` formaliza onde vivem os artefatos que orientam o
 assistente de IA e as regras de uso, para o trabalho ficar reproduzível entre
@@ -356,7 +420,7 @@ projeto):
 
 ---
 
-## 11. Resumo — decisões e onde ler mais
+## 12. Resumo — decisões e onde ler mais
 
 | Decisão | Motivo resumido | Onde aprofundar |
 |---|---|---|
@@ -369,3 +433,6 @@ projeto):
 | shadcn via CLI, não MCP | CLI resolve direto; menos ferramenta para manter | `docs/HARNESS.md` §4.3 |
 | Motor de agentes nativo (não n8n) | 3 fluxos n8n eram pipelines simples; configurabilidade via admin sem redeploy | [ADR-0007](docs/decisions/0007-encerramento-integracao-n8n.md) |
 | Fase 1 em lote / Fase 2 por par | Custo de comparação N-a-N baixo; avaliação rica só nos pares aprovados | `src/server/agents/orquestracao.ts` |
+| Dispatcher por provedor (`agent-client.ts`) | Saída estruturada não é portável entre provedores; um contrato comum evita `if/else` triplicado nos 3 agentes | [ADR-0011](docs/decisions/0011-multiplos-provedores-llm.md) |
+| Captação por e-mail via IMAP genérico + loop em processo | Cobre Zimbra/Workspace/M365 sem SDK proprietário; sem cron externo | [ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md) |
+| Banco de talentos como coluna do Candidato, não Triagem sintética | Candidato sem vaga compatível não tem processo seletivo para anexar um resultado | [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md) |
