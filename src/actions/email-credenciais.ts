@@ -36,6 +36,13 @@ export async function createEmailCredencial(
       usuario: parsed.data.usuario,
       senhaCifrada: encryptCredential(parsed.data.senha),
       pasta: parsed.data.pasta,
+      // ultimoUidProcessado=0 (em vez do default null) faz a primeira
+      // captura processar a caixa desde o UID 1 em vez de pular para "a
+      // partir de agora" — capturarDesde limita esse backfill a uma janela
+      // recente via IMAP SEARCH SINCE, em vez da caixa inteira.
+      ...(parsed.data.capturarDesde
+        ? { ultimoUidProcessado: 0, capturarDesde: parsed.data.capturarDesde }
+        : {}),
     });
 
     revalidatePath("/admin");

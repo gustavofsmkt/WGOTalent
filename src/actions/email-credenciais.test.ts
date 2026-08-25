@@ -37,6 +37,7 @@ describe("email-credenciais server actions", () => {
         pasta: "INBOX",
         ativo: true,
         ultimoUidProcessado: null,
+        capturarDesde: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -58,6 +59,65 @@ describe("email-credenciais server actions", () => {
         expect(result.data).not.toHaveProperty("senhaCifrada");
       }
       expect(revalidatePath).toHaveBeenCalledWith("/admin");
+    });
+
+    it("does not set an initial watermark by default — first capture skips the mailbox's history", async () => {
+      vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
+        id: "cred-1",
+        host: "imap.gmail.com",
+        porta: 993,
+        usuario: "rh@empresa.com",
+        senhaCifrada: "cifrada",
+        pasta: "INBOX",
+        ativo: true,
+        ultimoUidProcessado: null,
+        capturarDesde: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+
+      await createEmailCredencial({
+        host: "imap.gmail.com",
+        porta: 993,
+        usuario: "rh@empresa.com",
+        senha: "senha-real-secreta",
+        pasta: "INBOX",
+      });
+
+      const createCall = vi.mocked(emailCredencialRepository.create).mock.calls[0]![0];
+      expect(createCall).not.toHaveProperty("ultimoUidProcessado");
+      expect(createCall).not.toHaveProperty("capturarDesde");
+    });
+
+    it("seeds the watermark at 0 and stores capturarDesde when it's set — first capture processes the mailbox from that date on", async () => {
+      vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
+        id: "cred-1",
+        host: "imap.gmail.com",
+        porta: 993,
+        usuario: "rh@empresa.com",
+        senhaCifrada: "cifrada",
+        pasta: "INBOX",
+        ativo: true,
+        ultimoUidProcessado: 0,
+        capturarDesde: "2026-05-24",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
+
+      await createEmailCredencial({
+        host: "imap.gmail.com",
+        porta: 993,
+        usuario: "rh@empresa.com",
+        senha: "senha-real-secreta",
+        pasta: "INBOX",
+        capturarDesde: "2026-05-24",
+      });
+
+      const createCall = vi.mocked(emailCredencialRepository.create).mock.calls[0]![0];
+      expect(createCall.ultimoUidProcessado).toBe(0);
+      expect(createCall.capturarDesde).toBe("2026-05-24");
     });
 
     it("rejects an empty password", async () => {
@@ -109,6 +169,7 @@ describe("email-credenciais server actions", () => {
         pasta: "INBOX",
         ativo: false,
         ultimoUidProcessado: null,
+        capturarDesde: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -131,6 +192,7 @@ describe("email-credenciais server actions", () => {
         pasta: "INBOX",
         ativo: true,
         ultimoUidProcessado: null,
+        capturarDesde: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,

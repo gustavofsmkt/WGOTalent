@@ -1,0 +1,1 @@
+ALTER TABLE "wgotalent_email_credenciais" ADD COLUMN "capturar_desde" date;

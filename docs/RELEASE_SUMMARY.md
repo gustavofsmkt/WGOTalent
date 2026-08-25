@@ -123,7 +123,7 @@ gráficos — funil e KPIs do dashboard são CSS puro.
 
 ## Testes
 
-- 54 arquivos de teste / 426 testes (Vitest), todos verdes após a adição da
+- 54 arquivos de teste / 440 testes (Vitest), todos verdes após a adição da
   captação por e-mail (48 arquivos / 390 testes na validação final original
   do greenfield).
 - Cobertura em repositories, Server Actions, validação Zod, motor de

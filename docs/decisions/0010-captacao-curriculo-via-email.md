@@ -62,9 +62,60 @@ servidor), não cron externo nem route handler acionado de fora.
    porque o dedup por e-mail/celular já existente trata isso como merge, não
    duplicação. Isso substitui, para este fluxo, o modelo de idempotência de
    webhook descartado no ADR-0007 (que era acoplado a HTTP inbound do n8n).
+   Na **primeira captura** (`ultimoUidProcessado` nulo), o watermark inicia
+   no `uidNext` atual do mailbox, não em UID 1 — a busca nunca varre o
+   histórico existente da caixa, só o que chegar dali em diante. Foi
+   descoberto durante o teste manual com Gmail pessoal: um watermark
+   começando em 1 fez o primeiro ciclo tentar buscar e processar mais de
+   19 mil mensagens já existentes na caixa, travando o loop indefinidamente
+   (guarda de sobreposição nunca liberava). O watermark avança para o
+   `uidNext - 1` observado mesmo quando zero mensagens novas são
+   encontradas nesse primeiro ciclo — sem isso, cada ciclo repetiria a
+   decisão de "pular o histórico" para sempre, em vez de persisti-la uma
+   vez.
 5. **Novas dependências** (aprovadas explicitamente pelo usuário):
    `imapflow` (cliente IMAP) + `mailparser` (parsing MIME/anexos) +
    `@types/mailparser`.
+6. **Backfill opcional e limitado por data na ativação** — campo "Capturar
+   e-mails a partir de" (data) no cadastro da credencial, coluna
+   `capturar_desde` em `wgotalent_email_credenciais`. Vazio (padrão): o
+   watermark inicial pula para "a partir de agora" (item 4), sem varrer
+   nada. Preenchido: o watermark inicial é `0` (varre desde o UID 1), mas o
+   próprio `IMAP SEARCH` já filtra por `SINCE <data>` no servidor — nunca
+   busca nem processa mensagem anterior à data escolhida. Substitui um
+   design anterior (checkbox "processar tudo desde o início", sem limite de
+   data) depois que o teste manual mostrou que "tudo" processava mais de
+   19 mil mensagens de uma caixa pessoal real; limitar por data é
+   necessário para colocar a captação em produção contra uma caixa (Zimbra)
+   que já recebe currículos há tempo, sem varrer anos de e-mail não
+   relacionado. A data fica salva na credencial e continua sendo enviada em
+   todo ciclo seguinte — uma vez que o watermark ultrapassa essa data, o
+   filtro `SINCE` vira um no-op permanente e inofensivo, sem precisar de um
+   passo explícito de "desativar depois do backfill".
+7. **Limite de mensagens por ciclo** (`MAX_MENSAGENS_POR_CICLO = 20` em
+   `captura-curriculos.ts`) — aplicado sempre, não só no backfill. Um
+   backlog grande é consumido em lotes ao longo de vários ciclos, não tudo
+   de uma vez: cada ciclo busca no máximo N mensagens, ordenadas por UID
+   crescente, e o watermark avança até a maior UID **efetivamente
+   processada** no lote, nunca além — se o processo for interrompido no
+   meio de um backfill grande, o próximo ciclo retoma do lote seguinte, sem
+   reprocessar (e sem gastar cota de IA de novo em) o que já foi
+   consumido.
+8. **Limite de RPM/RPD/tokens do provedor de IA não é implementado aqui,
+   de propósito** — a captação reage a `AgenteQuotaExcedidaError` (já
+   existente em `src/lib/agents/gemini-client.ts`, com retry/backoff
+   próprio para picos curtos), em vez de calcular limites específicos do
+   Gemini dentro do código de e-mail. Quando uma mensagem falha por cota
+   excedida, o watermark **não avança por cima dela** — fica pendente para
+   nova tentativa num ciclo seguinte, dando tempo da janela de RPM/RPD do
+   provedor resetar, em vez de descartar o currículo permanentemente. Essa
+   abordagem é agnóstica de provedor por construção: funciona sem mudança
+   quando Claude/OpenAI forem adicionados como implementações de
+   `~/lib/agents/`, porque reage ao mesmo tipo de erro, não a números fixos
+   de um provedor específico. Um limitador de taxa configurável por
+   provedor (RPM/RPD/TPM) fica para quando houver múltiplos provedores de
+   fato implementados — não faz sentido modelar isso a partir de um único
+   provedor real.
 
 ## Consequências
 

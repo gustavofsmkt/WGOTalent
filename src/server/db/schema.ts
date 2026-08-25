@@ -390,6 +390,11 @@ export const emailCredenciais = createTable("email_credenciais", {
   senhaCifrada: text("senha_cifrada").notNull(),
   pasta: varchar("pasta", { length: 120 }).default("INBOX").notNull(),
   ultimoUidProcessado: bigint("ultimo_uid_processado", { mode: "number" }),
+  // Filtro opcional aplicado no próprio IMAP SEARCH (SINCE): quando setado,
+  // a captura nunca busca nem processa mensagem anterior a esta data.
+  // Combinado com ultimoUidProcessado=0, limita o backfill a uma janela
+  // recente em vez de varrer a caixa inteira desde o início.
+  capturarDesde: date("capturar_desde", { mode: "string" }),
   ativo: boolean("ativo").default(true).notNull(),
   ...timestamps,
 });

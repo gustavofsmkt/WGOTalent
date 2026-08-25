@@ -8,6 +8,7 @@ const {
   logoutMock,
   releaseMock,
   simpleParserMock,
+  mailboxRef,
 } = vi.hoisted(() => ({
   connectMock: vi.fn(),
   getMailboxLockMock: vi.fn(),
@@ -16,6 +17,7 @@ const {
   logoutMock: vi.fn(),
   releaseMock: vi.fn(),
   simpleParserMock: vi.fn(),
+  mailboxRef: { current: { uidNext: 100 } as { uidNext: number } | false },
 }));
 
 vi.mock("imapflow", () => ({
@@ -25,6 +27,9 @@ vi.mock("imapflow", () => ({
     search = searchMock;
     fetch = fetchMock;
     logout = logoutMock;
+    get mailbox() {
+      return mailboxRef.current;
+    }
   },
 }));
 
@@ -46,6 +51,7 @@ describe("buscarMensagensNovas", () => {
     connectMock.mockResolvedValue(undefined);
     getMailboxLockMock.mockResolvedValue({ path: "INBOX", release: releaseMock });
     logoutMock.mockResolvedValue(undefined);
+    mailboxRef.current = { uidNext: 100 };
   });
 
   const params = {
@@ -65,20 +71,43 @@ describe("buscarMensagensNovas", () => {
     expect(searchMock).toHaveBeenCalledWith({ uid: "11:*" }, { uid: true });
   });
 
-  it("starts from UID 1 when the mailbox has never been captured", async () => {
+  it("includes since in the search criteria when capturarDesde is set", async () => {
     searchMock.mockResolvedValueOnce([]);
 
-    await buscarMensagensNovas({ ...params, desdeUid: null });
+    await buscarMensagensNovas({ ...params, capturarDesde: "2026-05-24" });
 
-    expect(searchMock).toHaveBeenCalledWith({ uid: "1:*" }, { uid: true });
+    expect(searchMock).toHaveBeenCalledWith(
+      { uid: "11:*", since: "2026-05-24" },
+      { uid: true },
+    );
   });
 
-  it("returns an empty array without fetching when search finds nothing", async () => {
+  it("omits since from the search criteria when capturarDesde is not set", async () => {
+    searchMock.mockResolvedValueOnce([]);
+
+    await buscarMensagensNovas(params);
+
+    const [criteria] = searchMock.mock.calls[0]!;
+    expect(criteria).not.toHaveProperty("since");
+  });
+
+  it("starts from the mailbox's current uidNext when never captured before — skips history instead of scanning it", async () => {
+    mailboxRef.current = { uidNext: 5000 };
+    searchMock.mockResolvedValueOnce([]);
+
+    const result = await buscarMensagensNovas({ ...params, desdeUid: null });
+
+    expect(searchMock).toHaveBeenCalledWith({ uid: "5000:*" }, { uid: true });
+    expect(result.uidReferencia).toBe(4999);
+  });
+
+  it("returns uidReferencia even with zero messages, so the watermark can advance without any new mail", async () => {
+    mailboxRef.current = { uidNext: 42 };
     searchMock.mockResolvedValueOnce(false);
 
     const result = await buscarMensagensNovas(params);
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ mensagens: [], uidReferencia: 41 });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -101,7 +130,7 @@ describe("buscarMensagensNovas", () => {
 
     const result = await buscarMensagensNovas(params);
 
-    expect(result).toEqual([
+    expect(result.mensagens).toEqual([
       {
         uid: 11,
         anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(1024) }],
@@ -115,8 +144,42 @@ describe("buscarMensagensNovas", () => {
 
     const result = await buscarMensagensNovas(params);
 
-    expect(result).toEqual([]);
+    expect(result.mensagens).toEqual([]);
     expect(simpleParserMock).not.toHaveBeenCalled();
+  });
+
+  it("caps the batch at limiteLote, sorted ascending, and reports uidReferencia as null (more remain)", async () => {
+    searchMock.mockResolvedValueOnce([15, 11, 13]);
+    fetchMock.mockReturnValueOnce(
+      asyncIterable([
+        { uid: 11, source: Buffer.from("a") },
+        { uid: 13, source: Buffer.from("b") },
+      ]),
+    );
+    simpleParserMock.mockResolvedValue({ attachments: [] });
+
+    const result = await buscarMensagensNovas({ ...params, limiteLote: 2 });
+
+    expect(fetchMock).toHaveBeenCalledWith([11, 13], expect.anything(), expect.anything());
+    expect(result.mensagens.map((m) => m.uid)).toEqual([11, 13]);
+    expect(result.uidReferencia).toBeNull();
+  });
+
+  it("returns the normal uidReferencia when everything found fits within limiteLote", async () => {
+    mailboxRef.current = { uidNext: 20 };
+    searchMock.mockResolvedValueOnce([11, 12]);
+    fetchMock.mockReturnValueOnce(
+      asyncIterable([
+        { uid: 11, source: Buffer.from("a") },
+        { uid: 12, source: Buffer.from("b") },
+      ]),
+    );
+    simpleParserMock.mockResolvedValue({ attachments: [] });
+
+    const result = await buscarMensagensNovas({ ...params, limiteLote: 5 });
+
+    expect(fetchMock).toHaveBeenCalledWith([11, 12], expect.anything(), expect.anything());
+    expect(result.uidReferencia).toBe(19);
   });
 
   it("releases the mailbox lock and logs out even when fetching fails", async () => {

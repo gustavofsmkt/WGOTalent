@@ -27,6 +27,12 @@ import { Input } from "~/components/ui/input";
 import { FormSubmitButton } from "~/components/form-submit-button";
 import { ErrorCallout } from "~/components/error-callout";
 
+function tresMesesAtras(): string {
+  const data = new Date();
+  data.setMonth(data.getMonth() - 3);
+  return data.toISOString().slice(0, 10);
+}
+
 export function CreateEmailCredencialForm() {
   const router = useRouter();
   const [serverError, setServerError] = React.useState<{
@@ -41,6 +47,7 @@ export function CreateEmailCredencialForm() {
       usuario: "",
       senha: "",
       pasta: "INBOX",
+      capturarDesde: "",
     } as EmailCredencialCreateInput,
     validators: { onBlur: emailCredencialCreateSchema },
     onSubmit: async ({ value }) => {
@@ -204,6 +211,37 @@ export function CreateEmailCredencialForm() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       aria-invalid={hasErrors}
                     />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                );
+              }}
+            </form.Field>
+
+            <form.Field name="capturarDesde">
+              {(field) => {
+                const hasErrors =
+                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                return (
+                  <Field data-invalid={hasErrors}>
+                    <FieldLabel htmlFor="email-credencial-capturar-desde">
+                      Capturar e-mails a partir de
+                    </FieldLabel>
+                    <Input
+                      id="email-credencial-capturar-desde"
+                      name={field.name}
+                      type="date"
+                      value={field.state.value ?? ""}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={hasErrors}
+                    />
+                    <FieldDescription>
+                      Opcional — use só na ativação inicial de uma caixa que já recebe
+                      currículos há tempo (ex: indo para produção). A primeira captura varre a
+                      caixa desde essa data (ex.: {tresMesesAtras()} para os últimos 3 meses),
+                      em vez de reprocessar tudo. Deixe em branco (padrão) para capturar só o
+                      que chegar a partir de agora — o recomendado para caixas de teste.
+                    </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
                 );

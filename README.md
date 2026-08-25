@@ -183,13 +183,33 @@ com IMAP habilitado, sem SDK proprietário por provedor (ver
   configurável por `EMAIL_CAPTURA_INTERVALO_MS` (default 60s).
 - **Idempotência via watermark de UID IMAP** (`ultimoUidProcessado`),
   monotônico e por-mailbox: cada ciclo busca só mensagens com UID maior que o
-  último processado, e o watermark só avança depois que o ciclo inteiro
-  termina com sucesso.
+  último processado, e o watermark só avança até o que foi efetivamente
+  coberto no ciclo — nunca além, nunca parcialmente.
+- **Na primeira ativação**, o padrão é pular o histórico da caixa e capturar
+  só o que chegar dali em diante (evita tratar anos de e-mail antigo como
+  candidatura). Para colocar a captação em produção contra uma caixa que já
+  recebe currículos há tempo, preencha "Capturar e-mails a partir de" (uma
+  data) ao cadastrar a credencial — a captura passa a consumir o backlog a
+  partir dessa data (o próprio `IMAP SEARCH SINCE` já filtra no servidor,
+  nunca busca mensagem mais antiga) em lotes de até 20 mensagens por ciclo
+  (não tudo de uma vez), o que mantém cada ciclo rápido e faz uma eventual
+  interrupção no meio do backfill perder no máximo o lote em andamento, não
+  o progresso todo.
 - Anexos elegíveis (mesmos mimetypes/tamanho aceitos no upload manual: PDF,
   DOCX, PNG, JPEG, até 5MB) são extraídos com `imapflow` + `mailparser` e
   processados pelo mesmo pipeline do upload em lote
   ([src/server/candidatos/processar-curriculo-recebido.ts](src/server/candidatos/processar-curriculo-recebido.ts)),
-  só mudando `origem` para `"email"`.
+  só mudando `origem` para `"email"`. Não há filtro de "isso parece um
+  currículo" além do tipo/tamanho do arquivo — numa caixa dedicada de
+  recrutamento isso não é problema, mas numa caixa pessoal de teste
+  qualquer PDF que chegar (boleto, recibo) entra no pipeline de extração.
+- **Cota de IA excedida não descarta o currículo**: se a extração falhar
+  por limite de requisições do provedor (`AgenteQuotaExcedidaError`), o
+  watermark não avança por cima dessa mensagem — ela fica pendente para
+  nova tentativa num ciclo seguinte, em vez de ser perdida para sempre.
+  Reage ao tipo de erro, não a números de RPM/RPD de um provedor
+  específico, então funciona sem mudança quando outros provedores de IA
+  além do Gemini forem adicionados.
 - **Nota de teste**: contas Gmail exigem uma **Senha de App**
   (`myaccount.google.com/apppasswords`) em vez da senha normal desde 2022 —
   usado para validar a feature em desenvolvimento. Em produção (Zimbra), a
@@ -205,7 +225,7 @@ npm run test:run   # Vitest single-run (usado pelo gate `check`)
 
 Vitest roda em ambiente Node, sem depender de um Postgres real (ver
 [vitest.config.ts](vitest.config.ts)) — testes de repositório e ações usam
-duplos/mocks em vez do banco. Suíte atual: 54 arquivos de teste cobrindo
+duplos/mocks em vez do banco. Suíte atual: 54 arquivos / 440 testes cobrindo
 validação, repositórios, agentes de IA, storage, server actions, captação de
 e-mail e páginas.
 
