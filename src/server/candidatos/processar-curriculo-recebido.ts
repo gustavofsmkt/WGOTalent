@@ -5,7 +5,7 @@ import { triagemRepository } from "~/server/db/repositories/triagem";
 import { storage } from "~/lib/storage";
 import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
-import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
+import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import { calcularDadosPendentes } from "~/lib/validation/extracao-curriculo";
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from "~/lib/validation/candidato-arquivo";
 

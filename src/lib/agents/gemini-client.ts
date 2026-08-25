@@ -1,43 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
-import type { z } from "zod";
-
-export interface GeminiArquivo {
-  mimeType: string;
-  data: Buffer;
-}
-
-export interface GerarRespostaEstruturadaInput<T> {
-  apiKey: string;
-  model: string;
-  systemPrompt: string;
-  userPrompt: string;
-  /** JSON Schema (subset suportado pelo Gemini) descrevendo o formato esperado da resposta. */
-  responseJsonSchema: Record<string, unknown>;
-  /** Schema Zod usado para validar em runtime o JSON já parseado, antes de devolver ao chamador. */
-  responseZodSchema: z.ZodType<T, z.ZodTypeDef, unknown>;
-  arquivo?: GeminiArquivo;
-}
-
-export class AgenteRespostaInvalidaError extends Error {
-  constructor(cause: unknown) {
-    super("Resposta do agente não corresponde ao schema esperado.");
-    this.cause = cause;
-  }
-}
-
-export class AgenteChamadaError extends Error {
-  constructor(cause: unknown) {
-    super("Falha ao chamar o provedor de LLM.");
-    this.cause = cause;
-  }
-}
-
-export class AgenteQuotaExcedidaError extends Error {
-  constructor(cause: unknown) {
-    super("Limite de requisições do provedor de IA atingido. Tente novamente em instantes.");
-    this.cause = cause;
-  }
-}
+import {
+  AgenteChamadaError,
+  AgenteQuotaExcedidaError,
+  comRetry,
+  parseRespostaEstruturada,
+  type GerarRespostaEstruturadaInput,
+} from "./shared";
 
 /** Detecta erro de limite de requisições (HTTP 429 / RESOURCE_EXHAUSTED) retornado pelo provedor. */
 function isErroDeQuota(error: unknown): boolean {
@@ -48,41 +16,15 @@ function isErroDeQuota(error: unknown): boolean {
   return typeof message === "string" && /RESOURCE_EXHAUSTED|"code":\s*429/.test(message);
 }
 
-const MAX_TENTATIVAS = 3;
-const BACKOFF_BASE_MS = 500;
-
-function calcularDelayBackoff(tentativa: number): number {
-  return BACKOFF_BASE_MS * 2 ** (tentativa - 1);
-}
-
-function aguardar(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * As 3 etapas de agente (extração de currículo, classificador de aderência,
  * avaliador de triagem) chamam todas esta função — um único retry aqui cobre
- * as 3. Backoff exponencial (500ms, 1s) porque a falha mais comum é rate
- * limit do provedor (429); reaplicado também a resposta malformada, já que a
- * geração é não-determinística e uma nova tentativa pode vir válida.
+ * as 3.
  */
 export async function gerarRespostaEstruturada<T>(
   input: GerarRespostaEstruturadaInput<T>,
 ): Promise<T> {
-  let ultimoErro: unknown;
-
-  for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-    try {
-      return await tentarGerarResposta(input);
-    } catch (error) {
-      ultimoErro = error;
-      if (tentativa < MAX_TENTATIVAS) {
-        await aguardar(calcularDelayBackoff(tentativa));
-      }
-    }
-  }
-
-  throw ultimoErro;
+  return comRetry(() => tentarGerarResposta(input));
 }
 
 async function tentarGerarResposta<T>(
@@ -115,8 +57,10 @@ async function tentarGerarResposta<T>(
     responseText = response.text;
   } catch (error) {
     if (isErroDeQuota(error)) {
+      console.error("[gemini-client] Erro de quota:", error);
       throw new AgenteQuotaExcedidaError(error);
     }
+    console.error("[gemini-client] Falha ao chamar o Gemini:", error);
     throw new AgenteChamadaError(error);
   }
 
@@ -124,24 +68,5 @@ async function tentarGerarResposta<T>(
     throw new AgenteChamadaError(new Error("Resposta vazia do provedor."));
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(responseText);
-  } catch (error) {
-    console.error("[gerarRespostaEstruturada] JSON inválido na resposta do agente:", responseText);
-    throw new AgenteRespostaInvalidaError(error);
-  }
-
-  const result = input.responseZodSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error(
-      "[gerarRespostaEstruturada] Resposta do agente não corresponde ao schema esperado:",
-      JSON.stringify(result.error.issues, null, 2),
-      "\nResposta recebida:",
-      JSON.stringify(parsed, null, 2),
-    );
-    throw new AgenteRespostaInvalidaError(result.error);
-  }
-
-  return result.data;
+  return parseRespostaEstruturada(responseText, input.responseZodSchema);
 }

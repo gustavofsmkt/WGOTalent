@@ -13,8 +13,8 @@ import {
   AgenteChamadaError,
   AgenteQuotaExcedidaError,
   AgenteRespostaInvalidaError,
-  gerarRespostaEstruturada,
-} from "./gemini-client";
+} from "./shared";
+import { gerarRespostaEstruturada } from "./gemini-client";
 
 const schema = z.object({ score: z.number() });
 const jsonSchema = {

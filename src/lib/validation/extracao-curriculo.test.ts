@@ -63,6 +63,41 @@ describe("extracaoCurriculoOutputSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("falls back to the default when nacionalidade/estadoCivil arrive as explicit null", () => {
+    // O JSON Schema mandado ao agente exige essas chaves (modo strict, ver
+    // extracao-curriculo.ts), então um provedor pode mandar null em vez de
+    // simplesmente omitir a chave — o fallback precisa valer nos dois casos.
+    const result = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      nacionalidade: null,
+      estadoCivil: null,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.nacionalidade).toBe("brasileira");
+      expect(result.data.estadoCivil).toBe("nao_informado");
+    }
+  });
+
+  it("falls back to false when the boolean flags arrive as explicit null", () => {
+    const result = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      possuiVeiculo: null,
+      ensinoMedioConcluido: null,
+      disponivelViagens: null,
+      disponivelMudanca: null,
+      inicioImediato: null,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.possuiVeiculo).toBe(false);
+      expect(result.data.ensinoMedioConcluido).toBe(false);
+      expect(result.data.disponivelViagens).toBe(false);
+      expect(result.data.disponivelMudanca).toBe(false);
+      expect(result.data.inicioImediato).toBe(false);
+    }
+  });
 });
 
 describe("calcularDadosPendentes", () => {

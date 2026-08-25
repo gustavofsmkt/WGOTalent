@@ -1,7 +1,8 @@
 /**
  * Catálogo estático de provedores/modelos de LLM suportados pelo motor de
- * agentes. Só "google_ai_studio" tem backend implementado (gemini-client.ts)
- * — os demais viram opção de UI só quando ganharem implementação real.
+ * agentes. "google_ai_studio" e "openai" têm backend implementado
+ * (gemini-client.ts / openai-client.ts, escolhidos via agent-client.ts) —
+ * outros provedores viram opção de UI só quando ganharem implementação real.
  */
 export interface ModelOption {
   value: string;
@@ -28,6 +29,15 @@ export const LLM_PROVIDERS: ProviderOption[] = [
       { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
       { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+    ],
+  },
+  {
+    value: "openai",
+    label: "OpenAI",
+    models: [
+      { value: "gpt-5.6-sol", label: "GPT-5.6 Sol" },
+      { value: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
+      { value: "gpt-5.6-luna", label: "GPT-5.6 Luna" },
     ],
   },
 ];

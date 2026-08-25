@@ -30,7 +30,7 @@ const MAX_MENSAGENS_POR_CICLO = 20;
  *
  * Uma mensagem cuja extração de IA falhar por limite de cota do provedor
  * (`AgenteQuotaExcedidaError`, agnóstico de provedor — mesmo tratamento
- * para Gemini, e para Claude/OpenAI quando forem adicionados) **não** deixa
+ * para Gemini e OpenAI, e para outros provedores quando forem adicionados) **não** deixa
  * o watermark passar por ela: fica pendente para nova tentativa num ciclo
  * seguinte, depois que a janela de RPM/RPD do provedor tiver tempo de
  * resetar (o intervalo entre ciclos já dá esse respiro). Isso importa

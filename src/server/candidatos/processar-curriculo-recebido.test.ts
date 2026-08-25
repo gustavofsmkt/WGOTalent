@@ -23,7 +23,7 @@ import { processarCurriculoRecebido } from "./processar-curriculo-recebido";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
-import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
+import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import type { ExtracaoCurriculoOutput } from "~/lib/validation/extracao-curriculo";
 

@@ -3,11 +3,9 @@ import { triagemRepository } from "~/server/db/repositories/triagem";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
-import { gerarRespostaEstruturada } from "~/lib/agents/gemini-client";
+import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
 import { resolveTemplate } from "~/lib/agents/template";
 import { type NovaAvaliacaoIA } from "~/server/db/schema";
-
-const AGENT_PROVIDER = "google_ai_studio";
 
 const avaliacaoOutputSchema = z.object({
   vagaFoiInferida: z.boolean(),
@@ -39,22 +37,24 @@ const RESPONSE_JSON_SCHEMA = {
     "scoreIa",
     "parecerIa",
   ],
+  additionalProperties: false,
 };
 
 export async function executarAvaliadorTriagem(
   triagemId: string,
 ): Promise<NovaAvaliacaoIA> {
-  const [config, credencial, triagem] = await Promise.all([
+  const [config, triagem] = await Promise.all([
     agenteConfigRepository.findBySlot("avaliador_triagem"),
-    llmCredencialRepository.findActiveByProvider(AGENT_PROVIDER),
     triagemRepository.findByIdWithJoins(triagemId),
   ]);
 
   if (!config?.ativo) {
     throw new Error("Agente avaliador_triagem não está configurado/ativo.");
   }
+
+  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${AGENT_PROVIDER}".`);
+    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
   }
   if (!triagem) {
     throw new Error(`Triagem "${triagemId}" não encontrada.`);
@@ -69,6 +69,7 @@ export async function executarAvaliadorTriagem(
   const userPrompt = resolveTemplate(config.userPrompt, variaveis);
 
   const resultado = await gerarRespostaEstruturada({
+    provider: config.provider,
     apiKey: decryptCredential(credencial.apiKeyCifrada),
     model: config.model,
     systemPrompt,

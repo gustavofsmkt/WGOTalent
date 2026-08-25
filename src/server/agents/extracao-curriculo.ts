@@ -3,7 +3,7 @@ import { storage } from "~/lib/storage";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
-import { gerarRespostaEstruturada } from "~/lib/agents/gemini-client";
+import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
 import { BRAZILIAN_UFS } from "~/lib/validation/common";
 import {
   extracaoCurriculoOutputSchema,
@@ -23,11 +23,34 @@ function nullableStringSchema(maxLength?: number) {
   return { anyOf: [stringSchema(maxLength), { type: "null" }] };
 }
 
+function nullableBooleanSchema() {
+  return { anyOf: [{ type: "boolean" }, { type: "null" }] };
+}
+
+function nullableEnumSchema(values: readonly string[]) {
+  return { anyOf: [{ type: "string", enum: [...values] }, { type: "null" }] };
+}
+
 const nullableDateString = { anyOf: [{ type: "string", format: "date" }, { type: "null" }] };
 
-/** LinkedIn/portfólio: normalização de esquema ausente é tratada em candidato.ts (optionalUrlSchema). */
-const nullableUrlString = { anyOf: [{ type: "string", format: "uri", maxLength: 255 }, { type: "null" }] };
+/**
+ * LinkedIn/portfólio: sem `format: "uri"` de propósito — a OpenAI rejeita
+ * esse valor de `format` em modo strict ("'uri' is not a valid format",
+ * confirmado batendo na API real em 2026-08-24; só date-time/time/date/
+ * duration/email/hostname/ipv4/ipv6/uuid são aceitos lá). A validação de
+ * URL de verdade já acontece em candidato.ts (optionalUrlSchema), que
+ * inclusive normaliza esquema ausente — este schema é só uma dica pro
+ * modelo, não a fronteira de validação.
+ */
+const nullableUrlString = { anyOf: [{ type: "string", maxLength: 255 }, { type: "null" }] };
 
+/**
+ * `additionalProperties: false` + todo campo em `required` (nulável quando
+ * pode faltar): não é exigência do Gemini, mas é do modo strict de
+ * Structured Outputs de outros provedores (ex: OpenAI) que serão adicionados
+ * depois — o Gemini aceita esse dialeto mais rígido normalmente, então um
+ * único schema serve para os dois em vez de um por provedor.
+ */
 const itemFormacao = {
   type: "object",
   properties: {
@@ -37,7 +60,8 @@ const itemFormacao = {
     dataInicio: { type: "string", format: "date" },
     dataTermino: nullableDateString,
   },
-  required: ["titulo", "areaFormacao", "dataInicio"],
+  required: ["titulo", "instituicao", "areaFormacao", "dataInicio", "dataTermino"],
+  additionalProperties: false,
 };
 
 const itemExperiencia = {
@@ -49,7 +73,8 @@ const itemExperiencia = {
     dataEntrada: { type: "string", format: "date" },
     dataSaida: nullableDateString,
   },
-  required: ["cargoTitulo", "dataEntrada"],
+  required: ["empresa", "cargoTitulo", "descricao", "dataEntrada", "dataSaida"],
+  additionalProperties: false,
 };
 
 const itemCertificacao = {
@@ -59,20 +84,27 @@ const itemCertificacao = {
     obtidaEm: nullableDateString,
     validade: nullableDateString,
   },
-  required: ["titulo"],
+  required: ["titulo", "obtidaEm", "validade"],
+  additionalProperties: false,
 };
+
+const ESTADO_CIVIL_VALUES = [
+  "nao_informado",
+  "solteiro",
+  "casado",
+  "divorciado",
+  "viuvo",
+  "uniao_estavel",
+] as const;
 
 const EXTRACAO_CURRICULO_JSON_SCHEMA = {
   type: "object",
   properties: {
     nome: stringSchema(150),
     nomeSocial: nullableStringSchema(150),
-    nacionalidade: stringSchema(60),
+    nacionalidade: nullableStringSchema(60),
     dataNascimento: nullableDateString,
-    estadoCivil: {
-      type: "string",
-      enum: ["nao_informado", "solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],
-    },
+    estadoCivil: nullableEnumSchema(ESTADO_CIVIL_VALUES),
     pcd: nullableStringSchema(),
     // Nem todo currículo traz e-mail — deixar nullable evita que o modelo
     // "invente" um valor só pra satisfazer um campo obrigatório (ex: a string
@@ -87,12 +119,12 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     logradouro: nullableStringSchema(200),
     resumoProfissional: stringSchema(),
     cnh: { anyOf: [{ type: "string", enum: ["a", "b", "ab", "c", "d", "e"] }, { type: "null" }] },
-    possuiVeiculo: { type: "boolean" },
-    ensinoMedioConcluido: { type: "boolean" },
-    disponivelViagens: { type: "boolean" },
-    disponivelMudanca: { type: "boolean" },
+    possuiVeiculo: nullableBooleanSchema(),
+    ensinoMedioConcluido: nullableBooleanSchema(),
+    disponivelViagens: nullableBooleanSchema(),
+    disponivelMudanca: nullableBooleanSchema(),
     disponibilidadeHorarios: nullableStringSchema(),
-    inicioImediato: { type: "boolean" },
+    inicioImediato: nullableBooleanSchema(),
     linkedin: nullableUrlString,
     portfolio: nullableUrlString,
     textoCurriculoExtraido: {
@@ -105,33 +137,51 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
   },
   required: [
     "nome",
+    "nomeSocial",
+    "nacionalidade",
+    "dataNascimento",
+    "estadoCivil",
+    "pcd",
+    "email",
     "celular",
+    "cep",
     "uf",
     "cidade",
+    "bairro",
+    "logradouro",
     "resumoProfissional",
+    "cnh",
+    "possuiVeiculo",
+    "ensinoMedioConcluido",
+    "disponivelViagens",
+    "disponivelMudanca",
+    "disponibilidadeHorarios",
+    "inicioImediato",
+    "linkedin",
+    "portfolio",
     "textoCurriculoExtraido",
     "formacoes",
     "experiencias",
     "certificacoes",
   ],
+  additionalProperties: false,
 };
-
-const AGENT_PROVIDER = "google_ai_studio";
 
 export async function executarExtracaoCurriculo(
   fileKey: string,
 ): Promise<ExtracaoCurriculoOutput> {
-  const [config, credencial, arquivoBuffer] = await Promise.all([
+  const [config, arquivoBuffer] = await Promise.all([
     agenteConfigRepository.findBySlot("extracao_curriculo"),
-    llmCredencialRepository.findActiveByProvider(AGENT_PROVIDER),
     storage.read(fileKey),
   ]);
 
   if (!config?.ativo) {
     throw new Error("Agente extracao_curriculo não está configurado/ativo.");
   }
+
+  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${AGENT_PROVIDER}".`);
+    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
   }
 
   const ext = fileKey.split(".").pop()?.toLowerCase();
@@ -141,6 +191,7 @@ export async function executarExtracaoCurriculo(
   if (ext === "docx") {
     const { value: textoDocx } = await mammoth.extractRawText({ buffer: arquivoBuffer });
     return gerarRespostaEstruturada({
+      provider: config.provider,
       apiKey: decryptCredential(credencial.apiKeyCifrada),
       model: config.model,
       systemPrompt: config.systemPrompt,
@@ -152,6 +203,7 @@ export async function executarExtracaoCurriculo(
 
   const mimeType = inferMimeTypeMultimodal(ext);
   return gerarRespostaEstruturada({
+    provider: config.provider,
     apiKey: decryptCredential(credencial.apiKeyCifrada),
     model: config.model,
     systemPrompt: config.systemPrompt,

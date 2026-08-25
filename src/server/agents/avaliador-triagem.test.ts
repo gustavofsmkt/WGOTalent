@@ -12,7 +12,7 @@ const {
   findByIdWithJoinsMock: vi.fn(),
 }));
 
-vi.mock("~/lib/agents/gemini-client", () => ({
+vi.mock("~/lib/agents/agent-client", () => ({
   gerarRespostaEstruturada: gerarRespostaEstruturadaMock,
 }));
 vi.mock("~/server/db/repositories/agente-config", () => ({
@@ -30,7 +30,13 @@ vi.mock("~/lib/agents/crypto", () => ({
 
 import { executarAvaliadorTriagem } from "./avaliador-triagem";
 
-const config = { ativo: true, model: "gemini-3.5-flash", systemPrompt: "sys", userPrompt: "user" };
+const config = {
+  ativo: true,
+  provider: "google_ai_studio",
+  model: "gemini-3.5-flash",
+  systemPrompt: "sys",
+  userPrompt: "user",
+};
 const credencial = { apiKeyCifrada: "cifrada" };
 const triagem = {
   id: "t1",

@@ -12,11 +12,24 @@ import { candidatoAgregadoSchema } from "./candidato";
  * migration antes da TASK-145 poder inserir de fato).
  */
 /**
- * nullish() (não só nullable()) porque o JSON Schema mandado ao Gemini só
+ * nullish() (não só nullable()) porque o JSON Schema mandado ao agente só
  * marca esses campos como não-obrigatórios — a resposta pode trazer `null`
  * OU simplesmente omitir a chave, e um `nullable()` puro rejeita a chave
  * ausente (`undefined`) com "campo obrigatório".
  */
+/**
+ * Campos com `.default()` na base (candidato.ts) só disparam o fallback
+ * para `undefined` — mas o JSON Schema mandado ao agente marca esses campos
+ * como obrigatórios-porém-nuláveis (compatibilidade com Structured Outputs
+ * strict de outros provedores, ver extracao-curriculo.ts), então o modelo
+ * pode devolver `null` explícito quando não souber o valor. Convertendo
+ * `null` para `undefined` antes de validar, o mesmo fallback se aplica nos
+ * dois casos.
+ */
+function nullToDefault<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess((val) => (val === null ? undefined : val), schema);
+}
+
 export const extracaoCurriculoOutputSchema = candidatoAgregadoSchema.extend({
   dataNascimento: candidatoAgregadoSchema.shape.dataNascimento.nullish(),
   cep: candidatoAgregadoSchema.shape.cep.nullish(),
@@ -24,6 +37,13 @@ export const extracaoCurriculoOutputSchema = candidatoAgregadoSchema.extend({
   logradouro: candidatoAgregadoSchema.shape.logradouro.nullish(),
   email: candidatoAgregadoSchema.shape.email.nullish(),
   celular: candidatoAgregadoSchema.shape.celular.nullish(),
+  nacionalidade: nullToDefault(candidatoAgregadoSchema.shape.nacionalidade),
+  estadoCivil: nullToDefault(candidatoAgregadoSchema.shape.estadoCivil),
+  possuiVeiculo: nullToDefault(candidatoAgregadoSchema.shape.possuiVeiculo),
+  ensinoMedioConcluido: nullToDefault(candidatoAgregadoSchema.shape.ensinoMedioConcluido),
+  disponivelViagens: nullToDefault(candidatoAgregadoSchema.shape.disponivelViagens),
+  disponivelMudanca: nullToDefault(candidatoAgregadoSchema.shape.disponivelMudanca),
+  inicioImediato: nullToDefault(candidatoAgregadoSchema.shape.inicioImediato),
 });
 
 export type ExtracaoCurriculoOutput = z.output<typeof extracaoCurriculoOutputSchema>;

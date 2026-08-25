@@ -2,11 +2,10 @@ import { z } from "zod";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
-import { gerarRespostaEstruturada } from "~/lib/agents/gemini-client";
+import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
 import { resolveTemplate } from "~/lib/agents/template";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 
-const AGENT_PROVIDER = "google_ai_studio";
 const CHUNK_SIZE = 25;
 const CONCORRENCIA = 3;
 
@@ -31,6 +30,7 @@ const RESPONSE_JSON_SCHEMA = {
       score: { type: "number" },
     },
     required: ["id", "score"],
+    additionalProperties: false,
   },
 };
 
@@ -40,16 +40,14 @@ export async function executarClassificadorAderencia(
   tipoPrincipal: string,
   tipoComparacao: string,
 ): Promise<{ id: string; score: number }[]> {
-  const [config, credencial] = await Promise.all([
-    agenteConfigRepository.findBySlot("classificador_aderencia"),
-    llmCredencialRepository.findActiveByProvider(AGENT_PROVIDER),
-  ]);
-
+  const config = await agenteConfigRepository.findBySlot("classificador_aderencia");
   if (!config?.ativo) {
     throw new Error("Agente classificador_aderencia não está configurado/ativo.");
   }
+
+  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${AGENT_PROVIDER}".`);
+    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
   }
 
   const apiKey = decryptCredential(credencial.apiKeyCifrada);
@@ -73,6 +71,7 @@ export async function executarClassificadorAderencia(
     });
 
     return gerarRespostaEstruturada({
+      provider: config.provider,
       apiKey,
       model: config.model,
       systemPrompt,

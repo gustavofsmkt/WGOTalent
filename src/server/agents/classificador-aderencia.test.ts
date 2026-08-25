@@ -8,7 +8,7 @@ const { gerarRespostaEstruturadaMock, findBySlotMock, findActiveByProviderMock }
   }),
 );
 
-vi.mock("~/lib/agents/gemini-client", () => ({
+vi.mock("~/lib/agents/agent-client", () => ({
   gerarRespostaEstruturada: gerarRespostaEstruturadaMock,
 }));
 vi.mock("~/server/db/repositories/agente-config", () => ({
@@ -23,7 +23,13 @@ vi.mock("~/lib/agents/crypto", () => ({
 
 import { executarClassificadorAderencia, type ItemAderencia } from "./classificador-aderencia";
 
-const config = { ativo: true, model: "gemini-3.5-flash-lite", systemPrompt: "sys {{tipo_principal}}", userPrompt: "cmp {{tipo_comparacao}}" };
+const config = {
+  ativo: true,
+  provider: "google_ai_studio",
+  model: "gemini-3.5-flash-lite",
+  systemPrompt: "sys {{tipo_principal}}",
+  userPrompt: "cmp {{tipo_comparacao}}",
+};
 const credencial = { apiKeyCifrada: "cifrada" };
 
 function itens(n: number): ItemAderencia[] {

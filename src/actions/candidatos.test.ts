@@ -39,7 +39,7 @@ import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-i
 import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
-import { AgenteQuotaExcedidaError } from "~/lib/agents/gemini-client";
+import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import type { Candidato, UploadLoteItem } from "~/server/db/schema";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import type { ExtracaoCurriculoOutput } from "~/lib/validation/extracao-curriculo";
