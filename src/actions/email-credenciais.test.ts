@@ -28,6 +28,9 @@ describe("email-credenciais server actions", () => {
 
   describe("createEmailCredencial", () => {
     it("encrypts the password before persisting and never returns it", async () => {
+      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -62,6 +65,9 @@ describe("email-credenciais server actions", () => {
     });
 
     it("does not set an initial watermark by default — first capture skips the mailbox's history", async () => {
+      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -91,6 +97,9 @@ describe("email-credenciais server actions", () => {
     });
 
     it("seeds the watermark at 0 and stores capturarDesde when it's set — first capture processes the mailbox from that date on", async () => {
+      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -143,6 +152,27 @@ describe("email-credenciais server actions", () => {
       });
 
       expect(result.success).toBe(false);
+      expect(emailCredencialRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("blocks creation when a recent duplicate submission is detected", async () => {
+      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        true,
+      );
+      vi.spyOn(emailCredencialRepository, "create");
+
+      const result = await createEmailCredencial({
+        host: "imap.gmail.com",
+        porta: 993,
+        usuario: "rh@empresa.com",
+        senha: "senha-real-secreta",
+        pasta: "INBOX",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe(
+        "Esta credencial de e-mail já foi cadastrada (envio duplicado detectado).",
+      );
       expect(emailCredencialRepository.create).not.toHaveBeenCalled();
     });
   });

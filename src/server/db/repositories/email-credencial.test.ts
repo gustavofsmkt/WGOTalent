@@ -78,9 +78,9 @@ describe("emailCredencialRepository", () => {
     expect(result).toBeNull();
   });
 
-  it("create deactivates any existing active credential before inserting the new one", async () => {
+  it("create deactivates any existing active credential and inserts the new one atomically", async () => {
     const calls: string[] = [];
-    const fakeDb = {
+    const fakeTx = {
       update: () => ({
         set: (data: Record<string, unknown>) => ({
           where: async () => {
@@ -97,6 +97,9 @@ describe("emailCredencialRepository", () => {
           },
         }),
       }),
+    };
+    const fakeDb = {
+      transaction: async (cb: (tx: typeof fakeTx) => unknown) => cb(fakeTx),
     } as unknown as DbOrTx;
 
     const created = await emailCredencialRepository.create(

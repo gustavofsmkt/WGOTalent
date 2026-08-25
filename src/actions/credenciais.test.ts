@@ -27,6 +27,9 @@ describe("credenciais server actions", () => {
 
   describe("createCredencial", () => {
     it("encrypts the API key before persisting and never returns it", async () => {
+      vi.spyOn(llmCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        false,
+      );
       vi.spyOn(llmCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         provider: "google_ai_studio",
@@ -53,6 +56,24 @@ describe("credenciais server actions", () => {
     it("rejects an empty API key", async () => {
       const result = await createCredencial({ provider: "google_ai_studio", apiKey: "" });
       expect(result.success).toBe(false);
+      expect(llmCredencialRepository.create).not.toHaveBeenCalled();
+    });
+
+    it("blocks creation when a recent duplicate submission is detected", async () => {
+      vi.spyOn(llmCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
+        true,
+      );
+      vi.spyOn(llmCredencialRepository, "create");
+
+      const result = await createCredencial({
+        provider: "google_ai_studio",
+        apiKey: "sk-real-secret",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe(
+        "Esta credencial já foi cadastrada (envio duplicado detectado).",
+      );
       expect(llmCredencialRepository.create).not.toHaveBeenCalled();
     });
   });
