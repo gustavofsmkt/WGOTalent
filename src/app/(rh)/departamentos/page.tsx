@@ -5,18 +5,11 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "~/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { DeleteDepartamentoButton } from "./_components/delete-departamento-button";
 import { PageFilter } from "~/components/page-filter";
+import { DataTable, type ColumnDef } from "~/components/data-table";
 
 interface DepartamentosPageProps {
   searchParams?: Promise<{ q?: string }>;
@@ -48,6 +41,89 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
       return "";
     }
   };
+
+  type Departamento = (typeof allDepartamentos)[number];
+
+  const columns: ColumnDef<Departamento>[] = [
+    {
+      header: "Nome",
+      cell: (dept) => {
+        const initial = dept.nome.trim().charAt(0).toUpperCase();
+        return (
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-lg bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0 text-sm border border-primary/20">
+              {initial}
+            </div>
+            <Link
+              href={`/departamentos/${dept.id}`}
+              className="hover:text-primary hover:underline transition-colors line-clamp-1"
+            >
+              {dept.nome}
+            </Link>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Descrição",
+      cellClassName: "text-muted-foreground text-sm max-w-[360px]",
+      cell: (dept) => <p className="line-clamp-2">{dept.descricao}</p>,
+    },
+    {
+      header: "Nº de Cargos",
+      cell: (dept) => (
+        <Badge
+          variant={dept.activeCargosCount > 0 ? "secondary" : "outline"}
+          className="font-mono text-xs gap-1"
+        >
+          <Briefcase className="size-3" />
+          {dept.activeCargosCount}
+        </Badge>
+      ),
+    },
+    {
+      header: "Criado em",
+      headerClassName: "w-[140px]",
+      cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
+      cell: (dept) => formatDate(dept.createdAt),
+    },
+    {
+      header: "Ações",
+      headerClassName: "w-[110px]",
+      cell: (dept) => (
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/departamentos/${dept.id}`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-sm",
+              className: "text-muted-foreground hover:text-primary",
+            })}
+            title={`Ver detalhes de ${dept.nome}`}
+            aria-label={`Ver detalhes de ${dept.nome}`}
+          >
+            <Eye className="size-4" />
+          </Link>
+          <Link href={`/departamentos/${dept.id}/editar`}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              type="button"
+              className="text-muted-foreground hover:text-primary"
+              title={`Editar ${dept.nome}`}
+              aria-label={`Editar ${dept.nome}`}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          </Link>
+          <DeleteDepartamentoButton
+            departamentoId={dept.id}
+            departamentoNome={dept.nome}
+          />
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
@@ -102,101 +178,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
             />
           ) : (
             <>
-              {/* Desktop View */}
-              <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-[280px]">Nome</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="w-[140px] text-center">
-                        Nº de Cargos
-                      </TableHead>
-                      <TableHead className="w-[140px]">Criado em</TableHead>
-                      <TableHead className="w-[130px] text-right">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDepartamentos.map((dept) => {
-                      const initial = dept.nome.trim().charAt(0).toUpperCase();
-                      return (
-                        <TableRow
-                          key={dept.id}
-                          className="hover:bg-muted/30 transition-colors"
-                        >
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-3">
-                              <div className="size-9 rounded-lg bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0 text-sm border border-primary/20">
-                                {initial}
-                              </div>
-                              <Link
-                                href={`/departamentos/${dept.id}`}
-                                className="hover:text-primary hover:underline transition-colors line-clamp-1"
-                              >
-                                {dept.nome}
-                              </Link>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm max-w-[360px]">
-                            <p className="line-clamp-2">{dept.descricao}</p>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge
-                              variant={
-                                dept.activeCargosCount > 0
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                              className="font-mono text-xs gap-1"
-                            >
-                              <Briefcase className="size-3" />
-                              {dept.activeCargosCount}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDate(dept.createdAt)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Link
-                                href={`/departamentos/${dept.id}`}
-                                className={buttonVariants({
-                                  variant: "ghost",
-                                  size: "icon-sm",
-                                  className:
-                                    "text-muted-foreground hover:text-primary",
-                                })}
-                                title={`Ver detalhes de ${dept.nome}`}
-                                aria-label={`Ver detalhes de ${dept.nome}`}
-                              >
-                                <Eye className="size-4" />
-                              </Link>
-                              <Link href={`/departamentos/${dept.id}/editar`}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  type="button"
-                                  className="text-muted-foreground hover:text-primary"
-                                  title={`Editar ${dept.nome}`}
-                                  aria-label={`Editar ${dept.nome}`}
-                                >
-                                  <Pencil className="size-4" />
-                                </Button>
-                              </Link>
-                              <DeleteDepartamentoButton
-                                departamentoId={dept.id}
-                                departamentoNome={dept.nome}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable columns={columns} rows={filteredDepartamentos} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-3">

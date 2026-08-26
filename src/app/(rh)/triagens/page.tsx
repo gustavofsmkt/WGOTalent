@@ -6,15 +6,6 @@ import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "~/components/ui/table";
-import { Card, CardContent } from "~/components/ui/card";
-import {
   triagemRepository,
   type TriagemFiltros,
 } from "~/server/db/repositories/triagem";
@@ -29,6 +20,7 @@ import { PageFilter } from "~/components/page-filter";
 import { ViewToggle } from "./_components/view-toggle";
 import { DeleteTriagemButton } from "./_components/delete-triagem-button";
 import MetricCardsSummary from "~/components/metric-cards-summary";
+import { DataTable, type ColumnDef } from "~/components/data-table";
 
 const ETAPA_OPTIONS = [
   { value: "todas", label: "Todas as Etapas" },
@@ -159,9 +151,108 @@ export default async function TriagensPage(props: TriagensPageProps) {
     vagaAtivaFilter ||
     Boolean(vagaFilter && vagaFilter !== "todas");
 
+  type Triagem = (typeof allTriagens)[number];
+
+  const columns: ColumnDef<Triagem>[] = [
+    {
+      header: "Candidato",
+      cell: (item) => (
+        <div className="flex items-center gap-2.5">
+          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+            {getInitials(item.candidato.nome)}
+          </div>
+          <div className="min-w-0">
+            <Link
+              href={`/triagens/${item.id}`}
+              className="font-medium text-foreground hover:underline truncate block"
+            >
+              {item.candidato.nome}
+            </Link>
+            <p className="text-xs text-muted-foreground truncate">
+              {item.candidato.email}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Vaga / Cargo",
+      cell: (item) => (
+        <div className="space-y-0.5">
+          <p className="font-medium text-foreground text-xs">
+            {item.vaga.cargoTitulo}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {item.vaga.departamentoNome} • {item.vaga.cidade}/{item.vaga.uf}
+          </p>
+        </div>
+      ),
+    },
+    {
+      header: "Etapa",
+      cell: (item) => <StatusBadge status={item.etapa} />,
+    },
+    {
+      header: "Resultado",
+      cell: (item) => (
+        <div className="space-y-1">
+          <StatusBadge status={item.resultado} />
+          {item.motivo && MOTIVO_LABELS[item.motivo] && (
+            <p className="text-[11px] text-muted-foreground">
+              {MOTIVO_LABELS[item.motivo]}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Score IA",
+      cell: (item) =>
+        item.avaliacaoIa ? (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
+            title={item.avaliacaoIa.parecerIa || undefined}
+          >
+            <Sparkles className="size-3 text-primary" />
+            {Math.round(Number(item.avaliacaoIa.scoreIa))}%
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        ),
+    },
+    {
+      header: "Data",
+      cellClassName: "text-xs text-muted-foreground",
+      cell: (item) => formatDate(item.createdAt),
+    },
+    {
+      header: "Ações",
+      headerClassName: "w-[60px]",
+      cellClassName: "text-right",
+      cell: (item) => (
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/triagens/${item.id}`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-xs",
+            })}
+            title="Ver detalhes da triagem"
+          >
+            <Eye className="size-4" />
+            <span className="sr-only">Ver detalhes</span>
+          </Link>
+          <DeleteTriagemButton
+            triagemId={item.id}
+            candidatoNome={item.candidato.nome}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
-      {/* Header */}
       <PageHeader
         title="Triagens"
         description="Gerencie o fluxo de candidatos pelas etapas do processo seletivo."
@@ -194,7 +285,6 @@ export default async function TriagensPage(props: TriagensPageProps) {
         />
       ) : (
         <>
-          {/* Metric Cards Summary */}
           <MetricCardsSummary
             cards={[
               {
@@ -218,192 +308,78 @@ export default async function TriagensPage(props: TriagensPageProps) {
             ]}
           />
 
-          {/* Filters + View Toggle */}
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              <PageFilter
-                searchPlaceholder="Buscar por candidato, cargo, departamento..."
-                searchAriaLabel="Buscar triagem por candidato, cargo ou departamento"
-                filterBar={{
-                  selects: [
-                    {
-                      paramKey: "vaga",
-                      defaultValue: "todas",
-                      placeholder: "Vaga",
-                      options: [
-                        { value: "todas", label: "Todas as Vagas" },
-                        ...vagaOptions.map((v) => ({
-                          value: v.id,
-                          label: `${v.cargo.titulo} — ${v.cidade}/${v.uf}`,
-                        })),
-                      ],
-                    },
-                    {
-                      paramKey: "etapa",
-                      defaultValue: "todas",
-                      placeholder: "Etapa",
-                      options: ETAPA_OPTIONS,
-                    },
-                    {
-                      paramKey: "resultado",
-                      defaultValue: "todas",
-                      placeholder: "Resultado",
-                      options: RESULTADO_OPTIONS,
-                    },
-                    {
-                      paramKey: "motivo",
-                      defaultValue: "todos",
-                      placeholder: "Motivo",
-                      options: MOTIVO_OPTIONS,
-                    },
-                  ],
-                  checkbox: {
-                    paramKey: "vagaAtiva",
-                    trueValue: "1",
-                    label: "Somente ativas",
+          <div className="space-y-2">
+            <PageFilter
+              searchPlaceholder="Buscar por candidato, cargo, departamento..."
+              searchAriaLabel="Buscar triagem por candidato, cargo ou departamento"
+              filterBar={{
+                selects: [
+                  {
+                    paramKey: "vaga",
+                    defaultValue: "todas",
+                    placeholder: "Vaga",
+                    options: [
+                      { value: "todas", label: "Todas as Vagas" },
+                      ...vagaOptions.map((v) => ({
+                        value: v.id,
+                        label: `${v.cargo.titulo} — ${v.cidade}/${v.uf}`,
+                      })),
+                    ],
                   },
-                }}
-              />
-            </div>
-          </div>
-          <ViewToggle />
-
-          {/* Content View: Pipeline (Kanban) or Lista (Table) */}
-          {filteredTriagens.length === 0 ? (
-            <DataEmptyState
-              title={"Nenhuma triagem encontrada"}
-              description={
-                "Tente ajustar ou limpar os filtros para visualizar outras triagens."
-              }
-              action={
-                <Link
-                  href="/triagens"
-                  className={buttonVariants({ variant: "outline" })}
-                >
-                  Limpar filtros
-                </Link>
-              }
+                  {
+                    paramKey: "etapa",
+                    defaultValue: "todas",
+                    placeholder: "Etapa",
+                    options: ETAPA_OPTIONS,
+                  },
+                  {
+                    paramKey: "resultado",
+                    defaultValue: "todas",
+                    placeholder: "Resultado",
+                    options: RESULTADO_OPTIONS,
+                  },
+                  {
+                    paramKey: "motivo",
+                    defaultValue: "todos",
+                    placeholder: "Motivo",
+                    options: MOTIVO_OPTIONS,
+                  },
+                ],
+                checkbox: {
+                  paramKey: "vagaAtiva",
+                  trueValue: "1",
+                  label: "Somente ativas",
+                },
+              }}
             />
-          ) : currentView === "pipeline" ? (
-            <TriagemPipelineBoard items={filteredTriagens} />
-          ) : (
-            /* Table / List View */
-            <Card className="shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[200px]">Candidato</TableHead>
-                      <TableHead className="min-w-[200px]">
-                        Vaga / Cargo
-                      </TableHead>
-                      <TableHead className="min-w-[120px]">Etapa</TableHead>
-                      <TableHead className="min-w-[140px]">Resultado</TableHead>
-                      <TableHead className="min-w-[100px]">Score IA</TableHead>
-                      <TableHead className="min-w-[110px]">Data</TableHead>
-                      <TableHead className="w-[100px] text-right">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTriagens.map((item) => (
-                      <TableRow
-                        key={item.id}
-                        className="hover:bg-muted/40 transition-colors"
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2.5">
-                            <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-                              {getInitials(item.candidato.nome)}
-                            </div>
-                            <div className="min-w-0">
-                              <Link
-                                href={`/triagens/${item.id}`}
-                                className="font-medium text-foreground hover:underline truncate block"
-                              >
-                                {item.candidato.nome}
-                              </Link>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {item.candidato.email}
-                              </p>
-                            </div>
-                          </div>
-                        </TableCell>
 
-                        <TableCell>
-                          <div className="space-y-0.5">
-                            <p className="font-medium text-foreground text-xs">
-                              {item.vaga.cargoTitulo}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.vaga.departamentoNome} • {item.vaga.cidade}/
-                              {item.vaga.uf}
-                            </p>
-                          </div>
-                        </TableCell>
+            <ViewToggle />
 
-                        <TableCell>
-                          <StatusBadge status={item.etapa} />
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="space-y-1">
-                            <StatusBadge status={item.resultado} />
-                            {item.motivo && MOTIVO_LABELS[item.motivo] && (
-                              <p className="text-[11px] text-muted-foreground">
-                                {MOTIVO_LABELS[item.motivo]}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          {item.avaliacaoIa ? (
-                            <span
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
-                              title={item.avaliacaoIa.parecerIa || undefined}
-                            >
-                              <Sparkles className="size-3 text-primary" />
-                              {Math.round(Number(item.avaliacaoIa.scoreIa))}%
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              —
-                            </span>
-                          )}
-                        </TableCell>
-
-                        <TableCell className="text-xs text-muted-foreground">
-                          {formatDate(item.createdAt)}
-                        </TableCell>
-
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Link
-                              href={`/triagens/${item.id}`}
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "icon-xs",
-                              })}
-                              title="Ver detalhes da triagem"
-                            >
-                              <Eye className="size-4" />
-                              <span className="sr-only">Ver detalhes</span>
-                            </Link>
-                            <DeleteTriagemButton
-                              triagemId={item.id}
-                              candidatoNome={item.candidato.nome}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          )}
+            {filteredTriagens.length === 0 ? (
+              <DataEmptyState
+                title={"Nenhuma triagem encontrada"}
+                description={
+                  "Tente ajustar ou limpar os filtros para visualizar outras triagens."
+                }
+                action={
+                  <Link
+                    href="/triagens"
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Limpar filtros
+                  </Link>
+                }
+              />
+            ) : currentView === "pipeline" ? (
+              <TriagemPipelineBoard items={filteredTriagens} />
+            ) : (
+              <DataTable
+                columns={columns}
+                rows={filteredTriagens}
+                className="block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs"
+              />
+            )}
+          </div>
         </>
       )}
     </div>

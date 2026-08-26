@@ -3,19 +3,12 @@ import Link from "next/link";
 import { Plus, Briefcase, Eye, Building2, Pencil } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
-import { Button, buttonVariants } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "~/components/ui/table";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "./_components/delete-cargo-button";
 import { PageFilter } from "~/components/page-filter";
+import { DataTable, type ColumnDef } from "~/components/data-table";
 
 interface CargosPageProps {
   searchParams?: Promise<{ q?: string }>;
@@ -46,6 +39,78 @@ export default async function CargosPage(props: CargosPageProps) {
       return "";
     }
   };
+
+  type Cargo = (typeof allCargos)[number];
+
+  const columns: ColumnDef<Cargo>[] = [
+    {
+      header: "Título do Cargo",
+      cell: (cargo) => (
+        <Link
+          href={`/cargos/${cargo.id}`}
+          className="hover:text-primary hover:underline transition-colors line-clamp-1"
+        >
+          {cargo.titulo}
+        </Link>
+      ),
+    },
+    {
+      header: "Departamento",
+      cell: (cargo) => (
+        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+          <Building2 className="size-3.5" />
+          <span className="line-clamp-1">{cargo.departamento.nome}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Status",
+      cell: (cargo) => (
+        <StatusBadge
+          status={cargo.ativo ? "aberta" : "incompleta"}
+          label={cargo.ativo ? "Ativo" : "Inativo"}
+        />
+      ),
+    },
+    {
+      header: "Criado em",
+      cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
+      cell: (cargo) => formatDate(cargo.createdAt),
+    },
+    {
+      header: "Ações",
+      headerClassName: "w-[100px]",
+      cell: (cargo) => (
+        <div className="flex items-center justify gap-1">
+          <Link
+            href={`/cargos/${cargo.id}`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-sm",
+              className: "text-muted-foreground hover:text-primary",
+            })}
+            title={`Ver detalhes de ${cargo.titulo}`}
+            aria-label={`Ver detalhes de ${cargo.titulo}`}
+          >
+            <Eye className="size-4" />
+          </Link>
+          <Link
+            href={`/cargos/${cargo.id}/editar`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-sm",
+              className: "text-muted-foreground hover:text-primary",
+            })}
+            title={`Editar ${cargo.titulo}`}
+            aria-label={`Editar ${cargo.titulo}`}
+          >
+            <Pencil className="size-4" />
+          </Link>
+          <DeleteCargoButton cargoId={cargo.id} cargoTitulo={cargo.titulo} />
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
@@ -100,92 +165,7 @@ export default async function CargosPage(props: CargosPageProps) {
             />
           ) : (
             <>
-              {/* Desktop View */}
-              <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-[300px]">
-                        Título do Cargo
-                      </TableHead>
-                      <TableHead className="w-[200px]">Departamento</TableHead>
-                      <TableHead className="w-[120px]">Status</TableHead>
-                      <TableHead className="w-[140px]">Criado em</TableHead>
-                      <TableHead className="w-[130px] text-right">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCargos.map((cargo) => (
-                      <TableRow
-                        key={cargo.id}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        <TableCell className="font-medium">
-                          <Link
-                            href={`/cargos/${cargo.id}`}
-                            className="hover:text-primary hover:underline transition-colors line-clamp-1"
-                          >
-                            {cargo.titulo}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                            <Building2 className="size-3.5" />
-                            <span className="line-clamp-1">
-                              {cargo.departamento.nome}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={cargo.ativo ? "aberta" : "incompleta"}
-                            label={cargo.ativo ? "Ativo" : "Inativo"}
-                          />
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDate(cargo.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Link
-                              href={`/cargos/${cargo.id}`}
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "icon-sm",
-                                className:
-                                  "text-muted-foreground hover:text-primary",
-                              })}
-                              title={`Ver detalhes de ${cargo.titulo}`}
-                              aria-label={`Ver detalhes de ${cargo.titulo}`}
-                            >
-                              <Eye className="size-4" />
-                            </Link>
-                            <Link
-                              href={`/cargos/${cargo.id}/editar`}
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "icon-sm",
-                                className:
-                                  "text-muted-foreground hover:text-primary",
-                              })}
-                              title={`Editar ${cargo.titulo}`}
-                              aria-label={`Editar ${cargo.titulo}`}
-                            >
-                              <Pencil className="size-4" />
-                            </Link>
-                            <DeleteCargoButton
-                              cargoId={cargo.id}
-                              cargoTitulo={cargo.titulo}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable columns={columns} rows={filteredCargos} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-3">

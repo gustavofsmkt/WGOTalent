@@ -119,7 +119,7 @@ export function PageFilter({
     !!filterBar && (!!filterBar.selects?.length || !!filterBar.checkbox);
 
   return (
-    <div className="flex flex-col gap-3 w-full">
+    <div className="flex flex-col gap-2 w-full">
       {/* Row 1: Search */}
       <form
         onSubmit={(e) => {
@@ -137,7 +137,7 @@ export function PageFilter({
           onBlur={() => {
             if (searchTerm !== currentQuery) handleSearchApply(searchTerm);
           }}
-          className="pl-9 pr-8 h-9 text-sm  shadow-xs"
+          className="pl-9 pr-8 h-9 text-sm bg-card"
           aria-label={searchAriaLabel ?? searchPlaceholder}
         />
         {searchTerm && (

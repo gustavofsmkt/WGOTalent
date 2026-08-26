@@ -13,19 +13,12 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { DeleteVagaButton } from "./_components/delete-vaga-button";
 import { PageFilter } from "~/components/page-filter";
 import MetricCardsSummary from "~/components/metric-cards-summary";
+import { DataTable, type ColumnDef } from "~/components/data-table";
 
 const STATUS_OPTIONS = [
   { value: "todas", label: "Todos os status" },
@@ -89,6 +82,88 @@ export default async function VagasPage(props: VagasPageProps) {
     }
   };
 
+  type Vaga = (typeof allVagas)[number];
+
+  const columns: ColumnDef<Vaga>[] = [
+    {
+      header: "Cargo / Departamento",
+      cell: (vaga) => (
+        <>
+          <Link
+            href={`/vagas/${vaga.id}`}
+            className="hover:text-primary hover:underline transition-colors block font-semibold text-foreground"
+          >
+            {vaga.cargo.titulo}
+          </Link>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+            <Building2 className="size-3" />
+            <span>{vaga.cargo.departamento.nome}</span>
+          </div>
+        </>
+      ),
+    },
+    {
+      header: "Localização",
+      cell: (vaga) => (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPin className="size-3.5 text-muted-foreground shrink-0" />
+          <span>
+            {vaga.cidade} / {vaga.uf}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: "Posições",
+      cell: (vaga) => (
+        <div className="flex items-center gap-1 text-sm font-medium">
+          <Users className="size-3.5 text-muted-foreground" />
+          <span>{vaga.posicoesDisponiveis}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Remuneração",
+      cellClassName: "text-sm font-medium text-foreground",
+      cell: (vaga) => formatCurrency(vaga.remuneracaoOferecida),
+    },
+    {
+      header: "Status",
+      headerClassName: "w-[120px]",
+      cell: (vaga) => <StatusBadge status={vaga.status} />,
+    },
+    {
+      header: "Criada em",
+      headerClassName: "w-[120px]",
+      cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
+      cell: (vaga) => formatDate(vaga.createdAt),
+    },
+    {
+      header: "Ações",
+      headerClassName: "w-[60px]",
+      cell: (vaga) => (
+        <div className="flex items-centergap-1">
+          <Link
+            href={`/vagas/${vaga.id}`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-sm",
+              className: "text-muted-foreground hover:text-primary",
+            })}
+            title="Ver detalhes da vaga"
+            aria-label="Ver detalhes da vaga"
+          >
+            <Eye className="size-4" />
+          </Link>
+          <DeleteVagaButton
+            vagaId={vaga.id}
+            vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
       <PageHeader
@@ -122,7 +197,6 @@ export default async function VagasPage(props: VagasPageProps) {
         />
       ) : (
         <div className="space-y-4">
-          {/* Summary stats bento banner */}
           <MetricCardsSummary
             cards={[
               {
@@ -160,25 +234,6 @@ export default async function VagasPage(props: VagasPageProps) {
               ],
             }}
           />
-          {/* <div className="text-xs text-muted-foreground">
-              {filteredVagas.length === allVagas.length ? (
-                <span>
-                  Total de{" "}
-                  <strong className="font-semibold text-foreground">
-                    {allVagas.length}
-                  </strong>{" "}
-                  {allVagas.length === 1 ? "vaga" : "vagas"}
-                </span>
-              ) : (
-                <span>
-                  Mostrando{" "}
-                  <strong className="font-semibold text-foreground">
-                    {filteredVagas.length}
-                  </strong>{" "}
-                  de {allVagas.length} vagas
-                </span>
-              )}
-            </div> */}
 
           {filteredVagas.length === 0 ? (
             <DataEmptyState
@@ -195,91 +250,7 @@ export default async function VagasPage(props: VagasPageProps) {
             />
           ) : (
             <>
-              {/* Desktop View */}
-              <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-[260px]">
-                        Cargo / Departamento
-                      </TableHead>
-                      <TableHead className="w-[180px]">Localização</TableHead>
-                      <TableHead className="w-[100px]">Posições</TableHead>
-                      <TableHead className="w-[150px]">Remuneração</TableHead>
-                      <TableHead className="w-[120px]">Status</TableHead>
-                      <TableHead className="w-[120px]">Criada em</TableHead>
-                      <TableHead className="w-[120px] text-right">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVagas.map((vaga) => (
-                      <TableRow
-                        key={vaga.id}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        <TableCell className="font-medium">
-                          <Link
-                            href={`/vagas/${vaga.id}`}
-                            className="hover:text-primary hover:underline transition-colors block font-semibold text-foreground"
-                          >
-                            {vaga.cargo.titulo}
-                          </Link>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                            <Building2 className="size-3" />
-                            <span>{vaga.cargo.departamento.nome}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                            <span>
-                              {vaga.cidade} / {vaga.uf}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm font-medium">
-                            <Users className="size-3.5 text-muted-foreground" />
-                            <span>{vaga.posicoesDisponiveis}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-foreground">
-                          {formatCurrency(vaga.remuneracaoOferecida)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={vaga.status} />
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDate(vaga.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Link
-                              href={`/vagas/${vaga.id}`}
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "icon-sm",
-                                className:
-                                  "text-muted-foreground hover:text-primary",
-                              })}
-                              title={`Ver detalhes da vaga`}
-                              aria-label={`Ver detalhes da vaga`}
-                            >
-                              <Eye className="size-4" />
-                            </Link>
-                            <DeleteVagaButton
-                              vagaId={vaga.id}
-                              vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable columns={columns} rows={filteredVagas} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-3">

@@ -15,20 +15,13 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
 import { PageFilter } from "~/components/page-filter";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
 import MetricCardsSummary from "~/components/metric-cards-summary";
+import { DataTable, type ColumnDef } from "~/components/data-table";
 
 const ORIGEM_OPTIONS = [
   { value: "todas", label: "Todas as origens" },
@@ -112,6 +105,109 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         return { label: "Manual", tone: "neutral" as StatusTone };
     }
   };
+
+  type Candidato = (typeof allCandidatos)[number];
+
+  const columns: ColumnDef<Candidato>[] = [
+    {
+      header: "Candidato",
+      cell: (candidato) => (
+        <div className="flex items-center gap-4">
+          <div className="size-9 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
+            {getInitials(candidato.nome)}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <Link
+              href={`/candidatos/${candidato.id}`}
+              className="font-medium text-foreground hover:text-primary transition-colors text-sm truncate"
+            >
+              {candidato.nome}
+            </Link>
+            <span className="text-xs text-muted-foreground truncate">
+              {candidato.email}
+            </span>
+            <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Phone className="size-3" />
+              <a
+                href={getWhatsAppUrl(candidato.celular)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary transition-colors"
+              >
+                {candidato.celular}
+              </a>
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Localidade",
+      cell: (candidato) => (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="size-3.5 shrink-0 text-muted-foreground/70" />
+          <span>
+            {candidato.cidade}, {candidato.uf}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: "Cargo de Interesse",
+      cell: (candidato) =>
+        candidato.cargoInteresse ? (
+          <span className="text-xs font-medium text-foreground">
+            {candidato.cargoInteresse}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">
+            Não informado
+          </span>
+        ),
+    },
+    {
+      header: "Origem",
+      cell: (candidato) => {
+        const origemConfig = getOrigemBadge(candidato.origem);
+        return (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge tone={origemConfig.tone} label={origemConfig.label} />
+            {candidato.emBancoTalentos && (
+              <StatusBadge status="banco_talentos" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      header: "Cadastro",
+      cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
+      cell: (candidato) => formatDate(candidato.createdAt),
+    },
+    {
+      header: "Ações",
+      headerClassName: "w-[60px]",
+      cell: (candidato) => (
+        <div className="flex items-center justify-end gap-1">
+          <Link
+            href={`/candidatos/${candidato.id}`}
+            className={buttonVariants({
+              variant: "ghost",
+              size: "icon-xs",
+              className: "text-muted-foreground hover:text-foreground",
+            })}
+            title="Ver detalhes do candidato"
+          >
+            <Eye className="size-3.5" />
+          </Link>
+          <DeleteCandidatoButton
+            candidatoId={candidato.id}
+            candidatoNome={candidato.nome}
+          />
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
@@ -198,25 +294,6 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
               ],
             }}
           />
-          {/* <div className="text-xs text-muted-foreground">
-            {filteredCandidatos.length === allCandidatos.length ? (
-              <span>
-                Total de{" "}
-                <strong className="font-semibold text-foreground">
-                  {allCandidatos.length}
-                </strong>{" "}
-                {allCandidatos.length === 1 ? "candidato" : "candidatos"}
-              </span>
-            ) : (
-              <span>
-                Mostrando{" "}
-                <strong className="font-semibold text-foreground">
-                  {filteredCandidatos.length}
-                </strong>{" "}
-                de {allCandidatos.length} candidatos
-              </span>
-            )}
-          </div> */}
 
           {filteredCandidatos.length === 0 ? (
             <DataEmptyState
@@ -233,127 +310,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             />
           ) : (
             <>
-              {/* Desktop table view */}
-              <div className="hidden md:block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">
-                        Candidato
-                      </TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">
-                        Localidade
-                      </TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">
-                        Cargo de Interesse
-                      </TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider">
-                        Origem
-                      </TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-right">
-                        Cadastro
-                      </TableHead>
-                      <TableHead className="w-[100px] text-right font-semibold text-xs uppercase tracking-wider">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCandidatos.map((candidato) => {
-                      const origemConfig = getOrigemBadge(candidato.origem);
-                      return (
-                        <TableRow
-                          key={candidato.id}
-                          className="hover:bg-muted/30 transition-colors group"
-                        >
-                          <TableCell className="py-3.5">
-                            <div className="flex items-center gap-3">
-                              <div className="size-9 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                                {getInitials(candidato.nome)}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <Link
-                                  href={`/candidatos/${candidato.id}`}
-                                  className="font-medium text-foreground hover:text-primary transition-colors text-sm truncate"
-                                >
-                                  {candidato.nome}
-                                </Link>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {candidato.email}
-                                </span>
-                                <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <Phone className="size-3" />
-                                  <a
-                                    href={getWhatsAppUrl(candidato.celular)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:text-primary transition-colors"
-                                  >
-                                    {candidato.celular}
-                                  </a>
-                                </span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <MapPin className="size-3.5 shrink-0 text-muted-foreground/70" />
-                              <span>
-                                {candidato.cidade}, {candidato.uf}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {candidato.cargoInteresse ? (
-                              <span className="text-xs font-medium text-foreground">
-                                {candidato.cargoInteresse}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground italic">
-                                Não informado
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <StatusBadge
-                                tone={origemConfig.tone}
-                                label={origemConfig.label}
-                              />
-                              {candidato.emBancoTalentos && (
-                                <StatusBadge status="banco_talentos" />
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDate(candidato.createdAt)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Link
-                                href={`/candidatos/${candidato.id}`}
-                                className={buttonVariants({
-                                  variant: "ghost",
-                                  size: "icon-xs",
-                                  className:
-                                    "text-muted-foreground hover:text-foreground",
-                                })}
-                                title="Ver detalhes do candidato"
-                              >
-                                <Eye className="size-3.5" />
-                              </Link>
-                              <DeleteCandidatoButton
-                                candidatoId={candidato.id}
-                                candidatoNome={candidato.nome}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <DataTable columns={columns} rows={filteredCandidatos} />
 
               {/* Mobile card list */}
               <div className="grid grid-cols-1 gap-3 md:hidden">

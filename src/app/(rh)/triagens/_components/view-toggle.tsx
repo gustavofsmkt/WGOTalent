@@ -24,7 +24,7 @@ export function ViewToggle() {
   };
 
   return (
-    <div className="flex items-center gap-1 bg-muted/70 p-1 rounded-lg border border-border justify-end"> 
+    <div className="flex items-center gap-1 bg-muted/70 p-1 rounded-lg border border-border justify-end">
       <Button
         type="button"
         variant={currentView === "lista" ? "default" : "ghost"}
