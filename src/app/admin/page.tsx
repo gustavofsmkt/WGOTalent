@@ -33,13 +33,13 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full">
       <PageHeader
         title="Administração"
         description="Gerencie agentes, credenciais e configurações da plataforma."
       />
 
-      <Tabs defaultValue="agentes" className="mt-8">
+      <Tabs defaultValue="agentes" className="mt-4">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="agentes">Agentes</TabsTrigger>
           <TabsTrigger value="credenciais">Credenciais</TabsTrigger>
@@ -47,8 +47,8 @@ export default async function AdminPage() {
           <TabsTrigger value="configuracoes">Configurações Gerais</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="agentes" className="mt-6">
-          <div className="space-y-3">
+        <TabsContent value="agentes" className="mt-4">
+          <div className="space-y-2">
             {agentes.map((agente) => (
               <Card key={agente.id}>
                 <CardContent className="flex items-center justify-between p-4">
@@ -79,10 +79,10 @@ export default async function AdminPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="credenciais" className="mt-6 space-y-8">
-          <div className="space-y-3">
+        <TabsContent value="credenciais" className="mt-4 space-y-4">
+          <div className="space-y-2">
             {credenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground ml-1">
+              <p className="text-sm text-muted-foreground ml-4">
                 Nenhuma credencial cadastrada.
               </p>
             ) : (
@@ -111,10 +111,10 @@ export default async function AdminPage() {
           <CreateCredencialForm />
         </TabsContent>
 
-        <TabsContent value="email" className="mt-6 space-y-8">
-          <div className="space-y-3">
+        <TabsContent value="email" className="mt-4 space-y-4">
+          <div className="space-y-2">
             {emailCredenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground ml-1">
+              <p className="text-sm text-muted-foreground ml-4">
                 Nenhuma credencial cadastrada.
               </p>
             ) : (
@@ -144,9 +144,9 @@ export default async function AdminPage() {
           <CreateEmailCredencialForm />
         </TabsContent>
 
-        <TabsContent value="configuracoes" className="mt-6">
+        <TabsContent value="configuracoes" className="mt-4">
           <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
+            <CardContent className="p-4 text-center text-muted-foreground">
               Configurações gerais da plataforma — em breve.
             </CardContent>
           </Card>

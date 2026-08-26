@@ -42,12 +42,12 @@ export default async function CandidatoDetailPage(
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <CandidateHeader candidato={candidato} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left / Main Column (2 cols on large screens) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           <CandidatePersonalInfo candidato={candidato} />
           <CandidateExperience experiencias={candidato.experiencias} />
           <CandidateEducation formacoes={candidato.formacoes} />
@@ -55,7 +55,7 @@ export default async function CandidatoDetailPage(
         </div>
 
         {/* Right / Sidebar Column (1 col on large screens) */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <CandidatePreferences candidato={candidato} />
           <CandidateScreenings triagens={candidato.triagens} />
         </div>

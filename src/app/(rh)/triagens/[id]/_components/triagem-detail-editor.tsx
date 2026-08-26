@@ -203,7 +203,7 @@ export function TriagemDetailEditor({
             />
 
             {requiresMotivo && (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 <Select
                   value={pending.motivo ?? ""}
                   onValueChange={(v) => {
@@ -265,7 +265,7 @@ export function TriagemDetailEditor({
       />
 
       <Card>
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-4 sm:p-4">
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as TriagemEtapa)}
@@ -277,12 +277,12 @@ export function TriagemDetailEditor({
                   <TabsTrigger
                     key={etapa.value}
                     value={etapa.value}
-                    className="gap-1.5"
+                    className="gap-2"
                   >
                     <Icon className="size-4" />
                     {etapa.label}
                     {pending.etapa === etapa.value && (
-                      <span className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                      <span className="ml-4 rounded-full bg-primary/15 px-2  text-[10px] font-semibold text-primary">
                         Atual
                       </span>
                     )}

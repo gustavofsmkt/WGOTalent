@@ -144,7 +144,7 @@ function CurriculoSection({
   existingKey?: string | null;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Currículo Original</h3>
       <div className="grid grid-cols-1">
         <div className="space-y-2">
@@ -164,7 +164,7 @@ function CurriculoSection({
             Tamanho máximo: 5MB. Ao realizar o upload, o conteúdo será
             processado pelo motor de agentes.
             {existingKey && !file && (
-              <span className="block mt-1 text-primary">
+              <span className="block mt-2 text-primary">
                 Já existe um arquivo salvo. Envie um novo para substituir.
               </span>
             )}
@@ -177,7 +177,7 @@ function CurriculoSection({
 
 function DadosPessoaisSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Dados Pessoais</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field
@@ -361,7 +361,7 @@ function DadosPessoaisSection({ form }: { form: CandidatoFormApi }) {
 
 function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Contato e Links</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.Field
@@ -479,7 +479,7 @@ function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
 
 function EnderecoSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Endereço</h3>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_3fr]">
         <form.Field
@@ -621,7 +621,7 @@ function InteressesSection({
   departamentoOptions: DepartamentoOption[];
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Perfil e Interesses</h3>
 
       <form.Field
@@ -788,7 +788,7 @@ function InteressesSection({
 
 function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h3 className="text-lg font-medium">Disponibilidades e Requisitos</h3>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -867,7 +867,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <form.Field name="possuiVeiculo">
           {(field) => (
-            <Field orientation="horizontal" className="items-start gap-3 p-2">
+            <Field orientation="horizontal" className="items-start gap-4 p-2">
               <Checkbox
                 id="candidato-possui-veiculo"
                 checked={field.state.value}
@@ -887,7 +887,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
 
         <form.Field name="disponivelViagens">
           {(field) => (
-            <Field orientation="horizontal" className="items-start gap-3 p-2">
+            <Field orientation="horizontal" className="items-start gap-4 p-2">
               <Checkbox
                 id="candidato-disponivel-viagens"
                 checked={field.state.value}
@@ -907,7 +907,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
 
         <form.Field name="disponivelMudanca">
           {(field) => (
-            <Field orientation="horizontal" className="items-start gap-3 p-2">
+            <Field orientation="horizontal" className="items-start gap-4 p-2">
               <Checkbox
                 id="candidato-disponivel-mudanca"
                 checked={field.state.value}
@@ -927,7 +927,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
 
         <form.Field name="inicioImediato">
           {(field) => (
-            <Field orientation="horizontal" className="items-start gap-3 p-2">
+            <Field orientation="horizontal" className="items-start gap-4 p-2">
               <Checkbox
                 id="candidato-inicio-imediato"
                 checked={field.state.value}
@@ -949,7 +949,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
       <div className="grid grid-cols-1">
         <form.Field name="ensinoMedioConcluido">
           {(field) => (
-            <Field orientation="horizontal" className="items-start gap-3 p-2">
+            <Field orientation="horizontal" className="items-start gap-4 p-2">
               <Checkbox
                 id="candidato-ensino-medio"
                 checked={field.state.value}
@@ -973,7 +973,7 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
 
 function FormacoesSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">Formação Acadêmica</h3>
@@ -991,7 +991,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
           return (
             <div className="space-y-4">
               {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                   <GraduationCap className="mb-2 size-8" />
                   <p className="font-medium">
                     Nenhuma formação acadêmica adicionada
@@ -1006,7 +1006,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
                     key={index}
                     className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm"
                   >
-                    <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center justify-between border-b pb-2">
                       <span className="text-sm font-semibold text-foreground">
                         Formação #{index + 1}
                       </span>
@@ -1018,7 +1018,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
                         onClick={() => field.removeValue(index)}
                         aria-label={`Remover formação ${index + 1}`}
                       >
-                        <Trash2 className="mr-1 size-4" />
+                        <Trash2 className="mr-2 size-4" />
                         Remover
                       </Button>
                     </div>
@@ -1207,7 +1207,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
                   })
                 }
               >
-                <Plus className="mr-1.5 size-4" />
+                <Plus className="mr-2 size-4" />
                 Adicionar Formação
               </Button>
             </div>
@@ -1220,7 +1220,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
 
 function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">Experiência Profissional</h3>
@@ -1237,7 +1237,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
           return (
             <div className="space-y-4">
               {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                   <Briefcase className="mb-2 size-8" />
                   <p className="font-medium">
                     Nenhuma experiência profissional adicionada
@@ -1252,7 +1252,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
                     key={index}
                     className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm"
                   >
-                    <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center justify-between border-b pb-2">
                       <span className="text-sm font-semibold text-foreground">
                         Experiência #{index + 1}
                       </span>
@@ -1264,7 +1264,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
                         onClick={() => field.removeValue(index)}
                         aria-label={`Remover experiência ${index + 1}`}
                       >
-                        <Trash2 className="mr-1 size-4" />
+                        <Trash2 className="mr-2 size-4" />
                         Remover
                       </Button>
                     </div>
@@ -1466,7 +1466,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
                   })
                 }
               >
-                <Plus className="mr-1.5 size-4" />
+                <Plus className="mr-2 size-4" />
                 Adicionar Experiência
               </Button>
             </div>
@@ -1479,7 +1479,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
 
 function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">Certificações</h3>
@@ -1497,7 +1497,7 @@ function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
           return (
             <div className="space-y-4">
               {items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                   <Award className="mb-2 size-8" />
                   <p className="font-medium">Nenhuma certificação adicionada</p>
                   <p className="text-xs">
@@ -1510,7 +1510,7 @@ function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
                     key={index}
                     className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm"
                   >
-                    <div className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center justify-between border-b pb-2">
                       <span className="text-sm font-semibold text-foreground">
                         Certificação #{index + 1}
                       </span>
@@ -1522,7 +1522,7 @@ function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
                         onClick={() => field.removeValue(index)}
                         aria-label={`Remover certificação ${index + 1}`}
                       >
-                        <Trash2 className="mr-1 size-4" />
+                        <Trash2 className="mr-2 size-4" />
                         Remover
                       </Button>
                     </div>
@@ -1654,7 +1654,7 @@ function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
                   })
                 }
               >
-                <Plus className="mr-1.5 size-4" />
+                <Plus className="mr-2 size-4" />
                 Adicionar Certificação
               </Button>
             </div>
@@ -1780,7 +1780,7 @@ export function CandidatoBaseForm({
         noValidate
         className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar o candidato"
@@ -1789,7 +1789,7 @@ export function CandidatoBaseForm({
             />
           )}
 
-          <FieldGroup className="space-y-6">
+          <FieldGroup className="space-y-4">
             <DadosPessoaisSection form={form} />
             <ContatoURLsSection form={form} />
             <EnderecoSection form={form} />
@@ -1810,7 +1810,7 @@ export function CandidatoBaseForm({
           </FieldGroup>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-4">
           {onCancel && (
             <FormSubmitButton
               type="button"

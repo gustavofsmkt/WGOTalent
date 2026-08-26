@@ -58,7 +58,7 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between">
+      <CardHeader className="pb-2 border-b border-border/40 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
           <GitBranch className="size-4 text-primary" />
           Histórico de Triagens
@@ -69,7 +69,7 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
       </CardHeader>
       <CardContent className="pt-4">
         {triagens.length === 0 ? (
-          <div className="text-center py-6 text-sm text-muted-foreground">
+          <div className="text-center py-4 text-sm text-muted-foreground">
             Candidato ainda não foi vinculado a nenhum processo de triagem.
           </div>
         ) : (
@@ -81,7 +81,7 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
               return (
                 <div
                   key={triagem.id}
-                  className="p-4 rounded-lg bg-card border border-border/60 hover:border-border transition-colors shadow-2xs space-y-3"
+                  className="p-4 rounded-lg bg-card border border-border/60 hover:border-border transition-colors shadow-2xs space-y-2"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
@@ -102,7 +102,7 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
                       <StatusBadge status={triagem.resultado} />
                       <StatusBadge status={triagem.etapa} />
                       {triagem.avaliacaoIA?.scoreIa && (
-                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        <div className="inline-flex items-center gap-2 px-2  rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                           <Sparkles className="size-3" />
                           <span>
                             Score IA:{" "}
@@ -126,8 +126,8 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
                   )}
 
                   {parecerEtapaAtual && (
-                    <div className="text-xs text-muted-foreground/90 bg-muted/40 p-2.5 rounded-md border border-border/40">
-                      <span className="font-medium text-foreground flex items-center gap-1 mb-1">
+                    <div className="text-xs text-muted-foreground/90 bg-muted/40 p-2 rounded-md border border-border/40">
+                      <span className="font-medium text-foreground flex items-center gap-2 mb-2">
                         <MessageSquare className="size-3 text-muted-foreground/70" />
                         Parecer RH:
                       </span>
@@ -137,18 +137,18 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-1">
+                  <div className="flex justify-end pt-2">
                     <Link
                       href={`/triagens/${triagem.id}`}
                       className={buttonVariants({
                         variant: "ghost",
                         size: "sm",
                         className:
-                          "text-xs h-7 px-2.5 text-muted-foreground hover:text-foreground",
+                          "text-xs h-7 px-2 text-muted-foreground hover:text-foreground",
                       })}
                     >
                       <span>Ver detalhes da triagem</span>
-                      <ArrowRight className="size-3 ml-1" />
+                      <ArrowRight className="size-3 ml-4" />
                     </Link>
                   </div>
                 </div>

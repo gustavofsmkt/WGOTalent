@@ -273,7 +273,7 @@ export function CreateEmailCredencialForm() {
           </form.Field>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-4">
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
           >

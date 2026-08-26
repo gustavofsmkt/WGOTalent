@@ -95,7 +95,7 @@ export default async function VagasPage(props: VagasPageProps) {
           >
             {vaga.cargo.titulo}
           </Link>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground ">
             <Building2 className="size-3" />
             <span>{vaga.cargo.departamento.nome}</span>
           </div>
@@ -105,7 +105,7 @@ export default async function VagasPage(props: VagasPageProps) {
     {
       header: "Localização",
       cell: (vaga) => (
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MapPin className="size-3.5 text-muted-foreground shrink-0" />
           <span>
             {vaga.cidade} / {vaga.uf}
@@ -116,7 +116,7 @@ export default async function VagasPage(props: VagasPageProps) {
     {
       header: "Posições",
       cell: (vaga) => (
-        <div className="flex items-center gap-1 text-sm font-medium">
+        <div className="flex items-center gap-2 text-sm font-medium">
           <Users className="size-3.5 text-muted-foreground" />
           <span>{vaga.posicoesDisponiveis}</span>
         </div>
@@ -165,7 +165,7 @@ export default async function VagasPage(props: VagasPageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <PageHeader
         title="Vagas"
         description="Gerencie as oportunidades de trabalho, departamentos e posições abertas."
@@ -253,11 +253,11 @@ export default async function VagasPage(props: VagasPageProps) {
               <DataTable columns={columns} rows={filteredVagas} />
 
               {/* Mobile View */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2">
                 {filteredVagas.map((vaga) => (
                   <div
                     key={vaga.id}
-                    className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-3"
+                    className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-4"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -267,7 +267,7 @@ export default async function VagasPage(props: VagasPageProps) {
                         >
                           {vaga.cargo.titulo}
                         </Link>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground ">
                           <Building2 className="size-3" />
                           <span>{vaga.cargo.departamento.nome}</span>
                         </div>
@@ -275,14 +275,14 @@ export default async function VagasPage(props: VagasPageProps) {
                       <StatusBadge status={vaga.status} />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-1 border-t border-border/40">
-                      <div className="flex items-center gap-1.5">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2 border-t border-border/40">
+                      <div className="flex items-center gap-2">
                         <MapPin className="size-3.5 text-muted-foreground" />
                         <span>
                           {vaga.cidade} / {vaga.uf}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Users className="size-3.5 text-muted-foreground" />
                         <span>
                           {vaga.posicoesDisponiveis}{" "}
@@ -291,7 +291,7 @@ export default async function VagasPage(props: VagasPageProps) {
                             : "posições"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 col-span-2">
+                      <div className="flex items-center gap-2 col-span-2">
                         <DollarSign className="size-3.5 text-muted-foreground" />
                         <span className="font-medium text-foreground">
                           {formatCurrency(vaga.remuneracaoOferecida)}

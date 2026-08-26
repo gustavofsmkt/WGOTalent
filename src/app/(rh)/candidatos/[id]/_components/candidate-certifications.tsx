@@ -30,7 +30,7 @@ export function CandidateCertifications({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between">
+      <CardHeader className="pb-2 border-b border-border/40 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
           <Award className="size-4 text-primary" />
           Certificações
@@ -42,11 +42,11 @@ export function CandidateCertifications({
       </CardHeader>
       <CardContent className="pt-4">
         {certificacoes.length === 0 ? (
-          <div className="text-center py-6 text-sm text-muted-foreground">
+          <div className="text-center py-4 text-sm text-muted-foreground">
             Nenhuma certificação cadastrada.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {certificacoes.map((cert, index) => {
               const obtidaEmFormatted = formatDate(cert.obtidaEm);
               const validadeFormatted = formatDate(cert.validade);
@@ -54,7 +54,7 @@ export function CandidateCertifications({
               return (
                 <div
                   key={cert.id ?? index}
-                  className="p-3.5 rounded-lg bg-muted/30 border border-border/40 space-y-1.5"
+                  className="p-2 rounded-lg bg-muted/30 border border-border/40 space-y-1.5"
                 >
                   <h4 className="font-semibold text-foreground text-sm">
                     {cert.titulo}
@@ -62,14 +62,14 @@ export function CandidateCertifications({
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {obtidaEmFormatted && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-2">
                         <Calendar className="size-3 text-muted-foreground/70" />
                         Obtida em: {obtidaEmFormatted}
                       </span>
                     )}
 
                     {validadeFormatted ? (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-2">
                         Validade: {validadeFormatted}
                       </span>
                     ) : (

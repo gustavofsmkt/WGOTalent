@@ -33,7 +33,7 @@ export function ErrorCallout({
         {message}
         {children}
         {errors && errors.length > 0 && (
-          <ul className="mt-1.5 list-disc list-inside space-y-1">
+          <ul className="mt-2.5 list-disc list-inside space-y-1">
             {errors.map((err, idx) => (
               <li key={idx}>{err}</li>
             ))}

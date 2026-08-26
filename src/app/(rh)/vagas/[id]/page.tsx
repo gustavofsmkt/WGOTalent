@@ -54,7 +54,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
         <Link
@@ -65,7 +65,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             className: "text-muted-foreground hover:text-foreground",
           })}
         >
-          <ArrowLeft className="size-4 mr-1.5" />
+          <ArrowLeft className="size-4 mr-2" />
           Voltar para Vagas
         </Link>
       </div>
@@ -73,17 +73,17 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
       <PageHeader
         title={vaga.cargo.titulo}
         description={
-          <div className="flex flex-wrap items-center gap-3 pt-0.5">
+          <div className="flex flex-wrap items-center gap-4 ">
             <StatusBadge status={vaga.status} className="text-xs" />
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <Building2 className="size-3.5" />
               {vaga.cargo.departamento.nome}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <MapPin className="size-3.5" />
               {vaga.cidade} / {vaga.uf}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <Users className="size-3.5" />
               {vaga.posicoesDisponiveis}{" "}
               {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
@@ -109,22 +109,22 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Main Content - 2 columns */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-4">
           {/* Cargo Details */}
           <Card className="shadow-xs border-border/60">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Descrição do Cargo</CardTitle>
               <Link
                 href={`/cargos/${vaga.cargo.id}`}
-                className="text-xs text-primary hover:underline flex items-center gap-1"
+                className="text-xs text-primary hover:underline flex items-center gap-2"
               >
                 Ver Cargo completo
                 <ExternalLink className="size-3" />
               </Link>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {vaga.cargo.descricao}
@@ -137,7 +137,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
               <CardTitle className="text-lg">Requisitos e Critérios</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
+            <CardContent className="pt-4 space-y-4">
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -176,17 +176,17 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
         </div>
 
         {/* Sidebar Panel - 1 column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card className="shadow-xs border-border/60">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
               <CardTitle className="text-lg">Informações da Vaga</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div>
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Status da Oportunidade
                 </span>
-                <div className="mt-1">
+                <div className="mt-2">
                   <StatusBadge status={vaga.status} />
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Local de Trabalho
                 </span>
-                <span className="text-sm font-medium text-foreground mt-0.5 block">
+                <span className="text-sm font-medium text-foreground  block">
                   {vaga.cidade} / {vaga.uf}
                 </span>
               </div>
@@ -208,7 +208,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Posições Disponíveis
                 </span>
-                <span className="text-sm font-medium text-foreground mt-0.5 block">
+                <span className="text-sm font-medium text-foreground  block">
                   {vaga.posicoesDisponiveis}{" "}
                   {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
                 </span>
@@ -220,7 +220,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Remuneração Oferecida
                 </span>
-                <span className="text-sm font-medium text-foreground mt-0.5 block">
+                <span className="text-sm font-medium text-foreground  block">
                   {formatCurrency(vaga.remuneracaoOferecida)}
                 </span>
               </div>
@@ -231,7 +231,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Departamento
                 </span>
-                <span className="text-sm font-medium text-foreground mt-0.5 block">
+                <span className="text-sm font-medium text-foreground  block">
                   {vaga.cargo.departamento.nome}
                 </span>
               </div>
@@ -242,7 +242,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Criada em
                 </span>
-                <span className="text-sm text-muted-foreground mt-0.5 block">
+                <span className="text-sm text-muted-foreground  block">
                   {formatDate(vaga.createdAt)}
                 </span>
               </div>
@@ -252,7 +252,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                   <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                     Última Atualização
                   </span>
-                  <span className="text-sm text-muted-foreground mt-0.5 block">
+                  <span className="text-sm text-muted-foreground  block">
                     {formatDate(vaga.updatedAt)}
                   </span>
                 </div>
@@ -263,7 +263,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
       </div>
 
       {/* Pipeline de Candidatos */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Users className="size-4 text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">

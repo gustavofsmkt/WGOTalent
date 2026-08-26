@@ -34,8 +34,8 @@ export function DeleteCredencialButton({
 
   if (isConfirming) {
     return (
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-2">
           <AlertTriangle className="size-3 text-destructive" />
           Confirmar?
         </span>
@@ -75,7 +75,7 @@ export function DeleteCredencialButton({
       onClick={() => setIsConfirming(true)}
       className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
     >
-      <Trash2 className="size-3.5 mr-1.5" />
+      <Trash2 className="size-3.5 mr-2" />
       Excluir
     </Button>
   );

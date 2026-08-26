@@ -126,7 +126,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             <span className="text-xs text-muted-foreground truncate">
               {candidato.email}
             </span>
-            <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <span className="text-xs text-muted-foreground flex items-center gap-2 ">
               <Phone className="size-3" />
               <a
                 href={getWhatsAppUrl(candidato.celular)}
@@ -144,7 +144,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     {
       header: "Localidade",
       cell: (candidato) => (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="size-3.5 shrink-0 text-muted-foreground/70" />
           <span>
             {candidato.cidade}, {candidato.uf}
@@ -170,7 +170,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
       cell: (candidato) => {
         const origemConfig = getOrigemBadge(candidato.origem);
         return (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge tone={origemConfig.tone} label={origemConfig.label} />
             {candidato.emBancoTalentos && (
               <StatusBadge status="banco_talentos" />
@@ -188,7 +188,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
       header: "Ações",
       headerClassName: "w-[60px]",
       cell: (candidato) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-2">
           <Link
             href={`/candidatos/${candidato.id}`}
             className={buttonVariants({
@@ -210,7 +210,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <PageHeader
         title="Candidatos"
         description="Gerencie os profissionais cadastrados, histórico de triagens e talentos da organização."
@@ -313,7 +313,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
               <DataTable columns={columns} rows={filteredCandidatos} />
 
               {/* Mobile card list */}
-              <div className="grid grid-cols-1 gap-3 md:hidden">
+              <div className="grid grid-cols-1 gap-4 md:hidden">
                 {filteredCandidatos.map((candidato) => {
                   const origemConfig = getOrigemBadge(candidato.origem);
                   return (
@@ -321,9 +321,9 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                       key={candidato.id}
                       className="border-border/60 shadow-xs hover:border-border transition-colors"
                     >
-                      <CardContent className="p-4 space-y-3">
+                      <CardContent className="p-4 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4">
                             <div className="size-10 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
                               {getInitials(candidato.nome)}
                             </div>
@@ -339,7 +339,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                               </span>
                             </div>
                           </div>
-                          <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
                             <StatusBadge
                               tone={origemConfig.tone}
                               label={origemConfig.label}
@@ -350,8 +350,8 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 text-xs text-muted-foreground pt-1 border-t border-border/40">
-                          <div className="flex items-center gap-1.5">
+                        <div className="space-y-1.5 text-xs text-muted-foreground pt-2 border-t border-border/40">
+                          <div className="flex items-center gap-2">
                             <Phone className="size-3.5 text-muted-foreground/70" />
                             <a
                               href={getWhatsAppUrl(candidato.celular)}
@@ -362,14 +362,14 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                               {candidato.celular}
                             </a>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <MapPin className="size-3.5 text-muted-foreground/70" />
                             <span>
                               {candidato.cidade}, {candidato.uf}
                             </span>
                           </div>
                           {candidato.cargoInteresse && (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <Briefcase className="size-3.5 text-muted-foreground/70" />
                               <span className="font-medium text-foreground">
                                 {candidato.cargoInteresse}
@@ -388,10 +388,10 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                               className={buttonVariants({
                                 variant: "outline",
                                 size: "sm",
-                                className: "h-8 px-2.5 text-xs",
+                                className: "h-8 px-2 text-xs",
                               })}
                             >
-                              <Eye className="size-3.5 mr-1" />
+                              <Eye className="size-3.5 mr-2" />
                               Ver Detalhes
                             </Link>
                             <DeleteCandidatoButton

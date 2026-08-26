@@ -40,7 +40,7 @@ export function UploadProgressPopup() {
       aria-label="Progresso de upload"
     >
       <Card className="border-border/80 bg-background/95 backdrop-blur shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-2 border-b">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 pb-2 border-b">
           <div className="flex items-center gap-2">
             {isProcessing ? (
               <Loader2 className="size-4 animate-spin text-primary" />
@@ -68,9 +68,9 @@ export function UploadProgressPopup() {
           </Button>
         </CardHeader>
 
-        <CardContent className="p-3 space-y-2 max-h-56 overflow-y-auto">
+        <CardContent className="p-2 space-y-2 max-h-56 overflow-y-auto">
           {hasErrors && (
-            <Alert variant="destructive" className="py-2 px-3 text-xs">
+            <Alert variant="destructive" className="py-2 px-4 text-xs">
               <AlertDescription>
                 Alguns arquivos falharam no processamento.
               </AlertDescription>
@@ -85,13 +85,13 @@ export function UploadProgressPopup() {
               >
                 {(item.status === "pendente" ||
                   item.status === "processando") && (
-                  <Loader2 className="size-3.5 animate-spin text-primary shrink-0 mt-0.5" />
+                  <Loader2 className="size-3.5 animate-spin text-primary shrink-0 " />
                 )}
                 {item.status === "sucesso" && (
-                  <CheckCircle2 className="size-3.5 text-success shrink-0 mt-0.5" />
+                  <CheckCircle2 className="size-3.5 text-success shrink-0 " />
                 )}
                 {item.status === "erro" && (
-                  <XCircle className="size-3.5 text-destructive shrink-0 mt-0.5" />
+                  <XCircle className="size-3.5 text-destructive shrink-0 " />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-foreground truncate">
@@ -114,13 +114,13 @@ export function UploadProgressPopup() {
           </div>
         </CardContent>
 
-        <CardFooter className="p-2.5 pt-0 flex justify-end">
+        <CardFooter className="p-2 pt-0 flex justify-end">
           <Button
             variant="outline"
             size="sm"
             onClick={() => void limparFinalizados()}
             disabled={!temFinalizados}
-            className="text-xs h-7 gap-1"
+            className="text-xs h-7 gap-2"
           >
             <Trash2 className="size-3" />
             Limpar

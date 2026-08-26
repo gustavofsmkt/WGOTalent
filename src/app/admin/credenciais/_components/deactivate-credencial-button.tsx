@@ -36,9 +36,9 @@ export function DeactivateCredencialButton({
       className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
     >
       {isPending ? (
-        <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+        <Loader2 className="size-3.5 mr-2 animate-spin" />
       ) : (
-        <Power className="size-3.5 mr-1.5" />
+        <Power className="size-3.5 mr-2" />
       )}
       Desativar
     </Button>

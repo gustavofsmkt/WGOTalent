@@ -57,8 +57,8 @@ export function DeleteCandidatoButton({
         >
           <Trash2 className={variant === "button" ? "size-4" : "size-3.5"} />
         </Button>
-        <div className="absolute right-0 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-150">
-          <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+        <div className="absolute right-0 top-1/2 z-20 flex -translate-y-1/2 items-center gap-2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-2 shadow-lg animate-in fade-in zoom-in-95 duration-150">
+          <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-2">
             <AlertTriangle className="size-3 text-destructive" />
             Confirmar?
           </span>
@@ -98,7 +98,7 @@ export function DeleteCandidatoButton({
         variant="destructive"
         size="sm"
         onClick={() => setIsConfirming(true)}
-        className={cn("gap-1.5", className)}
+        className={cn("gap-2", className)}
       >
         <Trash2 className="size-3.5" />
         Excluir Candidato

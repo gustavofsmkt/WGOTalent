@@ -38,7 +38,7 @@ export default async function EditDepartamentoPage(
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <div className="flex items-center gap-2">
         <Link
           href={`/departamentos/${departamento.id}`}
@@ -48,7 +48,7 @@ export default async function EditDepartamentoPage(
             className: "text-muted-foreground hover:text-foreground",
           })}
         >
-          <ArrowLeft className="size-4 mr-1.5" />
+          <ArrowLeft className="size-4 mr-2" />
           Voltar para Detalhes
         </Link>
       </div>

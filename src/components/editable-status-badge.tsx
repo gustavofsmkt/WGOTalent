@@ -54,7 +54,7 @@ export function EditableStatusBadge<T extends string>({
         size="sm"
         aria-label={props["aria-label"]}
         className={cn(
-          "h-6 gap-1 rounded-4xl border px-2.5 py-0 text-xs font-medium tracking-wide",
+          "h-6 gap-2 rounded-4xl border px-2 py-0 text-xs font-medium tracking-wide",
           toneStyles[tone],
         )}
       >

@@ -46,8 +46,8 @@ export function DeleteCargoButton({
 
   if (isConfirming) {
     return (
-      <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
-        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+      <div className="flex items-center gap-2 animate-in fade-in duration-200">
+        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-2">
           <AlertTriangle className="size-3 text-destructive" />
           Confirmar?
         </span>
@@ -93,7 +93,7 @@ export function DeleteCargoButton({
         title={`Excluir cargo ${cargoTitulo}`}
         aria-label={`Excluir cargo ${cargoTitulo}`}
       >
-        <Trash2 className="size-4 mr-1.5" />
+        <Trash2 className="size-4 mr-2" />
         Excluir
       </Button>
     );

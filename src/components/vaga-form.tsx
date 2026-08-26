@@ -516,7 +516,7 @@ export function VagaForm({
           </FieldGroup>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-4">
           {onCancel ? (
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar

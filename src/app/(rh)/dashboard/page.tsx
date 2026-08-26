@@ -146,7 +146,7 @@ export default async function DashboardPage() {
   const totalResultados = summary.triagensTotais;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl space-y-6">
+    <div className="container mx-auto p-4 md:p-4 lg:p-4 max-w-7xl space-y-4">
       <PageHeader
         title="Dashboard"
         description="Visão geral estratégica e operacional de recrutamento, triagens e aderência por IA."
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
               <span>Posições ativas</span>
               <Link
                 href="/vagas"
-                className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                className="text-primary hover:underline font-medium inline-flex items-center "
               >
                 Ver vagas
                 <ArrowUpRight className="h-3 w-3" />
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
               <span>No banco de talentos</span>
               <Link
                 href="/candidatos"
-                className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                className="text-primary hover:underline font-medium inline-flex items-center "
               >
                 Ver talentos
                 <ArrowUpRight className="h-3 w-3" />
@@ -251,7 +251,7 @@ export default async function DashboardPage() {
               <span>{summary.triagensTotais} triagens no histórico</span>
               <Link
                 href="/triagens"
-                className="text-primary hover:underline font-medium inline-flex items-center gap-0.5"
+                className="text-primary hover:underline font-medium inline-flex items-center "
               >
                 Pipeline
                 <ArrowUpRight className="h-3 w-3" />
@@ -271,7 +271,7 @@ export default async function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-baseline gap-1">
+            <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold tracking-tight text-primary">
                 {summary.mediaScoreIa.media !== null
                   ? summary.mediaScoreIa.media
@@ -303,7 +303,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* 2. Visão de Funil e Distribuição de Resultados */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Triagens por Etapa (Funil) - Ocupa 2 colunas no desktop */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-4">
@@ -320,7 +320,7 @@ export default async function DashboardPage() {
               </div>
               <Link
                 href="/triagens"
-                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-2"
               >
                 Ver pipeline completo
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -336,7 +336,7 @@ export default async function DashboardPage() {
               />
             ) : (
               <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-5 gap-2 sm:gap-3 text-center">
+                <div className="grid grid-cols-5 gap-2 sm:gap-4 text-center">
                   {ETAPAS_CONFIG.map((etapa) => {
                     const count = summary.triagensPorEtapa[etapa.key] ?? 0;
                     const heightPercent =
@@ -407,10 +407,10 @@ export default async function DashboardPage() {
               <DataEmptyState
                 title="Sem resultados"
                 description="Nenhuma triagem finalizada ou em andamento ainda."
-                className="py-8 border-0"
+                className="py-4 border-0"
               />
             ) : (
-              <div className="space-y-3.5">
+              <div className="space-y-2">
                 {RESULTADOS_CONFIG.map((res) => {
                   const count = summary.triagensPorResultado[res.key] ?? 0;
                   const pct =
@@ -430,7 +430,7 @@ export default async function DashboardPage() {
                           />
                           {res.label}
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <span className="font-semibold text-foreground">
                             {count}
                           </span>
@@ -458,10 +458,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* 3. Tabelas de Vagas com Mais Candidatos & Atividade Recente */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Vagas com Mais Candidatos */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-primary" />
@@ -473,7 +473,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/vagas"
-              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-2"
             >
               Ver todas
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -481,11 +481,11 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0">
             {summary.vagasComMaisCandidatos.length === 0 ? (
-              <div className="p-6">
+              <div className="p-4">
                 <DataEmptyState
                   title="Nenhuma vaga cadastrada"
                   description="Crie novas vagas para receber candidaturas e avaliações."
-                  className="py-6 border-0"
+                  className="py-4 border-0"
                 />
               </div>
             ) : (
@@ -513,7 +513,7 @@ export default async function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-2">
                           <MapPin className="h-3 w-3 shrink-0" />
                           {vaga.cidade}/{vaga.uf}
                         </span>
@@ -548,7 +548,7 @@ export default async function DashboardPage() {
 
         {/* Atividade Recente */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
@@ -560,7 +560,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/triagens"
-              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-2"
             >
               Ver todas
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -568,11 +568,11 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0">
             {summary.atividadeRecente.length === 0 ? (
-              <div className="p-6">
+              <div className="p-4">
                 <DataEmptyState
                   title="Nenhuma atividade recente"
                   description="As movimentações e avaliações de triagem aparecerão aqui."
-                  className="py-6 border-0"
+                  className="py-4 border-0"
                 />
               </div>
             ) : (
@@ -589,7 +589,7 @@ export default async function DashboardPage() {
                   {summary.atividadeRecente.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
                             {getInitials(item.candidatoNome)}
                           </div>
@@ -607,10 +607,10 @@ export default async function DashboardPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1 items-start">
+                        <div className="flex flex-col gap-2 items-start">
                           <StatusBadge
                             status={item.resultado}
-                            className="text-[11px] py-0 px-1.5"
+                            className="text-[11px] py-0 px-2"
                           />
                           <span className="text-[11px] text-muted-foreground capitalize">
                             {item.etapa.replace("_", " ")}
@@ -623,7 +623,7 @@ export default async function DashboardPage() {
                             variant="outline"
                             className="text-xs font-semibold bg-primary/5 text-primary border-primary/20"
                           >
-                            <Sparkles className="h-3 w-3 mr-1 text-primary" />
+                            <Sparkles className="h-3 w-3 mr-2 text-primary" />
                             {item.scoreIa}
                           </Badge>
                         ) : (

@@ -352,7 +352,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
           </FieldGroup>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancelar
           </Button>

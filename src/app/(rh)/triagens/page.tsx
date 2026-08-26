@@ -157,7 +157,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
     {
       header: "Candidato",
       cell: (item) => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
             {getInitials(item.candidato.nome)}
           </div>
@@ -210,7 +210,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
       cell: (item) =>
         item.avaliacaoIa ? (
           <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
+            className="inline-flex items-center gap-2 px-2  rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
             title={item.avaliacaoIa.parecerIa || undefined}
           >
             <Sparkles className="size-3 text-primary" />
@@ -230,7 +230,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
       headerClassName: "w-[60px]",
       cellClassName: "text-right",
       cell: (item) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Link
             href={`/triagens/${item.id}`}
             className={buttonVariants({
@@ -252,7 +252,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <PageHeader
         title="Triagens"
         description="Gerencie o fluxo de candidatos pelas etapas do processo seletivo."

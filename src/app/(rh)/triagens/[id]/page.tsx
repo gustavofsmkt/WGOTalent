@@ -58,7 +58,7 @@ export default async function TriagemDetailPage({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
         <Link
@@ -69,7 +69,7 @@ export default async function TriagemDetailPage({
             className: "text-muted-foreground hover:text-foreground",
           })}
         >
-          <ArrowLeft className="size-4 mr-1.5" />
+          <ArrowLeft className="size-4 mr-2" />
           Voltar para Triagens
         </Link>
       </div>
@@ -81,8 +81,8 @@ export default async function TriagemDetailPage({
       />
 
       {/* Static info grid — rendered as RSC, not serialized to client */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-6 lg:col-span-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="flex flex-col gap-4 lg:col-span-5">
           {/* Contato Rápido */}
           <Card>
             <CardHeader>
@@ -137,7 +137,7 @@ export default async function TriagemDetailPage({
         <div className="lg:col-span-7">
           {/* Avaliação de IA */}
           <Card className="h-full relative overflow-hidden">
-            <div className="absolute right-0 top-0 p-6 opacity-[0.03] pointer-events-none">
+            <div className="absolute right-0 top-0 p-4 opacity-[0.03] pointer-events-none">
               <BrainCircuit className="h-32 w-32" />
             </div>
             <CardHeader className="relative z-10 flex flex-row items-start justify-between">
@@ -147,13 +147,13 @@ export default async function TriagemDetailPage({
                   Avaliação de IA WGO
                 </CardTitle>
                 {triagem.avaliacao_ia?.vagaFoiInferida && (
-                  <span className="mt-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                  <span className="mt-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-2 text-xs font-medium text-primary">
                     Vaga inferida automaticamente
                   </span>
                 )}
               </div>
               {triagem.avaliacao_ia && (
-                <div className="flex items-center gap-4 rounded-xl bg-muted/50 p-3">
+                <div className="flex items-center gap-4 rounded-xl bg-muted/50 p-2">
                   <div className="flex flex-col items-center">
                     <span className="text-3xl font-bold text-primary">
                       {Number(triagem.avaliacao_ia.scoreIa).toFixed(0)}
@@ -167,7 +167,7 @@ export default async function TriagemDetailPage({
             </CardHeader>
             <CardContent className="relative z-10">
               {triagem.avaliacao_ia ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div>
                     <h3 className="mb-2 text-sm font-semibold flex items-center gap-2 text-foreground">
                       Parecer Analítico

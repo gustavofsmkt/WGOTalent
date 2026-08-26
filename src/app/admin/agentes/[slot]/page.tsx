@@ -32,7 +32,7 @@ export default async function EditAgentePage(props: EditAgentePageProps) {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <PageHeader
         title={`Editar Agente: ${agenteConfig.slot}`}
         description="Prompt, modelo e parâmetros deste slot fixo."

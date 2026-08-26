@@ -60,7 +60,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
       </div>
 
       {/* Main Profile Header Banner */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between bg-card border border-border/60 p-6 rounded-xl shadow-xs">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between bg-card border border-border/60 p-4 rounded-xl shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Avatar / Initials */}
           <div className="size-16 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xl shrink-0">
@@ -68,7 +68,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
                 {candidato.nome}
               </h1>
@@ -95,8 +95,8 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
             )}
 
             {/* Quick Contact & Info line */}
-            <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-sm text-muted-foreground pt-1">
-              <span className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-sm text-muted-foreground pt-2">
+              <span className="flex items-center gap-2">
                 <Mail className="size-4 text-muted-foreground/70" />
                 <a
                   href={`mailto:${candidato.email}`}
@@ -106,7 +106,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
                 </a>
               </span>
 
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <Smartphone className="size-4 text-muted-foreground/70" />
                 <a
                   href={getWhatsAppUrl(candidato.celular)}
@@ -118,7 +118,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
                 </a>
               </span>
 
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <MapPin className="size-4 text-muted-foreground/70" />
                 <span>
                   {candidato.cidade}/{candidato.uf}
@@ -126,7 +126,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
               </span>
 
               {candidato.linkedin && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <ExternalLink className="size-4 text-muted-foreground/70" />
                   <a
                     href={candidato.linkedin}
@@ -140,7 +140,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
               )}
 
               {candidato.portfolio && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <Globe className="size-4 text-muted-foreground/70" />
                   <a
                     href={candidato.portfolio}

@@ -58,7 +58,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
         <Link
@@ -69,7 +69,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
             className: "text-muted-foreground hover:text-foreground",
           })}
         >
-          <ArrowLeft className="size-4 mr-1.5" />
+          <ArrowLeft className="size-4 mr-2" />
           Voltar para Cargos
         </Link>
       </div>
@@ -77,13 +77,13 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
       <PageHeader
         title={cargo.titulo}
         description={
-          <div className="flex flex-wrap items-center gap-3 pt-0.5">
+          <div className="flex flex-wrap items-center gap-4 ">
             <StatusBadge
               status={cargo.ativo ? "aberta" : "incompleta"}
               label={cargo.ativo ? "Ativo" : "Inativo"}
               className="text-xs"
             />
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <Building2 className="size-3.5" />
               {cargo.departamento.nome}
             </span>
@@ -111,13 +111,13 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 space-y-4">
           <Card className="shadow-xs border-border/60">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
               <CardTitle className="text-lg">Descrição do Cargo</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {cargo.descricao}
@@ -130,7 +130,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
               <CardTitle className="text-lg">Requisitos e Critérios</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
+            <CardContent className="pt-4 space-y-4">
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -168,12 +168,12 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card className="shadow-xs border-border/60">
             <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
               <CardTitle className="text-base">Metadados</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div className="space-y-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Departamento
@@ -225,7 +225,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
         </CardHeader>
         <CardContent className="p-0">
           {vagasDoCargo.length === 0 ? (
-            <div className="p-6">
+            <div className="p-4">
               <DataEmptyState
                 icon={Briefcase}
                 title="Nenhuma vaga cadastrada para este cargo"
@@ -238,7 +238,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                       size: "sm",
                     })}
                   >
-                    <Plus className="size-4 mr-1.5" />
+                    <Plus className="size-4 mr-2" />
                     Criar Vaga
                   </Link>
                 }
@@ -248,25 +248,25 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/20 hover:bg-muted/20">
-                  <TableHead className="pl-6">Localização</TableHead>
+                  <TableHead className="pl-4">Localização</TableHead>
                   <TableHead>Posições</TableHead>
                   <TableHead>Remuneração</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Criada em</TableHead>
-                  <TableHead className="pr-6 text-right">Ações</TableHead>
+                  <TableHead className="pr-4 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {vagasDoCargo.map((vaga) => (
                   <TableRow key={vaga.id}>
-                    <TableCell className="pl-6">
-                      <div className="flex items-center gap-1.5 text-sm">
+                    <TableCell className="pl-4">
+                      <div className="flex items-center gap-2 text-sm">
                         <MapPin className="size-3.5 text-muted-foreground" />
                         {vaga.cidade} / {vaga.uf}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5 text-sm">
+                      <div className="flex items-center gap-2 text-sm">
                         <Users className="size-3.5 text-muted-foreground" />
                         {vaga.posicoesDisponiveis}
                       </div>
@@ -280,7 +280,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(vaga.createdAt)}
                     </TableCell>
-                    <TableCell className="pr-6 text-right">
+                    <TableCell className="pr-4 text-right">
                       <Link
                         href={`/vagas/${vaga.id}`}
                         className={buttonVariants({

@@ -548,7 +548,7 @@ export function TriagemForm({
           </FieldGroup>
         </CardContent>
 
-        <CardFooter className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+        <CardFooter className="flex flex-col-reverse justify-end gap-4 sm:flex-row">
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
           >

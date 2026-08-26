@@ -81,20 +81,20 @@ export function CandidatePersonalInfo({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 border-b border-border/40">
+      <CardHeader className="pb-2 border-b border-border/40">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
           <User className="size-4 text-primary" />
           Dados Pessoais e Localização
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-4 space-y-6">
+      <CardContent className="pt-4 space-y-4">
         {/* Personal Details Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Data de Nascimento
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {formatDate(candidato.dataNascimento)}
               {age !== null ? ` (${age} anos)` : ""}
             </p>
@@ -104,7 +104,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Nacionalidade
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {candidato.nacionalidade || "Brasileira"}
             </p>
           </div>
@@ -113,7 +113,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Estado Civil
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {formatEstadoCivil(candidato.estadoCivil)}
             </p>
           </div>
@@ -122,7 +122,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               PCD
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {candidato.pcd ? candidato.pcd : "Não aplicável"}
             </p>
           </div>
@@ -131,7 +131,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               CNH
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {formatCNH(candidato.cnh)}
             </p>
           </div>
@@ -140,7 +140,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Veículo Próprio
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {candidato.possuiVeiculo ? "Sim" : "Não"}
             </p>
           </div>
@@ -149,7 +149,7 @@ export function CandidatePersonalInfo({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Ensino Médio
             </p>
-            <p className="font-medium text-foreground mt-0.5">
+            <p className="font-medium text-foreground ">
               {candidato.ensinoMedioConcluido ? "Concluído" : "Não concluído"}
             </p>
           </div>
@@ -159,17 +159,17 @@ export function CandidatePersonalInfo({
 
         {/* Address Info */}
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
             <MapPin className="size-3.5 text-primary" />
             Endereço Residencial
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm pt-2">
             <div className="sm:col-span-2">
               <p className="text-xs text-muted-foreground">
                 Logradouro / Bairro
               </p>
-              <p className="font-medium text-foreground mt-0.5">
+              <p className="font-medium text-foreground ">
                 {candidato.logradouro}
                 {candidato.bairro ? ` - ${candidato.bairro}` : ""}
               </p>
@@ -177,14 +177,14 @@ export function CandidatePersonalInfo({
 
             <div>
               <p className="text-xs text-muted-foreground">Cidade / UF</p>
-              <p className="font-medium text-foreground mt-0.5">
+              <p className="font-medium text-foreground ">
                 {candidato.cidade}/{candidato.uf}
               </p>
             </div>
 
             <div>
               <p className="text-xs text-muted-foreground">CEP</p>
-              <p className="font-medium text-foreground mt-0.5">
+              <p className="font-medium text-foreground ">
                 {formatCep(candidato.cep)}
               </p>
             </div>

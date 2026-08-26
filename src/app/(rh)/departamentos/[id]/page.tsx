@@ -93,7 +93,7 @@ export default async function DepartamentoDetailPage(
   const initial = departamento.nome.trim().charAt(0).toUpperCase();
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
         <Link
@@ -104,7 +104,7 @@ export default async function DepartamentoDetailPage(
             className: "text-muted-foreground hover:text-foreground",
           })}
         >
-          <ArrowLeft className="size-4 mr-1.5" />
+          <ArrowLeft className="size-4 mr-2" />
           Voltar para Departamentos
         </Link>
       </div>
@@ -119,7 +119,7 @@ export default async function DepartamentoDetailPage(
               href={`/departamentos/${departamento.id}/editar`}
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
-              <Pencil className="size-4 mr-1.5" />
+              <Pencil className="size-4 mr-2" />
               Editar
             </Link>
             <DeleteDepartamentoButton
@@ -133,9 +133,9 @@ export default async function DepartamentoDetailPage(
       />
 
       {/* Main Grid: Details Overview + Linked Positions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left column (2 cols on lg): Overview & Description */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           <Card className="border-border/60 shadow-xs">
             <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
               <div className="size-12 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-lg border border-primary/20">
@@ -148,7 +148,7 @@ export default async function DepartamentoDetailPage(
                   </CardTitle>
                   <Badge
                     variant="outline"
-                    className="gap-1 text-xs text-primary border-primary/30 bg-primary/5"
+                    className="gap-2 text-xs text-primary border-primary/30 bg-primary/5"
                   >
                     <CheckCircle2 className="size-3 text-primary" />
                     Ativo
@@ -164,7 +164,7 @@ export default async function DepartamentoDetailPage(
             </CardHeader>
             <CardContent className="space-y-4 pt-2">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                   Descrição e Atribuições
                 </h3>
                 <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed bg-muted/30 p-4 rounded-lg border border-border/40">
@@ -176,7 +176,7 @@ export default async function DepartamentoDetailPage(
 
           {/* Linked Cargos Section */}
           <Card className="border-border/60 shadow-xs">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -187,7 +187,7 @@ export default async function DepartamentoDetailPage(
                     {cargosVinculados.length}
                   </Badge>
                 </div>
-                <CardDescription className="text-xs mt-1">
+                <CardDescription className="text-xs mt-2">
                   Cargos ativos vinculados a este departamento.
                 </CardDescription>
               </div>
@@ -195,13 +195,13 @@ export default async function DepartamentoDetailPage(
                 href={`/cargos/novo?departamentoId=${departamento.id}`}
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                <Plus className="size-4 mr-1.5" />
+                <Plus className="size-4 mr-2" />
                 Novo Cargo
               </Link>
             </CardHeader>
             <CardContent className="p-0">
               {cargosVinculados.length === 0 ? (
-                <div className="p-6">
+                <div className="p-4">
                   <DataEmptyState
                     icon={Briefcase}
                     title="Nenhum cargo vinculado"
@@ -214,7 +214,7 @@ export default async function DepartamentoDetailPage(
                           size: "sm",
                         })}
                       >
-                        <Plus className="size-4 mr-1.5" />
+                        <Plus className="size-4 mr-2" />
                         Cadastrar Cargo
                       </Link>
                     }
@@ -283,16 +283,16 @@ export default async function DepartamentoDetailPage(
         </div>
 
         {/* Right column (1 col on lg): Metadata & Quick Info */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card className="border-border/60 shadow-xs">
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 Metadados do Registro
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <div className="flex items-start gap-3">
-                <Calendar className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4">
+                <Calendar className="size-4 text-muted-foreground shrink-0 " />
                 <div>
                   <div className="text-xs text-muted-foreground">
                     Cadastrado em
@@ -303,8 +303,8 @@ export default async function DepartamentoDetailPage(
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <Clock className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="flex items-start gap-4">
+                <Clock className="size-4 text-muted-foreground shrink-0 " />
                 <div>
                   <div className="text-xs text-muted-foreground">
                     Última atualização

@@ -66,7 +66,7 @@ export default function RootLayout({
 
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex w-64 flex-col border-r bg-background shrink-0 shadow-sm">
-              <div className="p-6 border-b">
+              <div className="p-4 border-b">
                 <div className="font-bold text-2xl tracking-tight text-primary">
                   <Link href="/">WGOTalent</Link>
                 </div>

@@ -50,7 +50,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
       cell: (dept) => {
         const initial = dept.nome.trim().charAt(0).toUpperCase();
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="size-9 rounded-lg bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0 text-sm border border-primary/20">
               {initial}
             </div>
@@ -74,7 +74,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
       cell: (dept) => (
         <Badge
           variant={dept.activeCargosCount > 0 ? "secondary" : "outline"}
-          className="font-mono text-xs gap-1"
+          className="font-mono text-xs gap-2"
         >
           <Briefcase className="size-3" />
           {dept.activeCargosCount}
@@ -91,7 +91,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
       header: "Ações",
       headerClassName: "w-[110px]",
       cell: (dept) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Link
             href={`/departamentos/${dept.id}`}
             className={buttonVariants({
@@ -126,7 +126,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <PageHeader
         title="Departamentos"
         description="Gerencie a estrutura organizacional da empresa."
@@ -181,7 +181,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
               <DataTable columns={columns} rows={filteredDepartamentos} />
 
               {/* Mobile View */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2">
                 {filteredDepartamentos.map((dept) => {
                   const initial = dept.nome.trim().charAt(0).toUpperCase();
                   return (
@@ -190,8 +190,8 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                       className="border border-border/60 shadow-xs"
                     >
                       <CardHeader className="p-4 pb-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4">
                             <div className="size-9 rounded-lg bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0 text-sm border border-primary/20">
                               {initial}
                             </div>
@@ -215,18 +215,18 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                                 ? "secondary"
                                 : "outline"
                             }
-                            className="font-mono text-xs shrink-0 gap-1"
+                            className="font-mono text-xs shrink-0 gap-2"
                           >
                             <Briefcase className="size-3" />
                             {dept.activeCargosCount}
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-4 pt-2 space-y-3">
+                      <CardContent className="p-4 pt-2 space-y-2">
                         <p className="text-sm text-muted-foreground line-clamp-3">
                           {dept.descricao}
                         </p>
-                        <div className="flex items-center justify-end gap-1 pt-2 border-t border-border/40">
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
                           <Link
                             href={`/departamentos/${dept.id}`}
                             className={buttonVariants({
@@ -236,7 +236,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                                 "text-xs text-muted-foreground hover:text-primary h-8",
                             })}
                           >
-                            <Eye className="size-3.5 mr-1.5" />
+                            <Eye className="size-3.5 mr-2" />
                             Detalhes
                           </Link>
                           <Link
@@ -248,7 +248,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                                 "text-xs text-muted-foreground hover:text-primary h-8",
                             })}
                           >
-                            <Pencil className="size-3.5 mr-1.5" />
+                            <Pencil className="size-3.5 mr-2" />
                             Editar
                           </Link>
                           <DeleteDepartamentoButton

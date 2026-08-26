@@ -41,7 +41,7 @@ export function NavLinks({ onItemClick, className }: NavLinksProps) {
             href={item.href}
             onClick={onItemClick}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-medium",
+              "flex items-center gap-4 px-4 py-2 rounded-md transition-colors font-medium",
               isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",

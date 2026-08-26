@@ -137,7 +137,7 @@ export function PageFilter({
           onBlur={() => {
             if (searchTerm !== currentQuery) handleSearchApply(searchTerm);
           }}
-          className="pl-9 pr-8 h-9 text-sm bg-card"
+          className="pl-9 pr-4 h-9 text-sm bg-card"
           aria-label={searchAriaLabel ?? searchPlaceholder}
         />
         {searchTerm && (
@@ -159,7 +159,7 @@ export function PageFilter({
 
       {/* Row 2: Filter bar */}
       {hasFilterBar && (
-        <div className="flex  items-end gap-x-3 gap-y-2 p-2.5 bg-card rounded-lg border border-border/60">
+        <div className="flex  items-end gap-x-3 gap-y-2 p-2 bg-card rounded-lg border border-border/60">
           {filterBar!.selects?.map((cfg) => (
             <Field key={cfg.paramKey}>
               <FieldLabel
@@ -219,7 +219,7 @@ export function PageFilter({
               onClick={handleClearAll}
               className="h-8 text-xs text-muted-foreground hover:text-foreground"
             >
-              <X className="size-3.5 mr-1" />
+              <X className="size-3.5 mr-2" />
               Limpar filtros
             </Button>
           )}

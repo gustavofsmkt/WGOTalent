@@ -151,7 +151,7 @@ export function UploadLoteForm() {
           )}
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-4">
           <Button
             type="button"
             variant="outline"

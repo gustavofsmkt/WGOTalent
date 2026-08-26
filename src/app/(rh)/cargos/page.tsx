@@ -57,7 +57,7 @@ export default async function CargosPage(props: CargosPageProps) {
     {
       header: "Departamento",
       cell: (cargo) => (
-        <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Building2 className="size-3.5" />
           <span className="line-clamp-1">{cargo.departamento.nome}</span>
         </div>
@@ -81,7 +81,7 @@ export default async function CargosPage(props: CargosPageProps) {
       header: "Ações",
       headerClassName: "w-[100px]",
       cell: (cargo) => (
-        <div className="flex items-center justify gap-1">
+        <div className="flex items-center justify gap-2">
           <Link
             href={`/cargos/${cargo.id}`}
             className={buttonVariants({
@@ -113,7 +113,7 @@ export default async function CargosPage(props: CargosPageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       <PageHeader
         title="Cargos"
         description="Gerencie os cargos e perfis profissionais da organização."
@@ -168,11 +168,11 @@ export default async function CargosPage(props: CargosPageProps) {
               <DataTable columns={columns} rows={filteredCargos} />
 
               {/* Mobile View */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2">
                 {filteredCargos.map((cargo) => (
                   <div
                     key={cargo.id}
-                    className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-3"
+                    className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-4"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <Link
@@ -188,8 +188,8 @@ export default async function CargosPage(props: CargosPageProps) {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
                         <Building2 className="size-3.5" />
                         <span className="line-clamp-1">
                           {cargo.departamento.nome}
@@ -200,7 +200,7 @@ export default async function CargosPage(props: CargosPageProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40 mt-1">
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40 mt-2">
                       <Link
                         href={`/cargos/${cargo.id}`}
                         className={buttonVariants({

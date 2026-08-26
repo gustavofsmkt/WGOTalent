@@ -24,16 +24,16 @@ export function ViewToggle() {
   };
 
   return (
-    <div className="flex items-center gap-1 bg-muted/70 p-1 rounded-lg border border-border justify-end">
+    <div className="flex items-center gap-2 bg-muted/70 p-1 rounded-lg border border-border justify-end">
       <Button
         type="button"
         variant={currentView === "lista" ? "default" : "ghost"}
         size="sm"
         onClick={() => setView("lista")}
-        className="h-7 px-2.5 text-xs font-medium"
+        className="h-7 px-2 text-xs font-medium"
         aria-pressed={currentView === "lista"}
       >
-        <List className="size-3.5 mr-1.5" />
+        <List className="size-3.5 mr-2" />
         Lista
       </Button>
       <Button
@@ -41,10 +41,10 @@ export function ViewToggle() {
         variant={currentView === "pipeline" ? "default" : "ghost"}
         size="sm"
         onClick={() => setView("pipeline")}
-        className="h-7 px-2.5 text-xs font-medium"
+        className="h-7 px-2 text-xs font-medium"
         aria-pressed={currentView === "pipeline"}
       >
-        <Kanban className="size-3.5 mr-1.5" />
+        <Kanban className="size-3.5 mr-2" />
         Pipeline
       </Button>
     </div>

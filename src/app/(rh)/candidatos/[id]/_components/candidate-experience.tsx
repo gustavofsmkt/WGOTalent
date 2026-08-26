@@ -30,7 +30,7 @@ export function CandidateExperience({
 
   return (
     <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between">
+      <CardHeader className="pb-2 border-b border-border/40 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
           <Briefcase className="size-4 text-primary" />
           Experiência Profissional
@@ -42,7 +42,7 @@ export function CandidateExperience({
       </CardHeader>
       <CardContent className="pt-4">
         {experiencias.length === 0 ? (
-          <div className="text-center py-6 text-sm text-muted-foreground">
+          <div className="text-center py-4 text-sm text-muted-foreground">
             Nenhuma experiência profissional cadastrada.
           </div>
         ) : (
@@ -58,25 +58,25 @@ export function CandidateExperience({
                   key={exp.id ?? index}
                   className="p-4 rounded-lg bg-muted/30 border border-border/40 space-y-2"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <h4 className="font-semibold text-foreground text-sm">
                       {exp.cargoTitulo}
                     </h4>
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="size-3 text-muted-foreground/70" />
                       {startFormatted} – {endFormatted}
                     </span>
                   </div>
 
                   {exp.empresa && (
-                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                       <Building2 className="size-3.5 text-muted-foreground/70" />
                       {exp.empresa}
                     </p>
                   )}
 
                   {exp.descricao && (
-                    <p className="text-sm text-muted-foreground/90 whitespace-pre-line pt-1 leading-relaxed">
+                    <p className="text-sm text-muted-foreground/90 whitespace-pre-line pt-2 leading-relaxed">
                       {exp.descricao}
                     </p>
                   )}
