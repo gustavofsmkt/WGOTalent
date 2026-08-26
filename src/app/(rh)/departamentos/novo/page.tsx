@@ -32,12 +32,7 @@ export default function NovoDepartamentoPage() {
         description="Preencha os dados abaixo para cadastrar um novo departamento na organização."
       />
 
-      <div className="flex justify-center">
-        <DepartamentoForm
-          redirectTo="/departamentos"
-          className="max-w-2xl w-full"
-        />
-      </div>
+      <DepartamentoForm redirectTo="/departamentos" />
     </div>
   );
 }

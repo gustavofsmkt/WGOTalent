@@ -40,13 +40,10 @@ export default async function NovoCandidatoPage() {
         description="Cadastre as informações completas, experiências, formações e preferências do profissional."
       />
 
-      <div className="flex justify-center">
-        <CandidatoBaseForm
-          cargoOptions={cargoOptions}
-          departamentoOptions={departamentoOptions}
-          className="w-full"
-        />
-      </div>
+      <CandidatoBaseForm
+        cargoOptions={cargoOptions}
+        departamentoOptions={departamentoOptions}
+      />
     </div>
   );
 }

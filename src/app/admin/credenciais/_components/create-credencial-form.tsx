@@ -70,7 +70,7 @@ export function CreateCredencialForm() {
     : [];
 
   return (
-    <Card className="w-full max-w-xl">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Nova Credencial</CardTitle>
         <CardDescription>
@@ -87,8 +87,9 @@ export function CreateCredencialForm() {
           void form.handleSubmit();
         }}
         noValidate
+        className="gap-4 flex flex-col"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar a credencial"
@@ -172,7 +173,7 @@ export function CreateCredencialForm() {
           </FieldGroup>
         </CardContent>
 
-        <CardFooter className="flex items-center justify-end gap-3">
+        <CardFooter className="flex items-center justify-end">
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
           >

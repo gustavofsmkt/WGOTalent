@@ -95,57 +95,6 @@ export default async function VagasPage(props: VagasPageProps) {
         }
       />
 
-      {/* Summary stats bento banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-border/60 shadow-xs">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Total de Vagas
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {allVagas.length}
-              </p>
-            </div>
-            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Briefcase className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 shadow-xs">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Vagas Abertas
-              </p>
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                {totalAbertas}
-              </p>
-            </div>
-            <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Building2 className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/60 shadow-xs">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Posições Totais
-              </p>
-              <p className="text-2xl font-bold text-foreground">
-                {totalPosicoes}
-              </p>
-            </div>
-            <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <Users className="size-5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {allVagas.length === 0 ? (
         <DataEmptyState
           icon={Briefcase}
@@ -163,6 +112,56 @@ export default async function VagasPage(props: VagasPageProps) {
         />
       ) : (
         <div className="space-y-4">
+          {/* Summary stats bento banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-border/60 shadow-xs">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Total de Vagas
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {allVagas.length}
+                  </p>
+                </div>
+                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Briefcase className="size-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-xs">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Vagas Abertas
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {totalAbertas}
+                  </p>
+                </div>
+                <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <Building2 className="size-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 shadow-xs">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Posições Totais
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {totalPosicoes}
+                  </p>
+                </div>
+                <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Users className="size-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
             <VagasFilter />
             <div className="text-xs text-muted-foreground shrink-0">

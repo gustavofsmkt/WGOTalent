@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "~/components/page-header";
 import { Card, CardContent } from "~/components/ui/card";
-import { buttonVariants } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
@@ -53,7 +53,15 @@ export default async function AdminPage() {
               <Card key={agente.id}>
                 <CardContent className="flex items-center justify-between p-4">
                   <div>
-                    <div className="font-medium">{agente.slot}</div>
+                    <div className="font-medium">
+                      {agente.slot
+                        .split("_")
+                        .map(
+                          (word) =>
+                            word.charAt(0).toUpperCase() + word.slice(1),
+                        )
+                        .join(" ")}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {getProviderLabel(agente.provider)} ·{" "}
                       {getModelsForProvider(agente.provider).find(
@@ -62,15 +70,9 @@ export default async function AdminPage() {
                       · {agente.ativo ? "ativo" : "inativo"}
                     </div>
                   </div>
-                  <Link
-                    href={`/admin/agentes/${agente.slot}`}
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                    })}
-                  >
-                    Editar
-                  </Link>
+                  <Button variant="outline">
+                    <Link href={`/admin/agentes/${agente.slot}`}>Editar</Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -80,7 +82,7 @@ export default async function AdminPage() {
         <TabsContent value="credenciais" className="mt-6 space-y-8">
           <div className="space-y-3">
             {credenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground ml-1">
                 Nenhuma credencial cadastrada.
               </p>
             ) : (
@@ -106,16 +108,13 @@ export default async function AdminPage() {
               ))
             )}
           </div>
-
-          <div className="flex justify-center">
-            <CreateCredencialForm />
-          </div>
+          <CreateCredencialForm />
         </TabsContent>
 
         <TabsContent value="email" className="mt-6 space-y-8">
           <div className="space-y-3">
             {emailCredenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground ml-1">
                 Nenhuma credencial cadastrada.
               </p>
             ) : (
@@ -142,10 +141,7 @@ export default async function AdminPage() {
               ))
             )}
           </div>
-
-          <div className="flex justify-center">
-            <CreateEmailCredencialForm />
-          </div>
+          <CreateEmailCredencialForm />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="mt-6">

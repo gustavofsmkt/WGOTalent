@@ -168,7 +168,7 @@ export default async function DashboardPage() {
             </Link>
             <Link
               href="/candidatos/novo"
-              className={buttonVariants({ variant: "default", size: "sm" })}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               <Plus className="mr-2 h-4 w-4" />
               Novo Candidato

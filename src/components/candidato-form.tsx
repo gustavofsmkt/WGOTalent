@@ -22,6 +22,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "~/components/ui/card";
 import {
   Field,
@@ -188,7 +189,10 @@ function DadosPessoaisSection({ form }: { form: CandidatoFormApi }) {
               field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
-                <FieldLabel htmlFor="candidato-nome">
+                <FieldLabel
+                  htmlFor="candidato-nome"
+                  className="fieldRequiredDot"
+                >
                   Nome Completo *
                 </FieldLabel>
                 <Input
@@ -369,7 +373,12 @@ function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
               field.state.meta.isTouched && field.state.meta.errors.length > 0;
             return (
               <Field data-invalid={hasErrors}>
-                <FieldLabel htmlFor="candidato-email">E-mail *</FieldLabel>
+                <FieldLabel
+                  htmlFor="candidato-email"
+                  className="fieldRequiredDot"
+                >
+                  E-mail
+                </FieldLabel>
                 <Input
                   id="candidato-email"
                   type="email"
@@ -490,6 +499,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
                   placeholder="00000-000"
+                  autoComplete="postal-code"
                 />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
@@ -515,6 +525,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
+                  autoComplete="street-address"
                 />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
@@ -540,6 +551,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
+                  autoComplete="neighborhood"
                 />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
@@ -563,6 +575,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                   aria-invalid={hasErrors}
+                  autoComplete="address-level2"
                 />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
@@ -585,6 +598,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
                     field.handleChange(e.target.value.toUpperCase().slice(0, 2))
                   }
                   aria-invalid={hasErrors}
+                  autoComplete="address-level1"
                   placeholder="EX"
                 />
                 <FieldError errors={field.state.meta.errors} />
@@ -978,7 +992,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
             <div className="space-y-4">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  <GraduationCap className="mb-2 size-8 text-muted-foreground/60" />
+                  <GraduationCap className="mb-2 size-8" />
                   <p className="font-medium">
                     Nenhuma formação acadêmica adicionada
                   </p>
@@ -1224,7 +1238,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
             <div className="space-y-4">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  <Briefcase className="mb-2 size-8 text-muted-foreground/60" />
+                  <Briefcase className="mb-2 size-8" />
                   <p className="font-medium">
                     Nenhuma experiência profissional adicionada
                   </p>
@@ -1484,7 +1498,7 @@ function CertificacoesSection({ form }: { form: CandidatoFormApi }) {
             <div className="space-y-4">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  <Award className="mb-2 size-8 text-muted-foreground/60" />
+                  <Award className="mb-2 size-8" />
                   <p className="font-medium">Nenhuma certificação adicionada</p>
                   <p className="text-xs">
                     Clique no botão abaixo para adicionar.
@@ -1747,7 +1761,7 @@ export function CandidatoBaseForm({
     : [];
 
   return (
-    <Card className={cn("w-full max-w-4xl mx-auto", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>{isEdit ? "Editar Candidato" : "Novo Candidato"}</CardTitle>
         <CardDescription>
@@ -1764,8 +1778,9 @@ export function CandidatoBaseForm({
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-10">
+        <CardContent className="space-y-6">
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar o candidato"
@@ -1774,7 +1789,7 @@ export function CandidatoBaseForm({
             />
           )}
 
-          <FieldGroup className="space-y-10">
+          <FieldGroup className="space-y-6">
             <DadosPessoaisSection form={form} />
             <ContatoURLsSection form={form} />
             <EnderecoSection form={form} />
@@ -1795,7 +1810,7 @@ export function CandidatoBaseForm({
           </FieldGroup>
         </CardContent>
 
-        <div className="px-6 py-4 bg-muted/50 border-t rounded-b-xl flex justify-end gap-3">
+        <CardFooter className="flex items-center justify-end gap-3">
           {onCancel && (
             <FormSubmitButton
               type="button"
@@ -1819,7 +1834,7 @@ export function CandidatoBaseForm({
               </FormSubmitButton>
             )}
           </form.Subscribe>
-        </div>
+        </CardFooter>
       </form>
     </Card>
   );

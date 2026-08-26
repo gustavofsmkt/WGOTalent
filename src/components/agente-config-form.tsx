@@ -100,7 +100,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
     : [];
 
   return (
-    <Card className="w-full max-w-3xl">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Agente: {agenteConfig.slot}</CardTitle>
         <CardDescription>
@@ -116,8 +116,9 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar a configuração"
@@ -327,24 +328,24 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               {(field) => (
                 <Field
                   orientation="horizontal"
-                  className="items-start gap-3 pt-2"
+                  className="items-start flex-col"
                 >
-                  <Checkbox
-                    id="agente-ativo"
-                    name={field.name}
-                    checked={field.state.value}
-                    onCheckedChange={(checked) =>
-                      field.handleChange(Boolean(checked))
-                    }
-                    onBlur={field.handleBlur}
-                  />
-                  <div>
+                  <div className="flex gap-2 items-center">
+                    <Checkbox
+                      id="agente-ativo"
+                      name={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={(checked) =>
+                        field.handleChange(Boolean(checked))
+                      }
+                      onBlur={field.handleBlur}
+                    />
                     <FieldLabel htmlFor="agente-ativo">Agente ativo</FieldLabel>
-                    <FieldDescription>
-                      Quando desativado, o disparo deste agente falha
-                      explicitamente.
-                    </FieldDescription>
                   </div>
+                  <FieldDescription>
+                    Quando desativado, o disparo deste agente falha
+                    explicitamente.
+                  </FieldDescription>
                 </Field>
               )}
             </form.Field>

@@ -37,9 +37,7 @@ export default async function EditAgentePage(props: EditAgentePageProps) {
         title={`Editar Agente: ${agenteConfig.slot}`}
         description="Prompt, modelo e parâmetros deste slot fixo."
       />
-      <div className="flex justify-center">
-        <AgenteConfigForm agenteConfig={agenteConfig} />
-      </div>
+      <AgenteConfigForm agenteConfig={agenteConfig} />
     </div>
   );
 }

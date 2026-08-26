@@ -126,7 +126,7 @@ export function CargoForm({
     : [];
 
   return (
-    <Card className={cn("w-full max-w-3xl", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>{isEdit ? "Editar Cargo" : "Novo Cargo"}</CardTitle>
         <CardDescription>
@@ -144,8 +144,9 @@ export function CargoForm({
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar o cargo"
@@ -298,6 +299,7 @@ export function CargoForm({
                       <Input
                         id={fieldId}
                         name={field.name}
+                        type="number"
                         placeholder="Ex: 8500.00 ou 8.500,00"
                         value={field.state.value ?? ""}
                         onBlur={field.handleBlur}
@@ -331,31 +333,28 @@ export function CargoForm({
                   const descId = `${fieldId}-description`;
 
                   return (
-                    <Field
-                      orientation="horizontal"
-                      className="items-start gap-3 pt-2"
-                    >
-                      <Checkbox
-                        id={fieldId}
-                        name={field.name}
-                        checked={field.state.value}
-                        onCheckedChange={(checked) =>
-                          field.handleChange(Boolean(checked))
-                        }
-                        onBlur={field.handleBlur}
-                        aria-describedby={descId}
-                      />
-                      <div className="grid gap-1 leading-none">
+                    <Field className="items-start  pt-2">
+                      <div className="flex gap-2">
+                        <Checkbox
+                          id={fieldId}
+                          name={field.name}
+                          checked={field.state.value}
+                          onCheckedChange={(checked) =>
+                            field.handleChange(Boolean(checked))
+                          }
+                          onBlur={field.handleBlur}
+                          aria-describedby={descId}
+                        />
                         <FieldLabel
                           htmlFor={fieldId}
                           className="cursor-pointer font-medium"
                         >
                           Cargo Ativo
                         </FieldLabel>
-                        <FieldDescription id={descId}>
-                          Cargos ativos ficam disponíveis para novas vagas.
-                        </FieldDescription>
                       </div>
+                      <FieldDescription id={descId}>
+                        Cargos ativos ficam disponíveis para novas vagas.
+                      </FieldDescription>
                     </Field>
                   );
                 }}

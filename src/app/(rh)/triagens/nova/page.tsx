@@ -73,14 +73,12 @@ export default async function NovaTriagemPage() {
           }
         />
       ) : (
-        <div className="flex justify-center">
-          <TriagemForm
-            candidatoOptions={candidatoOptions}
-            vagaOptions={vagaOptions}
-            redirectTo="/triagens"
-            className="w-full"
-          />
-        </div>
+        <TriagemForm
+          candidatoOptions={candidatoOptions}
+          vagaOptions={vagaOptions}
+          redirectTo="/triagens"
+          className="w-full"
+        />
       )}
     </div>
   );

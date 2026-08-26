@@ -135,7 +135,7 @@ export function TriagemForm({
     : [];
 
   return (
-    <Card className={cn("w-full max-w-3xl", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>Nova Triagem</CardTitle>
         <CardDescription>
@@ -150,8 +150,9 @@ export function TriagemForm({
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar a triagem"

@@ -138,7 +138,7 @@ export function VagaForm({
     : [];
 
   return (
-    <Card className={cn("w-full max-w-3xl", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>{isEdit ? "Editar Vaga" : "Nova Vaga"}</CardTitle>
         <CardDescription>
@@ -156,8 +156,9 @@ export function VagaForm({
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar a vaga"
@@ -381,7 +382,7 @@ export function VagaForm({
                       <Input
                         id={fieldId}
                         name={field.name}
-                        type="text"
+                        type="number"
                         placeholder="Ex: 6500.00 ou 6.500,00"
                         value={field.state.value ?? ""}
                         onBlur={field.handleBlur}

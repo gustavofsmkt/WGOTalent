@@ -72,7 +72,7 @@ export function CreateEmailCredencialForm() {
     : [];
 
   return (
-    <Card className="w-full max-w-xl">
+    <Card className="w-full ">
       <CardHeader>
         <CardTitle>Nova Credencial de E-mail</CardTitle>
         <CardDescription>
@@ -90,8 +90,9 @@ export function CreateEmailCredencialForm() {
           void form.handleSubmit();
         }}
         noValidate
+        className="gap-4 flex flex-col"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar a credencial"
@@ -100,14 +101,14 @@ export function CreateEmailCredencialForm() {
             />
           )}
 
-          <FieldGroup>
+          <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <form.Field name="host">
               {(field) => {
                 const hasErrors =
                   field.state.meta.isTouched &&
                   field.state.meta.errors.length > 0;
                 return (
-                  <Field data-invalid={hasErrors}>
+                  <Field data-invalid={hasErrors} className="sm:col-span-2">
                     <FieldLabel htmlFor="email-credencial-host">
                       Host IMAP
                     </FieldLabel>
@@ -132,7 +133,7 @@ export function CreateEmailCredencialForm() {
                   field.state.meta.isTouched &&
                   field.state.meta.errors.length > 0;
                 return (
-                  <Field data-invalid={hasErrors}>
+                  <Field data-invalid={hasErrors} className="sm:col-span-1">
                     <FieldLabel htmlFor="email-credencial-porta">
                       Porta
                     </FieldLabel>
@@ -154,7 +155,9 @@ export function CreateEmailCredencialForm() {
                 );
               }}
             </form.Field>
+          </FieldGroup>
 
+          <FieldGroup>
             <form.Field name="usuario">
               {(field) => {
                 const hasErrors =
@@ -209,65 +212,65 @@ export function CreateEmailCredencialForm() {
                 );
               }}
             </form.Field>
-
-            <form.Field name="pasta">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-pasta">
-                      Pasta monitorada
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-pasta"
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
-
-            <form.Field name="capturarDesde">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-capturar-desde">
-                      Capturar e-mails a partir de
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-capturar-desde"
-                      name={field.name}
-                      type="date"
-                      value={field.state.value ?? ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldDescription>
-                      Opcional — use só na ativação inicial de uma caixa que já
-                      recebe currículos há tempo (ex: indo para produção). A
-                      primeira captura varre a caixa desde essa data (ex.:{" "}
-                      {tresMesesAtras()} para os últimos 3 meses), em vez de
-                      reprocessar tudo. Deixe em branco (padrão) para capturar
-                      só o que chegar a partir de agora — o recomendado para
-                      caixas de teste.
-                    </FieldDescription>
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
           </FieldGroup>
+
+          <form.Field name="pasta">
+            {(field) => {
+              const hasErrors =
+                field.state.meta.isTouched &&
+                field.state.meta.errors.length > 0;
+              return (
+                <Field data-invalid={hasErrors}>
+                  <FieldLabel htmlFor="email-credencial-pasta">
+                    Pasta monitorada
+                  </FieldLabel>
+                  <Input
+                    id="email-credencial-pasta"
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={hasErrors}
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              );
+            }}
+          </form.Field>
+
+          <form.Field name="capturarDesde">
+            {(field) => {
+              const hasErrors =
+                field.state.meta.isTouched &&
+                field.state.meta.errors.length > 0;
+              return (
+                <Field data-invalid={hasErrors}>
+                  <FieldLabel htmlFor="email-credencial-capturar-desde">
+                    Capturar e-mails a partir de
+                  </FieldLabel>
+                  <Input
+                    id="email-credencial-capturar-desde"
+                    name={field.name}
+                    type="date"
+                    value={field.state.value ?? ""}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={hasErrors}
+                  />
+                  <FieldDescription>
+                    Opcional — use só na ativação inicial de uma caixa que já
+                    recebe currículos há tempo (ex: indo para produção). A
+                    primeira captura varre a caixa desde essa data (ex.:{" "}
+                    {tresMesesAtras()} para os últimos 3 meses), em vez de
+                    reprocessar tudo. Deixe em branco (padrão) para capturar só
+                    o que chegar a partir de agora — o recomendado para caixas
+                    de teste.
+                  </FieldDescription>
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              );
+            }}
+          </form.Field>
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-3">

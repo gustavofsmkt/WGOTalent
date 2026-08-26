@@ -103,7 +103,7 @@ export function DepartamentoForm({
     : [];
 
   return (
-    <Card className={cn("w-full max-w-2xl", className)}>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>
           {isEdit ? "Editar Departamento" : "Novo Departamento"}
@@ -122,8 +122,9 @@ export function DepartamentoForm({
           void form.handleSubmit();
         }}
         noValidate
+        className="flex flex-col gap-4"
       >
-        <CardContent className="space-y-6">
+        <CardContent>
           {serverError && (
             <ErrorCallout
               title="Não foi possível salvar o departamento"
