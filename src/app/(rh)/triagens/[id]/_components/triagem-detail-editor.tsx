@@ -3,7 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Briefcase, MapPin, Save, Loader2 } from "lucide-react";
+import {
+  Briefcase,
+  MapPin,
+  Loader2,
+  ChevronRight,
+  CheckCircle2,
+} from "lucide-react";
 
 import { updateTriagem } from "~/actions/triagens";
 import { PageHeader } from "~/components/page-header";
@@ -19,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { EditableStatusBadge } from "~/components/editable-status-badge";
 import {
   ETAPAS,
   resultadoLabels,
@@ -77,7 +82,8 @@ function buildInitialState(triagem: TriagemEditorData): PendingState {
   };
 }
 
-const ETAPA_OPTIONS = ETAPAS.map((e) => ({ value: e.value, label: e.label }));
+const ETAPA_ORDER = ETAPAS.map((e) => e.value);
+
 const RESULTADO_OPTIONS = (
   Object.keys(resultadoLabels) as TriagemResultado[]
 ).map((value) => ({ value, label: resultadoLabels[value] }));
@@ -91,22 +97,9 @@ export function TriagemDetailEditor({
   const [pending, setPending] = React.useState<PendingState>(() =>
     buildInitialState(triagem),
   );
-  const [baseline, setBaseline] = React.useState<PendingState>(() =>
-    buildInitialState(triagem),
-  );
   const [activeTab, setActiveTab] = React.useState<TriagemEtapa>(triagem.etapa);
   const [isPending, startTransition] = React.useTransition();
   const [motivoError, setMotivoError] = React.useState<string | null>(null);
-
-  const isDirty =
-    pending.etapa !== baseline.etapa ||
-    pending.resultado !== baseline.resultado ||
-    pending.motivo !== baseline.motivo ||
-    pending.parecerRhCurriculo !== baseline.parecerRhCurriculo ||
-    pending.parecerRhTestes !== baseline.parecerRhTestes ||
-    pending.parecerRhEntrevistaRh !== baseline.parecerRhEntrevistaRh ||
-    pending.parecerRhEntrevistaGestor !== baseline.parecerRhEntrevistaGestor ||
-    pending.parecerRhFinalizado !== baseline.parecerRhFinalizado;
 
   const requiresMotivo =
     pending.resultado === "reprovado" || pending.resultado === "desistente";
@@ -135,34 +128,52 @@ export function TriagemDetailEditor({
     setMotivoError(null);
   };
 
-  const handleSave = () => {
-    setMotivoError(null);
-
-    const payload = {
-      etapa: pending.etapa,
-      resultado: pending.resultado,
-      motivo: requiresMotivo ? pending.motivo : null,
-      parecerRhCurriculo: pending.parecerRhCurriculo || null,
-      parecerRhTestes: pending.parecerRhTestes || null,
-      parecerRhEntrevistaRh: pending.parecerRhEntrevistaRh || null,
-      parecerRhEntrevistaGestor: pending.parecerRhEntrevistaGestor || null,
-      parecerRhFinalizado: pending.parecerRhFinalizado || null,
+  const buildPayload = (state: PendingState) => {
+    const needsMotivo =
+      state.resultado === "reprovado" || state.resultado === "desistente";
+    return {
+      etapa: state.etapa,
+      resultado: state.resultado,
+      motivo: needsMotivo ? state.motivo : null,
+      parecerRhCurriculo: state.parecerRhCurriculo || null,
+      parecerRhTestes: state.parecerRhTestes || null,
+      parecerRhEntrevistaRh: state.parecerRhEntrevistaRh || null,
+      parecerRhEntrevistaGestor: state.parecerRhEntrevistaGestor || null,
+      parecerRhFinalizado: state.parecerRhFinalizado || null,
     };
+  };
 
+  const handleFinalizar = () => {
+    setMotivoError(null);
     startTransition(async () => {
-      const result = await updateTriagem(triagem.id, payload);
-
+      const result = await updateTriagem(triagem.id, buildPayload(pending));
       if (!result.success) {
-        toast.error(result.message ?? "Erro ao salvar a triagem.");
+        toast.error(result.message ?? "Erro ao finalizar a triagem.");
         const motivoIssue = result.errors?.motivo?.[0];
-        if (motivoIssue) {
-          setMotivoError(motivoIssue);
-        }
+        if (motivoIssue) setMotivoError(motivoIssue);
         return;
       }
+      toast.success("Triagem finalizada com sucesso.");
+      router.refresh();
+    });
+  };
 
-      toast.success("Triagem atualizada com sucesso.");
-      setBaseline(pending);
+  const handleAvancar = (etapaAtual: TriagemEtapa) => {
+    const currentIndex = ETAPA_ORDER.indexOf(etapaAtual);
+    const nextEtapa = ETAPA_ORDER[currentIndex + 1];
+    if (!nextEtapa) return;
+
+    startTransition(async () => {
+      const newState = { ...pending, etapa: nextEtapa };
+      const result = await updateTriagem(triagem.id, buildPayload(newState));
+      if (!result.success) {
+        toast.error(result.message ?? "Erro ao avançar a etapa.");
+        return;
+      }
+      const nextLabel = ETAPAS.find((e) => e.value === nextEtapa)?.label;
+      toast.success(`Avançado para: ${nextLabel}`);
+      setPending(newState);
+      setActiveTab(nextEtapa);
       router.refresh();
     });
   };
@@ -187,102 +198,27 @@ export function TriagemDetailEditor({
             </div>
           </div>
         }
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <EditableStatusBadge
-              value={pending.etapa}
-              options={ETAPA_OPTIONS}
-              onChange={(v) => setPending((p) => ({ ...p, etapa: v }))}
-              aria-label="Etapa atual do processo"
-            />
-            <EditableStatusBadge
-              value={pending.resultado}
-              options={RESULTADO_OPTIONS}
-              onChange={handleResultadoChange}
-              aria-label="Resultado"
-            />
-
-            {requiresMotivo && (
-              <div className="flex flex-col gap-2">
-                <Select
-                  value={pending.motivo ?? ""}
-                  onValueChange={(v) => {
-                    if (typeof v === "string") {
-                      setPending((p) => ({ ...p, motivo: v as TriagemMotivo }));
-                      setMotivoError(null);
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    size="sm"
-                    className="h-7 text-xs"
-                    aria-invalid={Boolean(motivoError)}
-                  >
-                    <SelectValue placeholder="Motivo...">
-                      {(val: string | null) =>
-                        motivoOptions.find((opt) => opt.value === val)?.label ??
-                        "Motivo..."
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent align="end" className="min-w-[260px]">
-                    {motivoOptions.map((opt) => (
-                      <SelectItem
-                        key={opt.value}
-                        value={opt.value}
-                        className="text-xs"
-                      >
-                        <span className="whitespace-normal break-words">
-                          {opt.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {motivoError && (
-                  <span className="text-xs text-destructive">
-                    {motivoError}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSave}
-              disabled={!isDirty || isPending}
-            >
-              {isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
-              )}
-              Salvar
-            </Button>
-          </div>
-        }
       />
 
       <Card>
-        <CardContent className="p-4 sm:p-4">
+        <CardContent>
           <Tabs
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as TriagemEtapa)}
           >
-            <TabsList className="h-auto w-full flex-wrap justify-start">
+            <TabsList className=" w-full flex-wrap justify-between gap-2">
               {ETAPAS.map((etapa) => {
                 const Icon = etapa.Icon;
                 return (
                   <TabsTrigger
                     key={etapa.value}
                     value={etapa.value}
-                    className="gap-2"
+                    className="gap-2 flex-1"
                   >
                     <Icon className="size-4" />
                     {etapa.label}
                     {pending.etapa === etapa.value && (
-                      <span className="ml-4 rounded-full bg-primary/15 px-2  text-[10px] font-semibold text-primary">
+                      <span className="ml-2 rounded-full bg-primary/15 px-2 text-xs  text-primary">
                         Atual
                       </span>
                     )}
@@ -293,29 +229,160 @@ export function TriagemDetailEditor({
 
             {ETAPAS.map((etapa) => {
               const field = PARECER_FIELD_BY_ETAPA[etapa.value];
+              const currentEtapaIndex = ETAPA_ORDER.indexOf(pending.etapa);
+              const tabEtapaIndex = ETAPA_ORDER.indexOf(etapa.value);
+              const isCurrentEtapa = tabEtapaIndex === currentEtapaIndex;
+              const isPastEtapa = tabEtapaIndex < currentEtapaIndex;
+              const isFinalEtapa = etapa.value === "finalizado";
+
               return (
                 <TabsContent
                   key={etapa.value}
                   value={etapa.value}
-                  className="mt-4"
+                  className="mt-4 space-y-2"
                 >
-                  <Field>
-                    <FieldLabel htmlFor={`parecer-${etapa.value}`}>
-                      Parecer do RH — {etapa.label}
-                    </FieldLabel>
-                    <Textarea
-                      id={`parecer-${etapa.value}`}
-                      value={pending[field]}
-                      onChange={(e) =>
-                        setPending((p) => ({ ...p, [field]: e.target.value }))
-                      }
-                      placeholder="Registre as impressões desta etapa..."
-                      rows={5}
-                    />
-                    <FieldDescription>
-                      Observações do RH específicas desta etapa do processo.
-                    </FieldDescription>
-                  </Field>
+                  {tabEtapaIndex > currentEtapaIndex ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Esta etapa ainda não foi iniciada.
+                    </p>
+                  ) : (
+                    <>
+                      <Field>
+                        <FieldLabel htmlFor={`parecer-${etapa.value}`}>
+                          Parecer do RH — {etapa.label}
+                        </FieldLabel>
+                        <Textarea
+                          id={`parecer-${etapa.value}`}
+                          value={pending[field]}
+                          onChange={(e) =>
+                            setPending((p) => ({
+                              ...p,
+                              [field]: e.target.value,
+                            }))
+                          }
+                          placeholder="Registre as impressões desta etapa..."
+                          rows={5}
+                          readOnly={isPastEtapa}
+                          className={
+                            isPastEtapa
+                              ? "cursor-default bg-muted text-foreground"
+                              : undefined
+                          }
+                        />
+                        {isCurrentEtapa && (
+                          <FieldDescription>
+                            Observações do RH específicas desta etapa do
+                            processo.
+                          </FieldDescription>
+                        )}
+                      </Field>
+
+                      {isCurrentEtapa &&
+                        (isFinalEtapa ? (
+                          <div className="flex flex-col gap-4">
+                            <div className="flex gap-4">
+                              <Field className="flex-1">
+                                <FieldLabel>Resultado</FieldLabel>
+                                <Select
+                                  value={pending.resultado}
+                                  onValueChange={(v) =>
+                                    handleResultadoChange(v as TriagemResultado)
+                                  }
+                                  disabled={isPending}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o resultado..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {RESULTADO_OPTIONS.map((opt) => (
+                                      <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                      >
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </Field>
+
+                              {requiresMotivo && (
+                                <Field className="flex-1">
+                                  <FieldLabel>Motivo</FieldLabel>
+                                  <Select
+                                    value={pending.motivo ?? ""}
+                                    onValueChange={(v) => {
+                                      setPending((p) => ({
+                                        ...p,
+                                        motivo: v as TriagemMotivo,
+                                      }));
+                                      setMotivoError(null);
+                                    }}
+                                    disabled={isPending}
+                                  >
+                                    <SelectTrigger
+                                      aria-invalid={Boolean(motivoError)}
+                                    >
+                                      <SelectValue placeholder="Selecione o motivo..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {motivoOptions.map((opt) => (
+                                        <SelectItem
+                                          key={opt.value}
+                                          value={opt.value}
+                                        >
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {motivoError && (
+                                    <span className="text-xs text-destructive">
+                                      {motivoError}
+                                    </span>
+                                  )}
+                                </Field>
+                              )}
+                            </div>
+
+                            <div className="flex justify-end">
+                              <Button
+                                type="button"
+                                onClick={handleFinalizar}
+                                disabled={
+                                  isPending ||
+                                  !pending[field].trim() ||
+                                  pending.resultado === "em_andamento" ||
+                                  (requiresMotivo && !pending.motivo)
+                                }
+                              >
+                                {isPending ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="size-4" />
+                                )}
+                                Finalizar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              onClick={() => handleAvancar(etapa.value)}
+                              disabled={isPending || !pending[field].trim()}
+                            >
+                              {isPending ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <ChevronRight className="size-4" />
+                              )}
+                              Avançar
+                            </Button>
+                          </div>
+                        ))}
+                    </>
+                  )}
                 </TabsContent>
               );
             })}
