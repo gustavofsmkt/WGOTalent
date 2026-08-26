@@ -62,7 +62,6 @@ export default async function EditDepartamentoPage(
         <DepartamentoForm
           departamento={departamento}
           redirectTo={`/departamentos/${departamento.id}`}
-          className="max-w-2xl w-full"
         />
       </div>
     </div>

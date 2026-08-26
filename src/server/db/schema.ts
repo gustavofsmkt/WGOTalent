@@ -86,6 +86,20 @@ export const triagemMotivoEnum = pgEnum("triagem_motivo", [
   "motivos_pessoais",
 ]);
 
+export const cidades = createTable(
+  "cidades",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nome: varchar("nome", { length: 100 }).notNull(),
+    uf: char("uf", { length: 2 }).notNull(),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("cidades_nome_uf_idx").on(table.nome, table.uf)],
+);
+
+export type Cidade = typeof cidades.$inferSelect;
+export type NovaCidade = typeof cidades.$inferInsert;
+
 export const departamentos = createTable("departamentos", {
   id: uuid("id").primaryKey().defaultRandom(),
   nome: varchar("nome", { length: 120 }).notNull().unique(),

@@ -57,7 +57,6 @@ export default async function EditarCargoPage(props: EditarCargoPageProps) {
           }}
           departamentoOptions={departamentos}
           redirectTo={`/cargos/${cargo.id}`}
-          className="max-w-2xl w-full"
         />
       </div>
     </div>

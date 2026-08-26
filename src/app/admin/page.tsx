@@ -145,11 +145,21 @@ export default async function AdminPage() {
         </TabsContent>
 
         <TabsContent value="configuracoes" className="mt-4">
-          <Card>
-            <CardContent className="p-4 text-center text-muted-foreground">
-              Configurações gerais da plataforma — em breve.
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Card>
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <div className="font-medium">Cidades</div>
+                  <div className="text-sm text-muted-foreground">
+                    Cidades disponíveis para seleção no cadastro de vagas.
+                  </div>
+                </div>
+                <Button variant="outline">
+                  <Link href="/admin/configuracoes/cidades">Editar</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -5,12 +5,16 @@ import { PageHeader } from "~/components/page-header";
 import { VagaForm } from "~/components/vaga-form";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { vagaRepository } from "~/server/db/repositories/vaga";
+import { cidadeRepository } from "~/server/db/repositories/cidade";
 import { buttonVariants } from "~/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function NovaVagaPage() {
-  const cargoOptions = await vagaRepository.findActiveCargoOptions();
+  const [cargoOptions, cidadeOptions] = await Promise.all([
+    vagaRepository.findActiveCargoOptions(),
+    cidadeRepository.findAll(),
+  ]);
 
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
@@ -49,7 +53,7 @@ export default async function NovaVagaPage() {
           }
         />
       ) : (
-        <VagaForm cargoOptions={cargoOptions} />
+        <VagaForm cargoOptions={cargoOptions} cidadeOptions={cidadeOptions} />
       )}
     </div>
   );

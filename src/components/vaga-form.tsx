@@ -10,7 +10,6 @@ import {
   type StatusVaga,
   type CreateVagaInput,
 } from "~/lib/validation/vaga";
-import { BRAZILIAN_UFS } from "~/lib/validation/common";
 import { createVaga, updateVaga } from "~/actions/vagas";
 import type { Vaga } from "~/server/db/schema";
 import {
@@ -50,6 +49,12 @@ export interface CargoOption {
   } | null;
 }
 
+export interface CidadeOption {
+  id: string;
+  nome: string;
+  uf: string;
+}
+
 export interface VagaFormProps {
   vaga?: {
     id: string;
@@ -61,6 +66,7 @@ export interface VagaFormProps {
     uf: string;
   } | null;
   cargoOptions: CargoOption[];
+  cidadeOptions: CidadeOption[];
   onSuccess?: (vaga: Vaga) => void;
   onCancel?: () => void;
   redirectTo?: string;
@@ -78,6 +84,7 @@ const statusLabels: Record<StatusVaga, string> = {
 export function VagaForm({
   vaga,
   cargoOptions,
+  cidadeOptions,
   onSuccess,
   onCancel,
   redirectTo,
@@ -406,19 +413,30 @@ export function VagaForm({
               </form.Field>
             </div>
 
-            {/* Linha 3: Cidade e UF */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              <div className="md:col-span-2">
+            {/* Linha 3: Cidade */}
+            <form.Field
+              name="cidade"
+              validators={{ onBlur: vagaSchema.shape.cidade }}
+            >
+              {(cidadeField) => (
                 <form.Field
-                  name="cidade"
-                  validators={{
-                    onBlur: vagaSchema.shape.cidade,
-                  }}
+                  name="uf"
+                  validators={{ onBlur: vagaSchema.shape.uf }}
                 >
-                  {(field) => {
+                  {(ufField) => {
+                    const selectedOption =
+                      cidadeOptions.find(
+                        (o) =>
+                          o.nome === cidadeField.state.value &&
+                          o.uf === ufField.state.value,
+                      ) ?? null;
+
                     const hasErrors =
-                      field.state.meta.isTouched &&
-                      field.state.meta.errors.length > 0;
+                      (cidadeField.state.meta.isTouched &&
+                        cidadeField.state.meta.errors.length > 0) ||
+                      (ufField.state.meta.isTouched &&
+                        ufField.state.meta.errors.length > 0);
+
                     const fieldId = "vaga-cidade";
                     const errorId = `${fieldId}-error`;
                     const descId = `${fieldId}-description`;
@@ -426,57 +444,17 @@ export function VagaForm({
                     return (
                       <Field data-invalid={hasErrors}>
                         <FieldLabel htmlFor={fieldId}>Cidade *</FieldLabel>
-                        <Input
-                          id={fieldId}
-                          name={field.name}
-                          type="text"
-                          placeholder="Ex: São Paulo"
-                          value={field.state.value ?? ""}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={hasErrors}
-                          aria-describedby={
-                            hasErrors ? `${descId} ${errorId}` : descId
-                          }
-                          autoComplete="off"
-                        />
-                        <FieldDescription id={descId}>
-                          Município de atuação da vaga (máx. 100 caracteres).
-                        </FieldDescription>
-                        <FieldError
-                          id={errorId}
-                          errors={field.state.meta.errors}
-                        />
-                      </Field>
-                    );
-                  }}
-                </form.Field>
-              </div>
-
-              <div>
-                <form.Field
-                  name="uf"
-                  validators={{
-                    onBlur: vagaSchema.shape.uf,
-                  }}
-                >
-                  {(field) => {
-                    const hasErrors =
-                      field.state.meta.isTouched &&
-                      field.state.meta.errors.length > 0;
-                    const fieldId = "vaga-uf";
-                    const errorId = `${fieldId}-error`;
-                    const descId = `${fieldId}-description`;
-
-                    return (
-                      <Field data-invalid={hasErrors}>
-                        <FieldLabel htmlFor={fieldId}>UF (Estado) *</FieldLabel>
                         <Select
-                          value={field.state.value || ""}
+                          value={selectedOption?.id ?? ""}
                           onValueChange={(val) => {
-                            if (typeof val === "string") {
-                              field.handleChange(val);
-                              field.handleBlur();
+                            const option = cidadeOptions.find(
+                              (o) => o.id === val,
+                            );
+                            if (option) {
+                              cidadeField.handleChange(option.nome);
+                              ufField.handleChange(option.uf);
+                              cidadeField.handleBlur();
+                              ufField.handleBlur();
                             }
                           }}
                         >
@@ -488,31 +466,49 @@ export function VagaForm({
                               hasErrors ? `${descId} ${errorId}` : descId
                             }
                           >
-                            <SelectValue placeholder="Selecione...">
-                              {(val: string | null) => val || "Selecione..."}
+                            <SelectValue placeholder="Selecione uma cidade...">
+                              {(val: string | null) => {
+                                if (!val) return "Selecione uma cidade...";
+                                const o = cidadeOptions.find(
+                                  (c) => c.id === val,
+                                );
+                                return o
+                                  ? `${o.nome} - ${o.uf}`
+                                  : "Selecione uma cidade...";
+                              }}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {BRAZILIAN_UFS.map((uf) => (
-                              <SelectItem key={uf} value={uf}>
-                                {uf}
+                            {cidadeOptions.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                Nenhuma cidade cadastrada
                               </SelectItem>
-                            ))}
+                            ) : (
+                              cidadeOptions.map((o) => (
+                                <SelectItem key={o.id} value={o.id}>
+                                  {o.nome} - {o.uf}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FieldDescription id={descId}>
-                          Unidade Federativa.
+                          Município de atuação da vaga. Cadastre cidades em
+                          Administração → Configurações Gerais.
                         </FieldDescription>
                         <FieldError
                           id={errorId}
-                          errors={field.state.meta.errors}
+                          errors={[
+                            ...cidadeField.state.meta.errors,
+                            ...ufField.state.meta.errors,
+                          ]}
                         />
                       </Field>
                     );
                   }}
                 </form.Field>
-              </div>
-            </div>
+              )}
+            </form.Field>
           </FieldGroup>
         </CardContent>
 

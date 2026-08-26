@@ -6,6 +6,7 @@ import { PageHeader } from "~/components/page-header";
 import { VagaForm } from "~/components/vaga-form";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
+import { cidadeRepository } from "~/server/db/repositories/cidade";
 import { buttonVariants } from "~/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +17,10 @@ interface EditarVagaPageProps {
 
 export default async function EditarVagaPage(props: EditarVagaPageProps) {
   const params = await props.params;
-  const [vaga, activeCargoOptions] = await Promise.all([
+  const [vaga, activeCargoOptions, cidadeOptions] = await Promise.all([
     vagaRepository.findById(params.id),
     vagaRepository.findActiveCargoOptions(),
+    cidadeRepository.findAll(),
   ]);
 
   if (!vaga) {
@@ -79,8 +81,8 @@ export default async function EditarVagaPage(props: EditarVagaPageProps) {
             uf: vaga.uf,
           }}
           cargoOptions={cargoOptions}
+          cidadeOptions={cidadeOptions}
           redirectTo={`/vagas/${vaga.id}`}
-          className="max-w-2xl w-full"
         />
       </div>
     </div>
