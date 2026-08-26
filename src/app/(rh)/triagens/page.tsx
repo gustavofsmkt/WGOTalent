@@ -25,8 +25,44 @@ import {
 } from "~/server/db/schema";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { MOTIVO_LABELS, getInitials, formatDate } from "~/lib/triagem-format";
-import { TriagensFilter } from "./_components/triagens-filter";
+import { PageFilter } from "~/components/page-filter";
+import { ViewToggle } from "./_components/view-toggle";
 import { DeleteTriagemButton } from "./_components/delete-triagem-button";
+import MetricCardsSummary from "~/components/metric-cards-summary";
+
+const ETAPA_OPTIONS = [
+  { value: "todas", label: "Todas as Etapas" },
+  { value: "curriculo", label: "Currículo" },
+  { value: "testes", label: "Testes" },
+  { value: "entrevista_rh", label: "Entrevista RH" },
+  { value: "entrevista_gestor", label: "Entrevista Gestor" },
+  { value: "finalizado", label: "Finalizado" },
+];
+
+const RESULTADO_OPTIONS = [
+  { value: "todas", label: "Todos os Resultados" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "aprovado", label: "Aprovado" },
+  { value: "reprovado", label: "Reprovado" },
+  { value: "desistente", label: "Desistente" },
+  { value: "banco_talentos", label: "Banco de Talentos" },
+];
+
+const MOTIVO_OPTIONS = [
+  { value: "todos", label: "Todos os Motivos" },
+  { value: "curriculo", label: "Reprovação: Currículo" },
+  { value: "fit_cultural", label: "Reprovação: Fit Cultural" },
+  { value: "testes", label: "Reprovação: Testes Técnicos" },
+  { value: "rh", label: "Reprovação: Avaliação RH" },
+  { value: "gestor", label: "Reprovação: Avaliação Gestor" },
+  {
+    value: "incompatibilidade_salarial",
+    label: "Desistência: Incompatibilidade Salarial",
+  },
+  { value: "aceitou_outra_proposta", label: "Desistência: Outra Proposta" },
+  { value: "nao_atendeu_contato", label: "Desistência: Não Atendeu Contato" },
+  { value: "motivos_pessoais", label: "Desistência: Motivos Pessoais" },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +91,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
   const etapaFilter = (searchParams.etapa ?? "").trim().toLowerCase();
   const resultadoFilter = (searchParams.resultado ?? "").trim().toLowerCase();
   const motivoFilter = (searchParams.motivo ?? "").trim().toLowerCase();
-  const currentView = searchParams.view === "lista" ? "lista" : "pipeline";
+  const currentView = searchParams.view === "pipeline" ? "pipeline" : "lista";
   const vagaAtivaFilter = searchParams.vagaAtiva === "1";
   const vagaFilter = (searchParams.vaga ?? "").trim();
 
@@ -115,6 +151,14 @@ export default async function TriagensPage(props: TriagensPageProps) {
     (t) => t.resultado === "aprovado",
   ).length;
 
+  const hasActiveFilters =
+    Boolean(query) ||
+    (etapaFilter && etapaFilter !== "todas") ||
+    (resultadoFilter && resultadoFilter !== "todas") ||
+    (motivoFilter && motivoFilter !== "todos") ||
+    vagaAtivaFilter ||
+    Boolean(vagaFilter && vagaFilter !== "todas");
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
       {/* Header */}
@@ -132,7 +176,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
         }
       />
 
-      {allTriagens.length === 0 ? (
+      {allTriagens.length === 0 && !hasActiveFilters ? (
         <DataEmptyState
           title={"Nenhuma triagem cadastrada"}
           description={
@@ -151,79 +195,95 @@ export default async function TriagensPage(props: TriagensPageProps) {
       ) : (
         <>
           {/* Metric Cards Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="shadow-xs border-border/80 bg-card">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Total de Triagens
-                  </p>
-                  <p className="text-2xl font-bold tracking-tight text-foreground">
-                    {totalCount}
-                  </p>
-                </div>
-                <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <Layers className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
+          <MetricCardsSummary
+            cards={[
+              {
+                title: "Total de Triagens",
+                info: totalCount.toString(),
+                icon: <Layers className="size-5" />,
+                iconColor: "bg-primary/10",
+              },
+              {
+                title: "Em Andamento",
+                info: emAndamentoCount.toString(),
+                icon: <Clock className="size-5" />,
+                iconColor: "bg-info/10",
+              },
+              {
+                title: "Aprovados",
+                info: aprovadosCount.toString(),
+                icon: <CheckCircle2 className="size-5" />,
+                iconColor: "bg-success/10",
+              },
+            ]}
+          />
 
-            <Card className="shadow-xs border-border/80 bg-card">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Em Andamento
-                  </p>
-                  <p className="text-2xl font-bold tracking-tight text-info">
-                    {emAndamentoCount}
-                  </p>
-                </div>
-                <div className="size-10 rounded-lg bg-info/10 flex items-center justify-center text-info">
-                  <Clock className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-xs border-border/80 bg-card">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Aprovados
-                  </p>
-                  <p className="text-2xl font-bold tracking-tight text-success">
-                    {aprovadosCount}
-                  </p>
-                </div>
-                <div className="size-10 rounded-lg bg-success/10 flex items-center justify-center text-success">
-                  <CheckCircle2 className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
+          {/* Filters + View Toggle */}
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <PageFilter
+                searchPlaceholder="Buscar por candidato, cargo, departamento..."
+                searchAriaLabel="Buscar triagem por candidato, cargo ou departamento"
+                filterBar={{
+                  selects: [
+                    {
+                      paramKey: "vaga",
+                      defaultValue: "todas",
+                      placeholder: "Vaga",
+                      options: [
+                        { value: "todas", label: "Todas as Vagas" },
+                        ...vagaOptions.map((v) => ({
+                          value: v.id,
+                          label: `${v.cargo.titulo} — ${v.cidade}/${v.uf}`,
+                        })),
+                      ],
+                    },
+                    {
+                      paramKey: "etapa",
+                      defaultValue: "todas",
+                      placeholder: "Etapa",
+                      options: ETAPA_OPTIONS,
+                    },
+                    {
+                      paramKey: "resultado",
+                      defaultValue: "todas",
+                      placeholder: "Resultado",
+                      options: RESULTADO_OPTIONS,
+                    },
+                    {
+                      paramKey: "motivo",
+                      defaultValue: "todos",
+                      placeholder: "Motivo",
+                      options: MOTIVO_OPTIONS,
+                    },
+                  ],
+                  checkbox: {
+                    paramKey: "vagaAtiva",
+                    trueValue: "1",
+                    label: "Somente ativas",
+                  },
+                }}
+              />
+            </div>
           </div>
-
-          {/* Filters */}
-          <TriagensFilter vagaOptions={vagaOptions} />
+          <ViewToggle />
 
           {/* Content View: Pipeline (Kanban) or Lista (Table) */}
           {filteredTriagens.length === 0 ? (
-            <Card className="shadow-xs">
-              <CardContent className="py-12">
-                <DataEmptyState
-                  title={"Nenhuma triagem encontrada"}
-                  description={
-                    "Tente ajustar ou limpar os filtros para visualizar outras triagens."
-                  }
-                  action={
-                    <Link
-                      href="/triagens"
-                      className={buttonVariants({ variant: "outline" })}
-                    >
-                      Limpar filtros
-                    </Link>
-                  }
-                />
-              </CardContent>
-            </Card>
+            <DataEmptyState
+              title={"Nenhuma triagem encontrada"}
+              description={
+                "Tente ajustar ou limpar os filtros para visualizar outras triagens."
+              }
+              action={
+                <Link
+                  href="/triagens"
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Limpar filtros
+                </Link>
+              }
+            />
           ) : currentView === "pipeline" ? (
             <TriagemPipelineBoard items={filteredTriagens} />
           ) : (

@@ -15,7 +15,7 @@ import {
 } from "~/components/ui/table";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "./_components/delete-cargo-button";
-import { CargosFilter } from "./_components/cargos-filter";
+import { PageFilter } from "~/components/page-filter";
 
 interface CargosPageProps {
   searchParams?: Promise<{ q?: string }>;
@@ -80,28 +80,10 @@ export default async function CargosPage(props: CargosPageProps) {
         />
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-            <CargosFilter />
-            <div className="text-xs text-muted-foreground">
-              {filteredCargos.length === allCargos.length ? (
-                <span>
-                  Total de{" "}
-                  <strong className="font-semibold text-foreground">
-                    {allCargos.length}
-                  </strong>{" "}
-                  {allCargos.length === 1 ? "cargo" : "cargos"}
-                </span>
-              ) : (
-                <span>
-                  Mostrando{" "}
-                  <strong className="font-semibold text-foreground">
-                    {filteredCargos.length}
-                  </strong>{" "}
-                  de {allCargos.length} cargos
-                </span>
-              )}
-            </div>
-          </div>
+          <PageFilter
+            searchPlaceholder="Buscar cargo por título ou departamento..."
+            searchAriaLabel="Buscar cargo por título ou departamento"
+          />
 
           {filteredCargos.length === 0 ? (
             <DataEmptyState

@@ -14,6 +14,7 @@ import { NavLinks } from "~/components/nav-links";
 import { UploadProgressProvider } from "~/components/upload-progress/upload-progress-store";
 import { Button } from "~/components/ui/button";
 import { Menu } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "WGOTalent",
@@ -42,7 +43,7 @@ export default function RootLayout({
             {/* Mobile Header & Nav */}
             <header className="md:hidden flex items-center justify-between p-4 border-b bg-background shrink-0">
               <div className="font-bold text-lg tracking-tight text-primary">
-                WGOTalent
+                <Link href="/">WGOTalent</Link>
               </div>
               <Sheet>
                 <SheetTrigger
@@ -56,7 +57,7 @@ export default function RootLayout({
                 <SheetContent side="left" className="w-64 p-0">
                   <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
                   <div className="p-4 border-b font-bold text-lg tracking-tight text-primary">
-                    WGOTalent
+                    <Link href="/">WGOTalent</Link>
                   </div>
                   <NavLinks className="p-4" />
                 </SheetContent>
@@ -67,7 +68,7 @@ export default function RootLayout({
             <aside className="hidden md:flex w-64 flex-col border-r bg-background shrink-0 shadow-sm">
               <div className="p-6 border-b">
                 <div className="font-bold text-2xl tracking-tight text-primary">
-                  WGOTalent
+                  <Link href="/">WGOTalent</Link>
                 </div>
               </div>
               <NavLinks className="p-4 flex-1" />

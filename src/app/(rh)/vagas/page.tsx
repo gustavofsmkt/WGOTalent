@@ -24,7 +24,17 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { DeleteVagaButton } from "./_components/delete-vaga-button";
-import { VagasFilter } from "./_components/vagas-filter";
+import { PageFilter } from "~/components/page-filter";
+import MetricCardsSummary from "~/components/metric-cards-summary";
+
+const STATUS_OPTIONS = [
+  { value: "todas", label: "Todos os status" },
+  { value: "aberta", label: "Aberta" },
+  { value: "pausada", label: "Pausada" },
+  { value: "concluida", label: "Concluída" },
+  { value: "cancelada", label: "Cancelada" },
+  { value: "incompleta", label: "Incompleta" },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -113,58 +123,44 @@ export default async function VagasPage(props: VagasPageProps) {
       ) : (
         <div className="space-y-4">
           {/* Summary stats bento banner */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Total de Vagas
-                  </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {allVagas.length}
-                  </p>
-                </div>
-                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Briefcase className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
+          <MetricCardsSummary
+            cards={[
+              {
+                title: "Total de Vagas",
+                info: allVagas.length.toString(),
+                icon: <Briefcase className="size-5" />,
+                iconColor: "bg-primary/10",
+              },
+              {
+                title: "Vagas Abertas",
+                info: totalAbertas.toString(),
+                icon: <Building2 className="size-5" />,
+                iconColor: "bg-emerald-500/10",
+              },
+              {
+                title: "Posições Totais",
+                info: totalPosicoes.toString(),
+                icon: <Users className="size-5" />,
+                iconColor: "bg-blue-500/10",
+              },
+            ]}
+          />
 
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Vagas Abertas
-                  </p>
-                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {totalAbertas}
-                  </p>
-                </div>
-                <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <Building2 className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Posições Totais
-                  </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {totalPosicoes}
-                  </p>
-                </div>
-                <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Users className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-            <VagasFilter />
-            <div className="text-xs text-muted-foreground shrink-0">
+          <PageFilter
+            searchPlaceholder="Buscar por cargo, depto, cidade..."
+            searchAriaLabel="Buscar vaga por cargo, departamento ou cidade"
+            filterBar={{
+              selects: [
+                {
+                  paramKey: "status",
+                  defaultValue: "todas",
+                  placeholder: "Status",
+                  options: STATUS_OPTIONS,
+                },
+              ],
+            }}
+          />
+          {/* <div className="text-xs text-muted-foreground">
               {filteredVagas.length === allVagas.length ? (
                 <span>
                   Total de{" "}
@@ -182,8 +178,7 @@ export default async function VagasPage(props: VagasPageProps) {
                   de {allVagas.length} vagas
                 </span>
               )}
-            </div>
-          </div>
+            </div> */}
 
           {filteredVagas.length === 0 ? (
             <DataEmptyState

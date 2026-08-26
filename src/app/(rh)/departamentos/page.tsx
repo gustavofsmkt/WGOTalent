@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { DeleteDepartamentoButton } from "./_components/delete-departamento-button";
-import { DepartamentosFilter } from "./_components/departamentos-filter";
+import { PageFilter } from "~/components/page-filter";
 
 interface DepartamentosPageProps {
   searchParams?: Promise<{ q?: string }>;
@@ -82,30 +82,10 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
         />
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-            <DepartamentosFilter />
-            <div className="text-xs text-muted-foreground">
-              {filteredDepartamentos.length === allDepartamentos.length ? (
-                <span>
-                  Total de{" "}
-                  <strong className="font-semibold text-foreground">
-                    {allDepartamentos.length}
-                  </strong>{" "}
-                  {allDepartamentos.length === 1
-                    ? "departamento"
-                    : "departamentos"}
-                </span>
-              ) : (
-                <span>
-                  Mostrando{" "}
-                  <strong className="font-semibold text-foreground">
-                    {filteredDepartamentos.length}
-                  </strong>{" "}
-                  de {allDepartamentos.length} departamentos
-                </span>
-              )}
-            </div>
-          </div>
+          <PageFilter
+            searchPlaceholder="Buscar departamento por nome..."
+            searchAriaLabel="Buscar departamento por nome"
+          />
 
           {filteredDepartamentos.length === 0 ? (
             <DataEmptyState

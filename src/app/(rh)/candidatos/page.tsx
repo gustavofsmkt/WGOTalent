@@ -26,8 +26,21 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
-import { CandidatosFilter } from "./_components/candidatos-filter";
+import { PageFilter } from "~/components/page-filter";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
+import MetricCardsSummary from "~/components/metric-cards-summary";
+
+const ORIGEM_OPTIONS = [
+  { value: "todas", label: "Todas as origens" },
+  { value: "manual", label: "Manual (RH)" },
+  { value: "email", label: "E-mail (IA)" },
+  { value: "indicacao", label: "Indicação" },
+];
+
+const POOL_OPTIONS = [
+  { value: "todos", label: "Todos os candidatos" },
+  { value: "banco_talentos", label: "Banco de Talentos" },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -142,76 +155,68 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         />
       ) : (
         <div className="space-y-4">
-          {/* Summary stats bento banner */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Total de Candidatos
-                  </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {allCandidatos.length}
-                  </p>
-                </div>
-                <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Users className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
+          <MetricCardsSummary
+            cards={[
+              {
+                title: "Total de Candidatos",
+                info: allCandidatos.length.toString(),
+                icon: <Users className="size-5" />,
+                iconColor: "bg-primary/10",
+              },
+              {
+                title: "Via E-mail / IA",
+                info: emailCount.toString(),
+                icon: <Mail className="size-5" />,
+                iconColor: "bg-info/10",
+              },
+              {
+                title: "Cadastro Manual / RH",
+                info: manualCount.toString(),
+                icon: <UserCheck className="size-5" />,
+                iconColor: "bg-muted",
+              },
+            ]}
+          />
 
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Via E-mail / IA
-                  </p>
-                  <p className="text-2xl font-bold text-info">{emailCount}</p>
-                </div>
-                <div className="size-10 rounded-xl bg-info/10 text-info flex items-center justify-center">
-                  <Mail className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Cadastro Manual / RH
-                  </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {manualCount}
-                  </p>
-                </div>
-                <div className="size-10 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
-                  <UserCheck className="size-5" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-            <CandidatosFilter />
-            <div className="text-xs text-muted-foreground whitespace-nowrap">
-              {filteredCandidatos.length === allCandidatos.length ? (
-                <span>
-                  Total de{" "}
-                  <strong className="font-semibold text-foreground">
-                    {allCandidatos.length}
-                  </strong>{" "}
-                  {allCandidatos.length === 1 ? "candidato" : "candidatos"}
-                </span>
-              ) : (
-                <span>
-                  Mostrando{" "}
-                  <strong className="font-semibold text-foreground">
-                    {filteredCandidatos.length}
-                  </strong>{" "}
-                  de {allCandidatos.length} candidatos
-                </span>
-              )}
-            </div>
-          </div>
+          <PageFilter
+            searchPlaceholder="Buscar por nome, e-mail, cidade ou cargo..."
+            searchAriaLabel="Buscar candidato por nome, e-mail, cidade ou cargo"
+            filterBar={{
+              selects: [
+                {
+                  paramKey: "origem",
+                  defaultValue: "todas",
+                  placeholder: "Origem",
+                  options: ORIGEM_OPTIONS,
+                },
+                {
+                  paramKey: "pool",
+                  defaultValue: "todos",
+                  placeholder: "Banco de Talentos",
+                  options: POOL_OPTIONS,
+                },
+              ],
+            }}
+          />
+          {/* <div className="text-xs text-muted-foreground">
+            {filteredCandidatos.length === allCandidatos.length ? (
+              <span>
+                Total de{" "}
+                <strong className="font-semibold text-foreground">
+                  {allCandidatos.length}
+                </strong>{" "}
+                {allCandidatos.length === 1 ? "candidato" : "candidatos"}
+              </span>
+            ) : (
+              <span>
+                Mostrando{" "}
+                <strong className="font-semibold text-foreground">
+                  {filteredCandidatos.length}
+                </strong>{" "}
+                de {allCandidatos.length} candidatos
+              </span>
+            )}
+          </div> */}
 
           {filteredCandidatos.length === 0 ? (
             <DataEmptyState
