@@ -64,14 +64,14 @@ export async function updateDepartamento(
 
   try {
     const departamento = await departamentoRepository.update(id, parsed.data);
-    
+
     if (!departamento) {
       return { success: false, message: "Departamento não encontrado" };
     }
 
     revalidatePath("/departamentos");
     revalidatePath(`/departamentos/${id}`);
-    
+
     return {
       success: true,
       data: departamento,
@@ -93,21 +93,20 @@ export async function updateDepartamento(
   }
 }
 
-export async function deleteDepartamento(
-  id: string,
-): Promise<ActionState> {
+export async function deleteDepartamento(id: string): Promise<ActionState> {
   try {
     const hasActiveCargos = await departamentoRepository.hasActiveCargos(id);
-    
+
     if (hasActiveCargos) {
       return {
         success: false,
-        message: "Não é possível excluir um departamento que possui cargos ativos.",
+        message:
+          "Não é possível excluir um departamento que possui cargos ativos.",
       };
     }
 
     const departamento = await departamentoRepository.softDelete(id);
-    
+
     if (!departamento) {
       return { success: false, message: "Departamento não encontrado" };
     }

@@ -1,13 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import {
-  Plus,
-  Sparkles,
-  Eye,
-  Layers,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
+import { Plus, Sparkles, Eye, Layers, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
@@ -21,7 +14,10 @@ import {
   TableCell,
 } from "~/components/ui/table";
 import { Card, CardContent } from "~/components/ui/card";
-import { triagemRepository, type TriagemFiltros } from "~/server/db/repositories/triagem";
+import {
+  triagemRepository,
+  type TriagemFiltros,
+} from "~/server/db/repositories/triagem";
 import {
   triagemEtapaEnum,
   triagemResultadoEnum,
@@ -34,7 +30,10 @@ import { DeleteTriagemButton } from "./_components/delete-triagem-button";
 
 export const dynamic = "force-dynamic";
 
-function isEnumValue<T extends string>(values: readonly T[], value: string): value is T {
+function isEnumValue<T extends string>(
+  values: readonly T[],
+  value: string,
+): value is T {
   return (values as readonly string[]).includes(value);
 }
 
@@ -61,7 +60,11 @@ export default async function TriagensPage(props: TriagensPageProps) {
   const vagaFilter = (searchParams.vaga ?? "").trim();
 
   const dbFilter: TriagemFiltros = {};
-  if (etapaFilter && etapaFilter !== "todas" && isEnumValue(triagemEtapaEnum.enumValues, etapaFilter)) {
+  if (
+    etapaFilter &&
+    etapaFilter !== "todas" &&
+    isEnumValue(triagemEtapaEnum.enumValues, etapaFilter)
+  ) {
     dbFilter.etapa = etapaFilter;
   }
   if (
@@ -71,7 +74,11 @@ export default async function TriagensPage(props: TriagensPageProps) {
   ) {
     dbFilter.resultado = resultadoFilter;
   }
-  if (motivoFilter && motivoFilter !== "todos" && isEnumValue(triagemMotivoEnum.enumValues, motivoFilter)) {
+  if (
+    motivoFilter &&
+    motivoFilter !== "todos" &&
+    isEnumValue(triagemMotivoEnum.enumValues, motivoFilter)
+  ) {
     dbFilter.motivo = motivoFilter;
   }
   if (vagaAtivaFilter) {
@@ -243,7 +250,10 @@ export default async function TriagensPage(props: TriagensPageProps) {
               </TableHeader>
               <TableBody>
                 {filteredTriagens.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-muted/40 transition-colors">
+                  <TableRow
+                    key={item.id}
+                    className="hover:bg-muted/40 transition-colors"
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2.5">
                         <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
@@ -269,7 +279,8 @@ export default async function TriagensPage(props: TriagensPageProps) {
                           {item.vaga.cargoTitulo}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {item.vaga.departamentoNome} • {item.vaga.cidade}/{item.vaga.uf}
+                          {item.vaga.departamentoNome} • {item.vaga.cidade}/
+                          {item.vaga.uf}
                         </p>
                       </div>
                     </TableCell>
@@ -336,4 +347,3 @@ export default async function TriagensPage(props: TriagensPageProps) {
     </div>
   );
 }
-

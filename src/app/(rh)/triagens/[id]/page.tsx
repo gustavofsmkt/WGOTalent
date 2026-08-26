@@ -75,7 +75,10 @@ export default async function TriagemDetailPage({
       </div>
 
       {/* Interactive editor: PageHeader + Tabs */}
-      <TriagemDetailEditor triagem={editorData} key={String(triagem.updatedAt)} />
+      <TriagemDetailEditor
+        triagem={editorData}
+        key={String(triagem.updatedAt)}
+      />
 
       {/* Static info grid — rendered as RSC, not serialized to client */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -99,7 +102,10 @@ export default async function TriagemDetailPage({
               <div className="flex gap-2">
                 <a
                   href={`mailto:${triagem.candidato.email}`}
-                  className={buttonVariants({ variant: "secondary", className: "flex-1" })}
+                  className={buttonVariants({
+                    variant: "secondary",
+                    className: "flex-1",
+                  })}
                 >
                   <Mail className="mr-2 h-4 w-4" /> Email
                 </a>
@@ -107,14 +113,20 @@ export default async function TriagemDetailPage({
                   href={getWhatsAppUrl(triagem.candidato.celular)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={buttonVariants({ variant: "secondary", className: "flex-1" })}
+                  className={buttonVariants({
+                    variant: "secondary",
+                    className: "flex-1",
+                  })}
                 >
                   <MessageSquare className="mr-2 h-4 w-4" /> WhatsApp
                 </a>
               </div>
               <Link
                 href={`/candidatos/${triagem.candidato.id}`}
-                className={buttonVariants({ variant: "outline", className: "w-full" })}
+                className={buttonVariants({
+                  variant: "outline",
+                  className: "w-full",
+                })}
               >
                 Ver Perfil Completo
               </Link>
@@ -197,7 +209,8 @@ export default async function TriagemDetailPage({
                     </div>
 
                     {triagem.avaliacao_ia.eliminatoriosFalhos &&
-                      triagem.avaliacao_ia.eliminatoriosFalhos.trim() !== "" && (
+                      triagem.avaliacao_ia.eliminatoriosFalhos.trim() !==
+                        "" && (
                         <div className="rounded-lg border-l-4 border-destructive bg-destructive/5 p-4 md:col-span-2">
                           <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-destructive">
                             <AlertTriangle className="h-4 w-4" />
@@ -213,7 +226,9 @@ export default async function TriagemDetailPage({
               ) : (
                 <div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
                   <BrainCircuit className="h-8 w-8 opacity-20" />
-                  <p className="text-sm">Nenhuma avaliação de IA disponível para esta triagem.</p>
+                  <p className="text-sm">
+                    Nenhuma avaliação de IA disponível para esta triagem.
+                  </p>
                 </div>
               )}
             </CardContent>

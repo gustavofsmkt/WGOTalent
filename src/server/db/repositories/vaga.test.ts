@@ -16,17 +16,25 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("vagaRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(vagaRepository).toBeDefined();
     expect(typeof vagaRepository.findAll).toBe("function");
-    expect(typeof vagaRepository.findAllWithCargoAndDepartamento).toBe("function");
+    expect(typeof vagaRepository.findAllWithCargoAndDepartamento).toBe(
+      "function",
+    );
     expect(typeof vagaRepository.findById).toBe("function");
-    expect(typeof vagaRepository.findByIdWithCargoAndDepartamento).toBe("function");
-    expect(typeof vagaRepository.findHistoricalByIdWithCargoAndDepartamento).toBe("function");
+    expect(typeof vagaRepository.findByIdWithCargoAndDepartamento).toBe(
+      "function",
+    );
+    expect(
+      typeof vagaRepository.findHistoricalByIdWithCargoAndDepartamento,
+    ).toBe("function");
     expect(typeof vagaRepository.findActiveCargoOptions).toBe("function");
     expect(typeof vagaRepository.findOpenByCidade).toBe("function");
     expect(typeof vagaRepository.create).toBe("function");

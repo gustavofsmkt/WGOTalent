@@ -33,18 +33,26 @@ export async function updateAgenteConfig(
           : thresholdScore.toString(),
     });
     if (!updated) {
-      return { success: false, message: "Configuração de agente não encontrada." };
+      return {
+        success: false,
+        message: "Configuração de agente não encontrada.",
+      };
     }
 
     revalidatePath("/admin");
     revalidatePath(`/admin/agentes/${slot}`);
 
-    return { success: true, data: updated, message: "Configuração atualizada com sucesso." };
+    return {
+      success: true,
+      data: updated,
+      message: "Configuração atualizada com sucesso.",
+    };
   } catch (error) {
     console.error("[updateAgenteConfig] Erro:", error);
     return {
       success: false,
-      message: "Ocorreu um erro inesperado ao atualizar a configuração do agente.",
+      message:
+        "Ocorreu um erro inesperado ao atualizar a configuração do agente.",
     };
   }
 }

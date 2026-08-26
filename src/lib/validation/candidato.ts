@@ -9,8 +9,15 @@ import {
 } from "./common";
 
 export const estadoCivilSchema = z.enum(
-  ["nao_informado", "solteiro", "casado", "divorciado", "viuvo", "uniao_estavel"],
-  { required_error: "Estado civil é obrigatório" }
+  [
+    "nao_informado",
+    "solteiro",
+    "casado",
+    "divorciado",
+    "viuvo",
+    "uniao_estavel",
+  ],
+  { required_error: "Estado civil é obrigatório" },
 );
 
 export const cnhSchema = z.enum(["a", "b", "ab", "c", "d", "e"], {
@@ -30,7 +37,10 @@ export const origemSchema = z.enum(["email", "manual", "indicacao"], {
  */
 const cepSchema = z.preprocess(
   (val) => (typeof val === "string" ? val.replace(/[^\d-]/g, "") : val),
-  nonEmptyString("O CEP é obrigatório").max(9, "O CEP deve ter no máximo 9 caracteres"),
+  nonEmptyString("O CEP é obrigatório").max(
+    9,
+    "O CEP deve ter no máximo 9 caracteres",
+  ),
 );
 
 const ABSOLUTE_URL_SCHEME_REGEX = /^https?:\/\//i;
@@ -46,7 +56,9 @@ const optionalUrlSchema = z.preprocess(
     if (typeof val !== "string") return val;
     const trimmed = val.trim();
     if (trimmed === "") return null;
-    return ABSOLUTE_URL_SCHEME_REGEX.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return ABSOLUTE_URL_SCHEME_REGEX.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
   },
   z
     .string()
@@ -54,14 +66,14 @@ const optionalUrlSchema = z.preprocess(
     .url({ message: "URL inválida" })
     .max(255, "A URL deve ter no máximo 255 caracteres")
     .optional()
-    .nullable()
+    .nullable(),
 );
 
 export const formacaoBaseSchema = z.object({
   id: uuidSchema.optional(),
   titulo: nonEmptyString("O título da formação é obrigatório").max(
     150,
-    "O título deve ter no máximo 150 caracteres"
+    "O título deve ter no máximo 150 caracteres",
   ),
   instituicao: trimmedString
     .max(150, "A instituição deve ter no máximo 150 caracteres")
@@ -69,7 +81,7 @@ export const formacaoBaseSchema = z.object({
     .nullable(),
   areaFormacao: nonEmptyString("A área de formação é obrigatória").max(
     120,
-    "A área deve ter no máximo 120 caracteres"
+    "A área deve ter no máximo 120 caracteres",
   ),
   dataInicio: dateStringSchema,
   dataTermino: dateStringSchema.optional().nullable(),
@@ -85,7 +97,7 @@ export const formacaoSchema = formacaoBaseSchema.refine(
   {
     message: "A data de término deve ser posterior ou igual à data de início",
     path: ["dataTermino"],
-  }
+  },
 );
 
 export type FormacaoInput = z.input<typeof formacaoSchema>;
@@ -99,7 +111,7 @@ export const experienciaBaseSchema = z.object({
     .nullable(),
   cargoTitulo: nonEmptyString("O título do cargo é obrigatório").max(
     150,
-    "O título do cargo deve ter no máximo 150 caracteres"
+    "O título do cargo deve ter no máximo 150 caracteres",
   ),
   descricao: trimmedString.optional().nullable(),
   dataEntrada: dateStringSchema,
@@ -116,7 +128,7 @@ export const experienciaSchema = experienciaBaseSchema.refine(
   {
     message: "A data de saída deve ser posterior ou igual à data de entrada",
     path: ["dataSaida"],
-  }
+  },
 );
 
 export type ExperienciaInput = z.input<typeof experienciaSchema>;
@@ -126,7 +138,7 @@ export const certificacaoBaseSchema = z.object({
   id: uuidSchema.optional(),
   titulo: nonEmptyString("O título da certificação é obrigatório").max(
     150,
-    "O título deve ter no máximo 150 caracteres"
+    "O título deve ter no máximo 150 caracteres",
   ),
   obtidaEm: dateStringSchema.optional().nullable(),
   validade: dateStringSchema.optional().nullable(),
@@ -142,7 +154,7 @@ export const certificacaoSchema = certificacaoBaseSchema.refine(
   {
     message: "A validade deve ser posterior ou igual à data de obtenção",
     path: ["validade"],
-  }
+  },
 );
 
 export type CertificacaoInput = z.input<typeof certificacaoSchema>;
@@ -152,7 +164,7 @@ export const candidatoSchema = z.object({
   id: uuidSchema.optional(),
   nome: nonEmptyString("O nome é obrigatório").max(
     150,
-    "O nome deve ter no máximo 150 caracteres"
+    "O nome deve ter no máximo 150 caracteres",
   ),
   nomeSocial: trimmedString
     .max(150, "O nome social deve ter no máximo 150 caracteres")
@@ -164,21 +176,27 @@ export const candidatoSchema = z.object({
   dataNascimento: dateStringSchema,
   estadoCivil: estadoCivilSchema.default("nao_informado"),
   pcd: trimmedString.optional().nullable(),
-  email: emailSchema.max(254, "O e-mail deve ter no máximo 254 caracteres").optional().nullable(),
-  celular: trimmedString.max(20, "O celular deve ter no máximo 20 caracteres").optional().nullable(),
+  email: emailSchema
+    .max(254, "O e-mail deve ter no máximo 254 caracteres")
+    .optional()
+    .nullable(),
+  celular: trimmedString
+    .max(20, "O celular deve ter no máximo 20 caracteres")
+    .optional()
+    .nullable(),
   cep: cepSchema,
   uf: ufSchema,
   cidade: nonEmptyString("A cidade é obrigatória").max(
     100,
-    "A cidade deve ter no máximo 100 caracteres"
+    "A cidade deve ter no máximo 100 caracteres",
   ),
   bairro: nonEmptyString("O bairro é obrigatório").max(
     100,
-    "O bairro deve ter no máximo 100 caracteres"
+    "O bairro deve ter no máximo 100 caracteres",
   ),
   logradouro: nonEmptyString("O logradouro é obrigatório").max(
     200,
-    "O logradouro deve ter no máximo 200 caracteres"
+    "O logradouro deve ter no máximo 200 caracteres",
   ),
   resumoProfissional: nonEmptyString("O resumo profissional é obrigatório"),
   cnh: cnhSchema.optional().nullable(),

@@ -1,6 +1,16 @@
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Users, UserCheck, Mail, Eye, MapPin, Phone, Briefcase, UploadCloud } from "lucide-react";
+import {
+  Plus,
+  Users,
+  UserCheck,
+  Mail,
+  Eye,
+  MapPin,
+  Phone,
+  Briefcase,
+  UploadCloud,
+} from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
@@ -43,10 +53,13 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
       (candidato.email?.toLowerCase().includes(query) ?? false) ||
       candidato.cidade.toLowerCase().includes(query) ||
       candidato.uf.toLowerCase().includes(query) ||
-      (candidato.cargoInteresse && candidato.cargoInteresse.toLowerCase().includes(query));
+      (candidato.cargoInteresse &&
+        candidato.cargoInteresse.toLowerCase().includes(query));
 
     const matchesOrigem =
-      !origemFilter || origemFilter === "todas" || candidato.origem === origemFilter;
+      !origemFilter ||
+      origemFilter === "todas" ||
+      candidato.origem === origemFilter;
 
     const matchesPool =
       !poolFilter || poolFilter === "todos" || candidato.emBancoTalentos;
@@ -68,7 +81,8 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
+    if (parts.length === 1)
+      return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
     const first = parts[0]?.charAt(0) ?? "";
     const last = parts[parts.length - 1]?.charAt(0) ?? "";
     return `${first}${last}`.toUpperCase();
@@ -119,7 +133,9 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Total de Candidatos
               </p>
-              <p className="text-2xl font-bold text-foreground">{allCandidatos.length}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {allCandidatos.length}
+              </p>
             </div>
             <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Users className="size-5" />
@@ -133,9 +149,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Via E-mail / IA
               </p>
-              <p className="text-2xl font-bold text-info">
-                {emailCount}
-              </p>
+              <p className="text-2xl font-bold text-info">{emailCount}</p>
             </div>
             <div className="size-10 rounded-xl bg-info/10 text-info flex items-center justify-center">
               <Mail className="size-5" />

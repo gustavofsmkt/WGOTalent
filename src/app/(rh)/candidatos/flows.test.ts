@@ -36,8 +36,14 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       { id: "dep-2", nome: "Recursos Humanos" },
     ];
 
-    vi.spyOn(candidatoRepository, "findActiveCargoOptions").mockResolvedValueOnce(mockCargos);
-    vi.spyOn(candidatoRepository, "findActiveDepartamentoOptions").mockResolvedValueOnce(mockDepartamentos);
+    vi.spyOn(
+      candidatoRepository,
+      "findActiveCargoOptions",
+    ).mockResolvedValueOnce(mockCargos);
+    vi.spyOn(
+      candidatoRepository,
+      "findActiveDepartamentoOptions",
+    ).mockResolvedValueOnce(mockDepartamentos);
 
     const [cargos, depts] = await Promise.all([
       candidatoRepository.findActiveCargoOptions(),
@@ -101,35 +107,44 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       },
     ];
 
-    vi.spyOn(candidatoRepository, "findByIdComplete").mockResolvedValueOnce(mockCandidate);
-    vi.spyOn(candidatoRepository, "findActiveCargoOptions").mockResolvedValueOnce(activeCargos);
-    vi.spyOn(candidatoRepository, "findActiveDepartamentoOptions").mockResolvedValueOnce([
-      { id: "dep-1", nome: "Tecnologia" },
-    ]);
+    vi.spyOn(candidatoRepository, "findByIdComplete").mockResolvedValueOnce(
+      mockCandidate,
+    );
+    vi.spyOn(
+      candidatoRepository,
+      "findActiveCargoOptions",
+    ).mockResolvedValueOnce(activeCargos);
+    vi.spyOn(
+      candidatoRepository,
+      "findActiveDepartamentoOptions",
+    ).mockResolvedValueOnce([{ id: "dep-1", nome: "Tecnologia" }]);
 
-    vi.spyOn(cargoRepository, "findByIdWithDepartamento").mockResolvedValueOnce({
-      id: "cargo-inativo-1",
-      departamentoId: "dep-1",
-      titulo: "Designer Antigo",
-      descricao: "Desc",
-      ativo: false,
-      faixaSalarial: "5000",
-      requisitos: "Req",
-      requisitosDesejaveis: "",
-      criteriosEliminatorios: "",
-      createdAt: "2023-01-01T00:00:00.000Z",
-      updatedAt: "2023-01-01T00:00:00.000Z",
-      deletedAt: null,
-      departamento: {
-        id: "dep-1",
-        nome: "Tecnologia",
+    vi.spyOn(cargoRepository, "findByIdWithDepartamento").mockResolvedValueOnce(
+      {
+        id: "cargo-inativo-1",
+        departamentoId: "dep-1",
+        titulo: "Designer Antigo",
+        descricao: "Desc",
+        ativo: false,
+        faixaSalarial: "5000",
+        requisitos: "Req",
+        requisitosDesejaveis: "",
+        criteriosEliminatorios: "",
+        createdAt: "2023-01-01T00:00:00.000Z",
+        updatedAt: "2023-01-01T00:00:00.000Z",
+        deletedAt: null,
+        departamento: {
+          id: "dep-1",
+          nome: "Tecnologia",
+        },
       },
-    });
+    );
 
     const cand = await candidatoRepository.findByIdComplete("cand-1");
     expect(cand).not.toBeNull();
 
-    const activeCargoOptions = await candidatoRepository.findActiveCargoOptions();
+    const activeCargoOptions =
+      await candidatoRepository.findActiveCargoOptions();
     let cargoOptions = activeCargoOptions;
 
     if (

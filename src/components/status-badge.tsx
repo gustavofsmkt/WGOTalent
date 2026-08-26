@@ -2,7 +2,8 @@ import * as React from "react";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 
-export type StatusTone = "success" | "warning" | "destructive" | "info" | "neutral";
+export type StatusTone =
+  "success" | "warning" | "destructive" | "info" | "neutral";
 
 export type DomainStatus =
   // Vaga status
@@ -70,8 +71,10 @@ export const toneStyles: Record<StatusTone, string> = {
   neutral: "bg-muted text-muted-foreground border-border",
 };
 
-export interface StatusBadgeProps
-  extends Omit<React.ComponentProps<typeof Badge>, "variant"> {
+export interface StatusBadgeProps extends Omit<
+  React.ComponentProps<typeof Badge>,
+  "variant"
+> {
   status?: DomainStatus | string;
   tone?: StatusTone;
   label?: React.ReactNode;
@@ -97,7 +100,7 @@ export function StatusBadge({
       className={cn(
         "font-medium border tracking-wide",
         toneStyles[resolvedTone],
-        className
+        className,
       )}
       {...props}
     >

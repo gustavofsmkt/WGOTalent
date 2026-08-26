@@ -28,7 +28,9 @@ vi.mock("~/lib/storage", () => ({
   storage: { read: storageReadMock },
 }));
 vi.mock("mammoth", () => ({
-  default: { extractRawText: vi.fn().mockResolvedValue({ value: "texto do docx" }) },
+  default: {
+    extractRawText: vi.fn().mockResolvedValue({ value: "texto do docx" }),
+  },
 }));
 
 import { executarExtracaoCurriculo } from "./extracao-curriculo";
@@ -61,7 +63,9 @@ describe("executarExtracaoCurriculo", () => {
     findActiveByProviderMock.mockResolvedValueOnce(credencial);
     storageReadMock.mockResolvedValueOnce(Buffer.from("pdf"));
 
-    await expect(executarExtracaoCurriculo("resumes/a.pdf")).rejects.toThrow(/ativo/);
+    await expect(executarExtracaoCurriculo("resumes/a.pdf")).rejects.toThrow(
+      /ativo/,
+    );
   });
 
   it("throws when no active credential exists for the provider", async () => {
@@ -69,7 +73,9 @@ describe("executarExtracaoCurriculo", () => {
     findActiveByProviderMock.mockResolvedValueOnce(null);
     storageReadMock.mockResolvedValueOnce(Buffer.from("pdf"));
 
-    await expect(executarExtracaoCurriculo("resumes/a.pdf")).rejects.toThrow(/credencial/);
+    await expect(executarExtracaoCurriculo("resumes/a.pdf")).rejects.toThrow(
+      /credencial/,
+    );
   });
 
   it("sends multimodal inlineData for a PDF file", async () => {
@@ -104,6 +110,8 @@ describe("executarExtracaoCurriculo", () => {
     findActiveByProviderMock.mockResolvedValueOnce(credencial);
     storageReadMock.mockResolvedValueOnce(Buffer.from("bytes"));
 
-    await expect(executarExtracaoCurriculo("resumes/a.rtf")).rejects.toThrow(/não suportada/);
+    await expect(executarExtracaoCurriculo("resumes/a.rtf")).rejects.toThrow(
+      /não suportada/,
+    );
   });
 });

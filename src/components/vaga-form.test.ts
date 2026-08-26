@@ -91,7 +91,8 @@ describe("VagaForm - Validation Integration", () => {
       expect(validNumber.data).toBe("5000.00");
     }
 
-    const validStringWithComma = remuneracaoOferecidaSchema.safeParse("4500,50");
+    const validStringWithComma =
+      remuneracaoOferecidaSchema.safeParse("4500,50");
     expect(validStringWithComma.success).toBe(true);
     if (validStringWithComma.success) {
       expect(validStringWithComma.data).toBe("4500.50");

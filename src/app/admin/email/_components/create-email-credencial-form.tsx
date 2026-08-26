@@ -76,9 +76,9 @@ export function CreateEmailCredencialForm() {
       <CardHeader>
         <CardTitle>Nova Credencial de E-mail</CardTitle>
         <CardDescription>
-          A senha é cifrada antes de ser salva e nunca é reexibida — para trocar, cadastre uma
-          nova. Só uma credencial fica ativa por vez: cadastrar uma nova desativa a anterior
-          automaticamente.
+          A senha é cifrada antes de ser salva e nunca é reexibida — para
+          trocar, cadastre uma nova. Só uma credencial fica ativa por vez:
+          cadastrar uma nova desativa a anterior automaticamente.
         </CardDescription>
       </CardHeader>
 
@@ -104,10 +104,13 @@ export function CreateEmailCredencialForm() {
             <form.Field name="host">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-host">Host IMAP</FieldLabel>
+                    <FieldLabel htmlFor="email-credencial-host">
+                      Host IMAP
+                    </FieldLabel>
                     <Input
                       id="email-credencial-host"
                       name={field.name}
@@ -126,10 +129,13 @@ export function CreateEmailCredencialForm() {
             <form.Field name="porta">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-porta">Porta</FieldLabel>
+                    <FieldLabel htmlFor="email-credencial-porta">
+                      Porta
+                    </FieldLabel>
                     <Input
                       id="email-credencial-porta"
                       name={field.name}
@@ -138,7 +144,9 @@ export function CreateEmailCredencialForm() {
                       max={65535}
                       value={field.state.value}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(Number(e.target.value))}
+                      onChange={(e) =>
+                        field.handleChange(Number(e.target.value))
+                      }
                       aria-invalid={hasErrors}
                     />
                     <FieldError errors={field.state.meta.errors} />
@@ -150,10 +158,13 @@ export function CreateEmailCredencialForm() {
             <form.Field name="usuario">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-usuario">Usuário</FieldLabel>
+                    <FieldLabel htmlFor="email-credencial-usuario">
+                      Usuário
+                    </FieldLabel>
                     <Input
                       id="email-credencial-usuario"
                       name={field.name}
@@ -172,7 +183,8 @@ export function CreateEmailCredencialForm() {
             <form.Field name="senha">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
                     <FieldLabel htmlFor="email-credencial-senha">
@@ -189,7 +201,8 @@ export function CreateEmailCredencialForm() {
                       aria-invalid={hasErrors}
                     />
                     <FieldDescription>
-                      Gmail exige uma Senha de App (não a senha normal da conta) desde 2022.
+                      Gmail exige uma Senha de App (não a senha normal da conta)
+                      desde 2022.
                     </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -200,10 +213,13 @@ export function CreateEmailCredencialForm() {
             <form.Field name="pasta">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-pasta">Pasta monitorada</FieldLabel>
+                    <FieldLabel htmlFor="email-credencial-pasta">
+                      Pasta monitorada
+                    </FieldLabel>
                     <Input
                       id="email-credencial-pasta"
                       name={field.name}
@@ -221,7 +237,8 @@ export function CreateEmailCredencialForm() {
             <form.Field name="capturarDesde">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
                     <FieldLabel htmlFor="email-credencial-capturar-desde">
@@ -237,11 +254,13 @@ export function CreateEmailCredencialForm() {
                       aria-invalid={hasErrors}
                     />
                     <FieldDescription>
-                      Opcional — use só na ativação inicial de uma caixa que já recebe
-                      currículos há tempo (ex: indo para produção). A primeira captura varre a
-                      caixa desde essa data (ex.: {tresMesesAtras()} para os últimos 3 meses),
-                      em vez de reprocessar tudo. Deixe em branco (padrão) para capturar só o
-                      que chegar a partir de agora — o recomendado para caixas de teste.
+                      Opcional — use só na ativação inicial de uma caixa que já
+                      recebe currículos há tempo (ex: indo para produção). A
+                      primeira captura varre a caixa desde essa data (ex.:{" "}
+                      {tresMesesAtras()} para os últimos 3 meses), em vez de
+                      reprocessar tudo. Deixe em branco (padrão) para capturar
+                      só o que chegar a partir de agora — o recomendado para
+                      caixas de teste.
                     </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -252,7 +271,9 @@ export function CreateEmailCredencialForm() {
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-3">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+          >
             {([canSubmit, isSubmitting]) => (
               <FormSubmitButton
                 pending={Boolean(isSubmitting)}

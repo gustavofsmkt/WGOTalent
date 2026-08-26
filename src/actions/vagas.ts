@@ -4,16 +4,11 @@ import { revalidatePath } from "next/cache";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import type { ActionState } from "~/lib/action-utils";
-import {
-  createVagaSchema,
-  updateVagaSchema,
-} from "~/lib/validation/vaga";
+import { createVagaSchema, updateVagaSchema } from "~/lib/validation/vaga";
 import type { Vaga } from "~/server/db/schema";
 import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
 
-export async function createVaga(
-  data: unknown,
-): Promise<ActionState<Vaga>> {
+export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
   const parsed = createVagaSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -115,9 +110,7 @@ export async function updateVaga(
   }
 }
 
-export async function deleteVaga(
-  id: string,
-): Promise<ActionState> {
+export async function deleteVaga(id: string): Promise<ActionState> {
   try {
     const vaga = await vagaRepository.softDelete(id);
 

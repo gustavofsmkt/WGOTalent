@@ -63,10 +63,7 @@ export const cargoRepository = {
     return rows;
   },
 
-  findById: async (
-    id: string,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Cargo | null> => {
+  findById: async (id: string, dbOrTx: DbOrTx = db): Promise<Cargo | null> => {
     const rows = await notDeleted(
       dbOrTx.select().from(cargos),
       cargos,
@@ -136,14 +133,8 @@ export const cargoRepository = {
     return rows.length > 0;
   },
 
-  create: async (
-    data: NovoCargo,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Cargo> => {
-    const rows = await dbOrTx
-      .insert(cargos)
-      .values(data)
-      .returning();
+  create: async (data: NovoCargo, dbOrTx: DbOrTx = db): Promise<Cargo> => {
+    const rows = await dbOrTx.insert(cargos).values(data).returning();
     const created = rows[0];
     if (!created) {
       throw new Error("Falha ao criar cargo.");

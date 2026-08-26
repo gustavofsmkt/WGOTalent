@@ -3,8 +3,9 @@ import { Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
-export interface FormSubmitButtonProps
-  extends React.ComponentProps<typeof Button> {
+export interface FormSubmitButtonProps extends React.ComponentProps<
+  typeof Button
+> {
   pending?: boolean;
   loadingText?: React.ReactNode;
 }

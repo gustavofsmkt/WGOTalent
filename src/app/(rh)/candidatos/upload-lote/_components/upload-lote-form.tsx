@@ -3,8 +3,20 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, CheckCircle2 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "~/components/ui/card";
-import { Field, FieldLabel, FieldDescription, FieldError } from "~/components/ui/field";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "~/components/ui/card";
+import {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { iniciarUploadLote } from "~/actions/candidatos";
@@ -24,7 +36,9 @@ export function UploadLoteForm() {
   const { seedItems } = useUploadProgress();
   const [files, setFiles] = React.useState<File[]>([]);
   const [clientError, setClientError] = React.useState<string | null>(null);
-  const [enqueuedMessage, setEnqueuedMessage] = React.useState<string | null>(null);
+  const [enqueuedMessage, setEnqueuedMessage] = React.useState<string | null>(
+    null,
+  );
   const [isEnqueuing, setIsEnqueuing] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -95,8 +109,9 @@ export function UploadLoteForm() {
       <CardHeader>
         <CardTitle>Selecionar Currículos</CardTitle>
         <CardDescription>
-          Cada currículo dispara o agente de extração e, se aprovado na etapa de aderência,
-          a triagem completa — sem necessidade de preencher o formulário manual.
+          Cada currículo dispara o agente de extração e, se aprovado na etapa de
+          aderência, a triagem completa — sem necessidade de preencher o
+          formulário manual.
         </CardDescription>
       </CardHeader>
 
@@ -110,7 +125,9 @@ export function UploadLoteForm() {
           )}
 
           <Field data-invalid={Boolean(clientError)}>
-            <FieldLabel htmlFor="upload-lote-files">Arquivos (até {MAX_ARQUIVOS})</FieldLabel>
+            <FieldLabel htmlFor="upload-lote-files">
+              Arquivos (até {MAX_ARQUIVOS})
+            </FieldLabel>
             <input
               ref={fileInputRef}
               id="upload-lote-files"
@@ -121,7 +138,9 @@ export function UploadLoteForm() {
               disabled={isEnqueuing}
               className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
             />
-            <FieldDescription>PDF, DOCX, PNG ou JPEG — até 5MB cada.</FieldDescription>
+            <FieldDescription>
+              PDF, DOCX, PNG ou JPEG — até 5MB cada.
+            </FieldDescription>
             {clientError && <FieldError errors={[{ message: clientError }]} />}
           </Field>
 
@@ -133,7 +152,11 @@ export function UploadLoteForm() {
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push("/candidatos")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/candidatos")}
+          >
             Voltar
           </Button>
           <Button type="submit" disabled={isEnqueuing || files.length === 0}>

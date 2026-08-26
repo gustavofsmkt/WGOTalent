@@ -123,11 +123,15 @@ export default async function CargosPage(props: CargosPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-[300px]">Título do Cargo</TableHead>
+                      <TableHead className="w-[300px]">
+                        Título do Cargo
+                      </TableHead>
                       <TableHead className="w-[200px]">Departamento</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
                       <TableHead className="w-[140px]">Criado em</TableHead>
-                      <TableHead className="w-[130px] text-right">Ações</TableHead>
+                      <TableHead className="w-[130px] text-right">
+                        Ações
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -168,7 +172,8 @@ export default async function CargosPage(props: CargosPageProps) {
                               className={buttonVariants({
                                 variant: "ghost",
                                 size: "icon-sm",
-                                className: "text-muted-foreground hover:text-primary",
+                                className:
+                                  "text-muted-foreground hover:text-primary",
                               })}
                               title={`Ver detalhes de ${cargo.titulo}`}
                               aria-label={`Ver detalhes de ${cargo.titulo}`}
@@ -180,7 +185,8 @@ export default async function CargosPage(props: CargosPageProps) {
                               className={buttonVariants({
                                 variant: "ghost",
                                 size: "icon-sm",
-                                className: "text-muted-foreground hover:text-primary",
+                                className:
+                                  "text-muted-foreground hover:text-primary",
                               })}
                               title={`Editar ${cargo.titulo}`}
                               aria-label={`Editar ${cargo.titulo}`}
@@ -219,11 +225,13 @@ export default async function CargosPage(props: CargosPageProps) {
                         className="shrink-0"
                       />
                     </div>
-                    
+
                     <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Building2 className="size-3.5" />
-                        <span className="line-clamp-1">{cargo.departamento.nome}</span>
+                        <span className="line-clamp-1">
+                          {cargo.departamento.nome}
+                        </span>
                       </div>
                       <div className="text-xs">
                         Criado em {formatDate(cargo.createdAt)}

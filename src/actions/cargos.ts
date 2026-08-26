@@ -3,16 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
-import {
-  createCargoSchema,
-  updateCargoSchema,
-} from "~/lib/validation/cargo";
+import { createCargoSchema, updateCargoSchema } from "~/lib/validation/cargo";
 import type { Cargo } from "~/server/db/schema";
 import type { ActionState } from "~/lib/action-utils";
 
-export async function createCargo(
-  data: unknown,
-): Promise<ActionState<Cargo>> {
+export async function createCargo(data: unknown): Promise<ActionState<Cargo>> {
   const parsed = createCargoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -24,7 +19,9 @@ export async function createCargo(
   }
 
   try {
-    const departamento = await departamentoRepository.findById(parsed.data.departamentoId);
+    const departamento = await departamentoRepository.findById(
+      parsed.data.departamentoId,
+    );
     if (!departamento) {
       return {
         success: false,
@@ -73,7 +70,9 @@ export async function updateCargo(
 
   try {
     if (parsed.data.departamentoId) {
-      const departamento = await departamentoRepository.findById(parsed.data.departamentoId);
+      const departamento = await departamentoRepository.findById(
+        parsed.data.departamentoId,
+      );
       if (!departamento) {
         return {
           success: false,
@@ -83,14 +82,14 @@ export async function updateCargo(
     }
 
     const cargo = await cargoRepository.update(id, parsed.data);
-    
+
     if (!cargo) {
       return { success: false, message: "Cargo não encontrado" };
     }
 
     revalidatePath("/cargos");
     revalidatePath(`/cargos/${id}`);
-    
+
     return {
       success: true,
       data: cargo,
@@ -103,12 +102,10 @@ export async function updateCargo(
   }
 }
 
-export async function deleteCargo(
-  id: string,
-): Promise<ActionState> {
+export async function deleteCargo(id: string): Promise<ActionState> {
   try {
     const hasActiveVagas = await cargoRepository.hasActiveVagas(id);
-    
+
     if (hasActiveVagas) {
       return {
         success: false,
@@ -117,7 +114,7 @@ export async function deleteCargo(
     }
 
     const cargo = await cargoRepository.softDelete(id);
-    
+
     if (!cargo) {
       return { success: false, message: "Cargo não encontrado" };
     }

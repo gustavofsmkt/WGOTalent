@@ -23,7 +23,9 @@ import { processarCurriculoRecebido } from "~/server/candidatos/processar-curric
 import { encryptCredential } from "~/lib/agents/crypto";
 import type { EmailCredencial } from "~/server/db/schema";
 
-function fakeCredencial(overrides: Partial<EmailCredencial> = {}): EmailCredencial {
+function fakeCredencial(
+  overrides: Partial<EmailCredencial> = {},
+): EmailCredencial {
   return {
     id: "cred-1",
     host: "imap.gmail.com",
@@ -47,7 +49,9 @@ describe("executarCicloDeCaptura", () => {
   });
 
   it("is a no-op when there is no active credential", async () => {
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(null);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      null,
+    );
 
     await executarCicloDeCaptura();
 
@@ -56,8 +60,13 @@ describe("executarCicloDeCaptura", () => {
 
   it("requests a bounded batch size, so a large backlog is never fetched in one shot", async () => {
     const credencial = fakeCredencial();
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
-    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({ mensagens: [], uidReferencia: 10 });
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
+    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
+      mensagens: [],
+      uidReferencia: 10,
+    });
 
     await executarCicloDeCaptura();
 
@@ -68,8 +77,13 @@ describe("executarCicloDeCaptura", () => {
 
   it("passes the credential's capturarDesde through to buscarMensagensNovas", async () => {
     const credencial = fakeCredencial({ capturarDesde: "2026-05-24" });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
-    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({ mensagens: [], uidReferencia: 10 });
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
+    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
+      mensagens: [],
+      uidReferencia: 10,
+    });
 
     await executarCicloDeCaptura();
 
@@ -79,10 +93,19 @@ describe("executarCicloDeCaptura", () => {
   });
 
   it("logs and returns without throwing when the IMAP connection fails", async () => {
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(fakeCredencial());
-    vi.mocked(buscarMensagensNovas).mockRejectedValueOnce(new Error("connection refused"));
-    const atualizarWatermarkSpy = vi.spyOn(emailCredencialRepository, "atualizarWatermark");
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      fakeCredencial(),
+    );
+    vi.mocked(buscarMensagensNovas).mockRejectedValueOnce(
+      new Error("connection refused"),
+    );
+    const atualizarWatermarkSpy = vi.spyOn(
+      emailCredencialRepository,
+      "atualizarWatermark",
+    );
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
 
     await expect(executarCicloDeCaptura()).resolves.toBeUndefined();
 
@@ -95,10 +118,21 @@ describe("executarCicloDeCaptura", () => {
 
   it("advances the watermark to the highest UID seen only after the cycle completes", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 11, anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") }] },
+        {
+          uid: 11,
+          anexos: [
+            {
+              filename: "cv.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
         { uid: 15, anexos: [] },
       ],
       uidReferencia: 10,
@@ -119,14 +153,24 @@ describe("executarCicloDeCaptura", () => {
 
   it("does not let one failed attachment stop the others or block the watermark advance", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 0 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
         {
           uid: 1,
           anexos: [
-            { filename: "ruim.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") },
-            { filename: "bom.pdf", mimeType: "application/pdf", buffer: Buffer.from("b") },
+            {
+              filename: "ruim.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+            {
+              filename: "bom.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("b"),
+            },
           ],
         },
       ],
@@ -134,7 +178,11 @@ describe("executarCicloDeCaptura", () => {
     });
     vi.mocked(processarCurriculoRecebido)
       .mockResolvedValueOnce({ status: "erro", mensagem: "falhou" })
-      .mockResolvedValueOnce({ status: "sucesso", candidatoId: "cand-2", mensagem: "ok" });
+      .mockResolvedValueOnce({
+        status: "sucesso",
+        candidatoId: "cand-2",
+        mensagem: "ok",
+      });
     const atualizarWatermarkSpy = vi
       .spyOn(emailCredencialRepository, "atualizarWatermark")
       .mockResolvedValueOnce(undefined);
@@ -147,14 +195,27 @@ describe("executarCicloDeCaptura", () => {
 
   it("isolates an unexpected rejection from one item and still advances the watermark (runWithLimit)", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 11, anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") }] },
+        {
+          uid: 11,
+          anexos: [
+            {
+              filename: "cv.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
       ],
       uidReferencia: 10,
     });
-    vi.mocked(processarCurriculoRecebido).mockRejectedValueOnce(new Error("bug inesperado"));
+    vi.mocked(processarCurriculoRecebido).mockRejectedValueOnce(
+      new Error("bug inesperado"),
+    );
     const atualizarWatermarkSpy = vi
       .spyOn(emailCredencialRepository, "atualizarWatermark")
       .mockResolvedValueOnce(undefined);
@@ -166,8 +227,13 @@ describe("executarCicloDeCaptura", () => {
 
   it("skips the mailbox's history on first capture: advances straight to uidReferencia even with zero new messages", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: null });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
-    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({ mensagens: [], uidReferencia: 19116 });
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
+    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
+      mensagens: [],
+      uidReferencia: 19116,
+    });
     const atualizarWatermarkSpy = vi
       .spyOn(emailCredencialRepository, "atualizarWatermark")
       .mockResolvedValueOnce(undefined);
@@ -180,9 +246,17 @@ describe("executarCicloDeCaptura", () => {
 
   it("does not write to the database when there is nothing new and the reference doesn't move the watermark forward", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 50 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
-    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({ mensagens: [], uidReferencia: 50 });
-    const atualizarWatermarkSpy = vi.spyOn(emailCredencialRepository, "atualizarWatermark");
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
+    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
+      mensagens: [],
+      uidReferencia: 50,
+    });
+    const atualizarWatermarkSpy = vi.spyOn(
+      emailCredencialRepository,
+      "atualizarWatermark",
+    );
 
     await executarCicloDeCaptura();
 
@@ -191,10 +265,21 @@ describe("executarCicloDeCaptura", () => {
 
   it("does not advance the watermark past a message that failed with a quota error — retried next cycle instead of lost", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 11, anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") }] },
+        {
+          uid: 11,
+          anexos: [
+            {
+              filename: "cv.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
       ],
       uidReferencia: 10,
     });
@@ -203,7 +288,10 @@ describe("executarCicloDeCaptura", () => {
       mensagem: "Limite de requisições do provedor de IA atingido.",
       errorType: "quota",
     });
-    const atualizarWatermarkSpy = vi.spyOn(emailCredencialRepository, "atualizarWatermark");
+    const atualizarWatermarkSpy = vi.spyOn(
+      emailCredencialRepository,
+      "atualizarWatermark",
+    );
 
     await executarCicloDeCaptura();
 
@@ -212,20 +300,57 @@ describe("executarCicloDeCaptura", () => {
 
   it("stops the watermark right before the first quota-blocked message, even when later messages in the same batch succeeded", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 11, anexos: [{ filename: "a.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") }] },
-        { uid: 12, anexos: [{ filename: "b.pdf", mimeType: "application/pdf", buffer: Buffer.from("b") }] },
-        { uid: 13, anexos: [{ filename: "c.pdf", mimeType: "application/pdf", buffer: Buffer.from("c") }] },
+        {
+          uid: 11,
+          anexos: [
+            {
+              filename: "a.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
+        {
+          uid: 12,
+          anexos: [
+            {
+              filename: "b.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("b"),
+            },
+          ],
+        },
+        {
+          uid: 13,
+          anexos: [
+            {
+              filename: "c.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("c"),
+            },
+          ],
+        },
       ],
       uidReferencia: 13,
     });
     vi.mocked(processarCurriculoRecebido).mockImplementation(async (input) => {
       if (input.filename === "b.pdf") {
-        return { status: "erro", mensagem: "cota excedida", errorType: "quota" };
+        return {
+          status: "erro",
+          mensagem: "cota excedida",
+          errorType: "quota",
+        };
       }
-      return { status: "sucesso", candidatoId: `cand-${input.filename}`, mensagem: "ok" };
+      return {
+        status: "sucesso",
+        candidatoId: `cand-${input.filename}`,
+        mensagem: "ok",
+      };
     });
     const atualizarWatermarkSpy = vi
       .spyOn(emailCredencialRepository, "atualizarWatermark")
@@ -240,10 +365,21 @@ describe("executarCicloDeCaptura", () => {
 
   it("does not use uidReferencia to skip ahead when the batch was blocked by a quota error", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 11, anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.from("a") }] },
+        {
+          uid: 11,
+          anexos: [
+            {
+              filename: "cv.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
       ],
       // uidReferencia bem à frente de 11 — não pode ser usado, pois a
       // mensagem 11 não foi resolvida.
@@ -254,7 +390,10 @@ describe("executarCicloDeCaptura", () => {
       mensagem: "cota excedida",
       errorType: "quota",
     });
-    const atualizarWatermarkSpy = vi.spyOn(emailCredencialRepository, "atualizarWatermark");
+    const atualizarWatermarkSpy = vi.spyOn(
+      emailCredencialRepository,
+      "atualizarWatermark",
+    );
 
     await executarCicloDeCaptura();
 
@@ -263,7 +402,9 @@ describe("executarCicloDeCaptura", () => {
 
   it("when the batch was capped (uidReferencia null), only advances to the highest UID actually processed — never beyond, even though more remain", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 0 });
-    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(credencial);
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
         { uid: 1, anexos: [] },

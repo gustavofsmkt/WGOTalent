@@ -84,17 +84,32 @@ describe("TriagemForm - Validation Integration", () => {
   });
 
   it("valida os esquemas dos campos individuais utilizados no onBlur do form", () => {
-    expect(triagemBaseSchema.shape.candidatoId.safeParse(validCandidatoId).success).toBe(true);
-    expect(triagemBaseSchema.shape.candidatoId.safeParse("invalido").success).toBe(false);
+    expect(
+      triagemBaseSchema.shape.candidatoId.safeParse(validCandidatoId).success,
+    ).toBe(true);
+    expect(
+      triagemBaseSchema.shape.candidatoId.safeParse("invalido").success,
+    ).toBe(false);
 
-    expect(triagemBaseSchema.shape.vagaId.safeParse(validVagaId).success).toBe(true);
+    expect(triagemBaseSchema.shape.vagaId.safeParse(validVagaId).success).toBe(
+      true,
+    );
     expect(triagemBaseSchema.shape.vagaId.safeParse("").success).toBe(false);
 
-    expect(triagemBaseSchema.shape.etapa.safeParse("entrevista_rh").success).toBe(true);
-    expect(triagemBaseSchema.shape.etapa.safeParse("etapa_inexistente").success).toBe(false);
+    expect(
+      triagemBaseSchema.shape.etapa.safeParse("entrevista_rh").success,
+    ).toBe(true);
+    expect(
+      triagemBaseSchema.shape.etapa.safeParse("etapa_inexistente").success,
+    ).toBe(false);
 
-    expect(triagemBaseSchema.shape.resultado.safeParse("aprovado").success).toBe(true);
-    expect(triagemBaseSchema.shape.resultado.safeParse("resultado_inexistente").success).toBe(false);
+    expect(
+      triagemBaseSchema.shape.resultado.safeParse("aprovado").success,
+    ).toBe(true);
+    expect(
+      triagemBaseSchema.shape.resultado.safeParse("resultado_inexistente")
+        .success,
+    ).toBe(false);
   });
 
   it("valida o updateTriagemSchema sem exigir candidatoId e vagaId", () => {

@@ -30,7 +30,10 @@ export async function createTriagem(
     // Valida se candidato existe e está ativo
     const candidato = await candidatoRepository.findById(candidatoId);
     if (!candidato) {
-      return { success: false, message: "Candidato não encontrado ou inativo." };
+      return {
+        success: false,
+        message: "Candidato não encontrado ou inativo.",
+      };
     }
 
     // Valida se vaga existe e está ativa
@@ -48,7 +51,8 @@ export async function createTriagem(
     if (emAndamentoExists && parsed.data.resultado === "em_andamento") {
       return {
         success: false,
-        message: "O candidato já possui uma triagem em andamento para esta vaga.",
+        message:
+          "O candidato já possui uma triagem em andamento para esta vaga.",
       };
     }
 
@@ -56,7 +60,7 @@ export async function createTriagem(
     revalidatePath("/triagens");
     revalidatePath(`/candidatos/${candidatoId}`);
     revalidatePath(`/vagas/${vagaId}`);
-    
+
     return {
       success: true,
       data: triagem,
@@ -68,7 +72,8 @@ export async function createTriagem(
     ) {
       return {
         success: false,
-        message: "O candidato já possui uma triagem em andamento para esta vaga.",
+        message:
+          "O candidato já possui uma triagem em andamento para esta vaga.",
       };
     }
     return {
@@ -113,7 +118,8 @@ export async function updateTriagem(
       if (emAndamentoExists) {
         return {
           success: false,
-          message: "O candidato já possui uma triagem em andamento para esta vaga.",
+          message:
+            "O candidato já possui uma triagem em andamento para esta vaga.",
         };
       }
     }
@@ -135,7 +141,8 @@ export async function updateTriagem(
     ) {
       return {
         success: false,
-        message: "O candidato já possui uma triagem em andamento para esta vaga.",
+        message:
+          "O candidato já possui uma triagem em andamento para esta vaga.",
       };
     }
     return {
@@ -145,17 +152,15 @@ export async function updateTriagem(
   }
 }
 
-export async function deleteTriagem(
-  id: string,
-): Promise<ActionState> {
+export async function deleteTriagem(id: string): Promise<ActionState> {
   try {
     const existingTriagem = await triagemRepository.findByIdWithJoins(id);
     if (!existingTriagem) {
-       return { success: false, message: "Triagem não encontrada." };
+      return { success: false, message: "Triagem não encontrada." };
     }
 
     await triagemRepository.softDelete(id);
-    
+
     revalidatePath("/triagens");
     revalidatePath(`/triagens/${id}`);
     revalidatePath(`/candidatos/${existingTriagem.candidato.id}`);

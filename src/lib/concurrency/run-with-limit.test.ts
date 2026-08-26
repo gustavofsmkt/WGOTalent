@@ -35,7 +35,9 @@ describe("runWithLimit", () => {
 
     expect(results[0]).toEqual({ ok: true, value: 1 });
     expect(results[1]!.ok).toBe(false);
-    expect((results[1] as { ok: false; error: unknown }).error).toBeInstanceOf(Error);
+    expect((results[1] as { ok: false; error: unknown }).error).toBeInstanceOf(
+      Error,
+    );
     expect(results[2]).toEqual({ ok: true, value: 3 });
   });
 

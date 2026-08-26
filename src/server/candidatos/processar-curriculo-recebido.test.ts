@@ -9,7 +9,10 @@ vi.mock("~/env", () => ({
   },
 }));
 vi.mock("~/lib/storage", () => ({
-  storage: { save: vi.fn().mockResolvedValue(undefined), delete: vi.fn().mockResolvedValue(undefined) },
+  storage: {
+    save: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 vi.mock("~/server/agents/extracao-curriculo", () => ({
   executarExtracaoCurriculo: vi.fn(),
@@ -97,11 +100,19 @@ describe("processarCurriculoRecebido", () => {
   it.each([["manual"], ["email"]] as const)(
     "sets origem explicitly to %s on createAggregate — regression for the silent 'manual' default bug",
     async (origem) => {
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
-        .mockResolvedValueOnce({ id: "cand-1" } as unknown as CandidatoDetailCompleto);
+        .mockResolvedValueOnce({
+          id: "cand-1",
+        } as unknown as CandidatoDetailCompleto);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(
         extraido as unknown as ExtracaoCurriculoOutput,
       );
@@ -120,7 +131,10 @@ describe("processarCurriculoRecebido", () => {
   );
 
   it("sets origem explicitly on mergeAggregate when the candidate already exists", async () => {
-    vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+    vi.spyOn(
+      candidatoRepository,
+      "findByEmailIncludingDeleted",
+    ).mockResolvedValueOnce({
       id: "cand-1",
       deletedAt: null,
     } as unknown as CandidatoDetailCompleto);

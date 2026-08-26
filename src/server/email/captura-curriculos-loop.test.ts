@@ -20,7 +20,8 @@ describe("iniciarLoopDeCaptura", () => {
     // Reseta o estado guardado em globalThis entre testes — sem isso o
     // guard contra HMR (por design) impediria o 2º/3º teste de reiniciar o
     // loop.
-    (globalThis as Record<string, unknown>).__wgotalentEmailCapturaLoop = undefined;
+    (globalThis as Record<string, unknown>).__wgotalentEmailCapturaLoop =
+      undefined;
   });
 
   afterEach(() => {
@@ -76,8 +77,12 @@ describe("iniciarLoopDeCaptura", () => {
   });
 
   it("does not crash the process when a cycle rejects", async () => {
-    executarCicloDeCapturaMock.mockRejectedValueOnce(new Error("falha no ciclo"));
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    executarCicloDeCapturaMock.mockRejectedValueOnce(
+      new Error("falha no ciclo"),
+    );
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
 
     iniciarLoopDeCaptura();
     await vi.advanceTimersByTimeAsync(60000);

@@ -28,9 +28,10 @@ describe("email-credenciais server actions", () => {
 
   describe("createEmailCredencial", () => {
     it("encrypts the password before persisting and never returns it", async () => {
-      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        false,
-      );
+      vi.spyOn(
+        emailCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(false);
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -55,7 +56,8 @@ describe("email-credenciais server actions", () => {
       });
 
       expect(result.success).toBe(true);
-      const createCall = vi.mocked(emailCredencialRepository.create).mock.calls[0]![0];
+      const createCall = vi.mocked(emailCredencialRepository.create).mock
+        .calls[0]![0];
       expect(createCall.senhaCifrada).not.toContain("senha-real-secreta");
       if (result.success) {
         expect(result.data).not.toHaveProperty("senha");
@@ -65,9 +67,10 @@ describe("email-credenciais server actions", () => {
     });
 
     it("does not set an initial watermark by default — first capture skips the mailbox's history", async () => {
-      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        false,
-      );
+      vi.spyOn(
+        emailCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(false);
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -91,15 +94,17 @@ describe("email-credenciais server actions", () => {
         pasta: "INBOX",
       });
 
-      const createCall = vi.mocked(emailCredencialRepository.create).mock.calls[0]![0];
+      const createCall = vi.mocked(emailCredencialRepository.create).mock
+        .calls[0]![0];
       expect(createCall).not.toHaveProperty("ultimoUidProcessado");
       expect(createCall).not.toHaveProperty("capturarDesde");
     });
 
     it("seeds the watermark at 0 and stores capturarDesde when it's set — first capture processes the mailbox from that date on", async () => {
-      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        false,
-      );
+      vi.spyOn(
+        emailCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(false);
       vi.spyOn(emailCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         host: "imap.gmail.com",
@@ -124,7 +129,8 @@ describe("email-credenciais server actions", () => {
         capturarDesde: "2026-05-24",
       });
 
-      const createCall = vi.mocked(emailCredencialRepository.create).mock.calls[0]![0];
+      const createCall = vi.mocked(emailCredencialRepository.create).mock
+        .calls[0]![0];
       expect(createCall.ultimoUidProcessado).toBe(0);
       expect(createCall.capturarDesde).toBe("2026-05-24");
     });
@@ -156,9 +162,10 @@ describe("email-credenciais server actions", () => {
     });
 
     it("blocks creation when a recent duplicate submission is detected", async () => {
-      vi.spyOn(emailCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        true,
-      );
+      vi.spyOn(
+        emailCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(true);
       vi.spyOn(emailCredencialRepository, "create");
 
       const result = await createEmailCredencial({
@@ -179,12 +186,16 @@ describe("email-credenciais server actions", () => {
 
   describe("deactivateEmailCredencial", () => {
     it("deactivates the credential", async () => {
-      vi.spyOn(emailCredencialRepository, "deactivate").mockResolvedValueOnce(null);
+      vi.spyOn(emailCredencialRepository, "deactivate").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deactivateEmailCredencial("cred-1");
 
       expect(result.success).toBe(true);
-      expect(emailCredencialRepository.deactivate).toHaveBeenCalledWith("cred-1");
+      expect(emailCredencialRepository.deactivate).toHaveBeenCalledWith(
+        "cred-1",
+      );
     });
   });
 
@@ -204,12 +215,16 @@ describe("email-credenciais server actions", () => {
         updatedAt: new Date().toISOString(),
         deletedAt: null,
       });
-      vi.spyOn(emailCredencialRepository, "softDelete").mockResolvedValueOnce(null);
+      vi.spyOn(emailCredencialRepository, "softDelete").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deleteEmailCredencial("cred-1");
 
       expect(result.success).toBe(true);
-      expect(emailCredencialRepository.softDelete).toHaveBeenCalledWith("cred-1");
+      expect(emailCredencialRepository.softDelete).toHaveBeenCalledWith(
+        "cred-1",
+      );
     });
 
     it("refuses to delete an active credential", async () => {
@@ -236,7 +251,9 @@ describe("email-credenciais server actions", () => {
     });
 
     it("returns an error when the credential does not exist", async () => {
-      vi.spyOn(emailCredencialRepository, "findById").mockResolvedValueOnce(null);
+      vi.spyOn(emailCredencialRepository, "findById").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deleteEmailCredencial("missing");
 

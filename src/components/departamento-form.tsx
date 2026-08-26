@@ -141,7 +141,8 @@ export function DepartamentoForm({
             >
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "departamento-nome";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -168,10 +169,7 @@ export function DepartamentoForm({
                       Nome único que identifica o departamento (máx. 120
                       caracteres).
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}
@@ -185,7 +183,8 @@ export function DepartamentoForm({
             >
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "departamento-descricao";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -212,10 +211,7 @@ export function DepartamentoForm({
                       Detalhamento das responsabilidades e atribuições do
                       departamento.
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}

@@ -76,7 +76,9 @@ describe("departamentos server actions", () => {
     it("handles unique constraint error when department name already exists", async () => {
       vi.spyOn(departamentoRepository, "create").mockRejectedValueOnce(
         Object.assign(
-          new postgres.PostgresError("duplicate key value violates unique constraint"),
+          new postgres.PostgresError(
+            "duplicate key value violates unique constraint",
+          ),
           { code: "23505" },
         ),
       );
@@ -182,7 +184,9 @@ describe("departamentos server actions", () => {
       vi.spyOn(departamentoRepository, "hasActiveCargos").mockResolvedValueOnce(
         false,
       );
-      vi.spyOn(departamentoRepository, "softDelete").mockResolvedValueOnce(null);
+      vi.spyOn(departamentoRepository, "softDelete").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deleteDepartamento("dept-not-found");
 

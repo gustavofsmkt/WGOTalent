@@ -21,11 +21,31 @@ export interface EtapaDef {
 }
 
 export const ETAPAS: readonly EtapaDef[] = [
-  { value: "curriculo", label: "Currículo", Icon: FileText, dotColor: "bg-blue-500" },
+  {
+    value: "curriculo",
+    label: "Currículo",
+    Icon: FileText,
+    dotColor: "bg-blue-500",
+  },
   { value: "testes", label: "Testes", Icon: Code, dotColor: "bg-amber-500" },
-  { value: "entrevista_rh", label: "Entrevista RH", Icon: Users, dotColor: "bg-purple-500" },
-  { value: "entrevista_gestor", label: "Entrevista Gestor", Icon: UserCheck, dotColor: "bg-indigo-500" },
-  { value: "finalizado", label: "Finalizado", Icon: CheckCircle, dotColor: "bg-emerald-500" },
+  {
+    value: "entrevista_rh",
+    label: "Entrevista RH",
+    Icon: Users,
+    dotColor: "bg-purple-500",
+  },
+  {
+    value: "entrevista_gestor",
+    label: "Entrevista Gestor",
+    Icon: UserCheck,
+    dotColor: "bg-indigo-500",
+  },
+  {
+    value: "finalizado",
+    label: "Finalizado",
+    Icon: CheckCircle,
+    dotColor: "bg-emerald-500",
+  },
 ] as const;
 
 export const etapaLabels: Record<TriagemEtapa, string> = {
@@ -44,7 +64,10 @@ export const resultadoLabels: Record<TriagemResultado, string> = {
   banco_talentos: "Banco de Talentos",
 };
 
-export const motivoReprovacaoLabels: Record<(typeof motivosReprovacao)[number], string> = {
+export const motivoReprovacaoLabels: Record<
+  (typeof motivosReprovacao)[number],
+  string
+> = {
   curriculo: "Currículo / Perfil não aderente",
   fit_cultural: "Fit cultural insuficiente",
   testes: "Reprovado nos testes técnicos",
@@ -52,7 +75,10 @@ export const motivoReprovacaoLabels: Record<(typeof motivosReprovacao)[number], 
   gestor: "Avaliação do Gestor desfavorável",
 };
 
-export const motivoDesistenciaLabels: Record<(typeof motivosDesistencia)[number], string> = {
+export const motivoDesistenciaLabels: Record<
+  (typeof motivosDesistencia)[number],
+  string
+> = {
   incompatibilidade_salarial: "Incompatibilidade salarial",
   aceitou_outra_proposta: "Aceitou outra proposta",
   nao_atendeu_contato: "Não atendeu contato / Incomunicável",
@@ -83,7 +109,8 @@ export type ParecerField = (typeof PARECER_FIELD_BY_ETAPA)[TriagemEtapa];
 
 export function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
+  if (parts.length === 1)
+    return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
   const first = parts[0]?.charAt(0) ?? "";
   const last = parts[parts.length - 1]?.charAt(0) ?? "";
   return `${first}${last}`.toUpperCase();

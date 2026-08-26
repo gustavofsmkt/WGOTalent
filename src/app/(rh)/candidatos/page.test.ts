@@ -9,7 +9,10 @@ vi.mock("~/env", () => ({
   },
 }));
 
-import { candidatoRepository, type CandidatoSummary } from "~/server/db/repositories/candidato";
+import {
+  candidatoRepository,
+  type CandidatoSummary,
+} from "~/server/db/repositories/candidato";
 
 describe("CandidatosPage - Server Component Logic", () => {
   it("fetches active candidates summary", async () => {

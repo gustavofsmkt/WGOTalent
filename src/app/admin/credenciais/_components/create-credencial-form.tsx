@@ -74,8 +74,8 @@ export function CreateCredencialForm() {
       <CardHeader>
         <CardTitle>Nova Credencial</CardTitle>
         <CardDescription>
-          A API key é cifrada antes de ser salva e nunca é reexibida — para trocar, cadastre uma
-          nova e desative a antiga.
+          A API key é cifrada antes de ser salva e nunca é reexibida — para
+          trocar, cadastre uma nova e desative a antiga.
         </CardDescription>
       </CardHeader>
 
@@ -101,17 +101,24 @@ export function CreateCredencialForm() {
             <form.Field name="provider">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="credencial-provider">Provedor</FieldLabel>
+                    <FieldLabel htmlFor="credencial-provider">
+                      Provedor
+                    </FieldLabel>
                     <Select
                       value={field.state.value}
                       onValueChange={(val) => {
                         if (typeof val === "string") field.handleChange(val);
                       }}
                     >
-                      <SelectTrigger id="credencial-provider" className="w-full" aria-invalid={hasErrors}>
+                      <SelectTrigger
+                        id="credencial-provider"
+                        className="w-full"
+                        aria-invalid={hasErrors}
+                      >
                         <SelectValue placeholder="Selecione um provedor...">
                           {(val: string | null) =>
                             LLM_PROVIDERS.find((p) => p.value === val)?.label ??
@@ -128,8 +135,8 @@ export function CreateCredencialForm() {
                       </SelectContent>
                     </Select>
                     <FieldDescription>
-                      A credencial cadastrada aqui é a usada por todos os agentes configurados
-                      para este provedor.
+                      A credencial cadastrada aqui é a usada por todos os
+                      agentes configurados para este provedor.
                     </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -140,10 +147,13 @@ export function CreateCredencialForm() {
             <form.Field name="apiKey">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="credencial-api-key">API Key</FieldLabel>
+                    <FieldLabel htmlFor="credencial-api-key">
+                      API Key
+                    </FieldLabel>
                     <Input
                       id="credencial-api-key"
                       name={field.name}
@@ -163,7 +173,9 @@ export function CreateCredencialForm() {
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-3">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+          >
             {([canSubmit, isSubmitting]) => (
               <FormSubmitButton
                 pending={Boolean(isSubmitting)}

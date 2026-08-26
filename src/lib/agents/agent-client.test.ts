@@ -29,7 +29,10 @@ describe("gerarRespostaEstruturada (dispatcher)", () => {
   it("dispatches to the gemini client for google_ai_studio", async () => {
     geminiMock.mockResolvedValueOnce({ score: 1 });
 
-    const result = await gerarRespostaEstruturada({ provider: "google_ai_studio", ...baseInput });
+    const result = await gerarRespostaEstruturada({
+      provider: "google_ai_studio",
+      ...baseInput,
+    });
 
     expect(result).toEqual({ score: 1 });
     expect(geminiMock).toHaveBeenCalledWith(baseInput);
@@ -39,7 +42,10 @@ describe("gerarRespostaEstruturada (dispatcher)", () => {
   it("dispatches to the openai client for openai", async () => {
     openaiMock.mockResolvedValueOnce({ score: 2 });
 
-    const result = await gerarRespostaEstruturada({ provider: "openai", ...baseInput });
+    const result = await gerarRespostaEstruturada({
+      provider: "openai",
+      ...baseInput,
+    });
 
     expect(result).toEqual({ score: 2 });
     expect(openaiMock).toHaveBeenCalledWith(baseInput);

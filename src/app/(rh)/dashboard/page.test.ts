@@ -126,7 +126,9 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
       ],
     };
 
-    vi.spyOn(dashboardRepository, "getDashboardSummary").mockResolvedValueOnce(mockSummary);
+    vi.spyOn(dashboardRepository, "getDashboardSummary").mockResolvedValueOnce(
+      mockSummary,
+    );
 
     const data = await dashboardRepository.getDashboardSummary();
     expect(data.vagasAbertas).toBe(4);

@@ -9,7 +9,10 @@ vi.mock("~/env", () => ({
   },
 }));
 
-import { vagaRepository, type VagaWithCargoAndDepartamento } from "~/server/db/repositories/vaga";
+import {
+  vagaRepository,
+  type VagaWithCargoAndDepartamento,
+} from "~/server/db/repositories/vaga";
 
 describe("VagasPage - Server Component Logic", () => {
   const mockVagas: VagaWithCargoAndDepartamento[] = [
@@ -91,9 +94,10 @@ describe("VagasPage - Server Component Logic", () => {
   ];
 
   it("fetches all active vagas with cargo and departamento", async () => {
-    vi.spyOn(vagaRepository, "findAllWithCargoAndDepartamento").mockResolvedValueOnce(
-      mockVagas,
-    );
+    vi.spyOn(
+      vagaRepository,
+      "findAllWithCargoAndDepartamento",
+    ).mockResolvedValueOnce(mockVagas);
 
     const result = await vagaRepository.findAllWithCargoAndDepartamento();
     expect(result).toHaveLength(3);

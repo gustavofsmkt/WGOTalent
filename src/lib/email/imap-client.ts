@@ -1,6 +1,9 @@
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
-import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from "~/lib/validation/candidato-arquivo";
+import {
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+} from "~/lib/validation/candidato-arquivo";
 
 export interface AnexoRecebido {
   filename: string;
@@ -84,7 +87,8 @@ export async function buscarMensagensNovas(
     try {
       const mailbox = client.mailbox;
       const uidNext = mailbox ? mailbox.uidNext : 1;
-      const primeiroUid = params.desdeUid === null ? uidNext : params.desdeUid + 1;
+      const primeiroUid =
+        params.desdeUid === null ? uidNext : params.desdeUid + 1;
 
       const encontrados = (
         (await client.search(
@@ -102,19 +106,27 @@ export async function buscarMensagensNovas(
         return { mensagens: [], uidReferencia: uidNext - 1 };
       }
 
-      const cortado = params.limiteLote != null && encontrados.length > params.limiteLote;
-      const uids = cortado ? encontrados.slice(0, params.limiteLote) : encontrados;
+      const cortado =
+        params.limiteLote != null && encontrados.length > params.limiteLote;
+      const uids = cortado
+        ? encontrados.slice(0, params.limiteLote)
+        : encontrados;
       const uidReferencia = cortado ? null : uidNext - 1;
 
       const mensagens: MensagemComAnexos[] = [];
-      for await (const message of client.fetch(uids, { uid: true, source: true }, { uid: true })) {
+      for await (const message of client.fetch(
+        uids,
+        { uid: true, source: true },
+        { uid: true },
+      )) {
         if (!message.source) continue;
 
         const parsed = await simpleParser(message.source);
         const anexos: AnexoRecebido[] = parsed.attachments
           .filter(
             (anexo) =>
-              ALLOWED_MIME_TYPES.includes(anexo.contentType) && anexo.content.length <= MAX_FILE_SIZE,
+              ALLOWED_MIME_TYPES.includes(anexo.contentType) &&
+              anexo.content.length <= MAX_FILE_SIZE,
           )
           .map((anexo) => ({
             filename: anexo.filename ?? "anexo",

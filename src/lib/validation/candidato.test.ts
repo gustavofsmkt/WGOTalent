@@ -139,7 +139,10 @@ describe("Validação de Candidato", () => {
     });
 
     it("deve assumir https:// quando o linkedin vem sem esquema", () => {
-      const data = { ...validCandidato, linkedin: "www.linkedin.com/in/fulano" };
+      const data = {
+        ...validCandidato,
+        linkedin: "www.linkedin.com/in/fulano",
+      };
       const result = candidatoSchema.safeParse(data);
       expect(result.success).toBe(true);
       if (result.success) {

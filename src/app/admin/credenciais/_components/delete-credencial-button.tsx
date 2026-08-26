@@ -11,7 +11,9 @@ interface DeleteCredencialButtonProps {
   credencialId: string;
 }
 
-export function DeleteCredencialButton({ credencialId }: DeleteCredencialButtonProps) {
+export function DeleteCredencialButton({
+  credencialId,
+}: DeleteCredencialButtonProps) {
   const router = useRouter();
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
@@ -45,7 +47,11 @@ export function DeleteCredencialButton({ credencialId }: DeleteCredencialButtonP
           onClick={handleDelete}
           className="h-8 px-2 text-xs"
         >
-          {isPending ? <Loader2 className="size-3.5 animate-spin" /> : "Sim, excluir"}
+          {isPending ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            "Sim, excluir"
+          )}
         </Button>
         <Button
           type="button"

@@ -41,6 +41,8 @@ export function decryptCredential(cipherText: string): string {
     ]);
     return decrypted.toString("utf8");
   } catch {
-    throw new Error("Falha ao decifrar credencial: dado corrompido ou adulterado.");
+    throw new Error(
+      "Falha ao decifrar credencial: dado corrompido ou adulterado.",
+    );
   }
 }

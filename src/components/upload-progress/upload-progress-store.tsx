@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { getUploadLoteAtivo, limparUploadLoteFinalizados } from "~/actions/candidatos";
+import {
+  getUploadLoteAtivo,
+  limparUploadLoteFinalizados,
+} from "~/actions/candidatos";
 import type { UploadLoteItem } from "~/server/db/schema";
 import { temItemEmAndamento, temErroPendente } from "./upload-progress-status";
 
@@ -18,9 +21,14 @@ export interface UploadProgressContextValue {
   dismiss: () => void;
 }
 
-const UploadProgressContext = React.createContext<UploadProgressContextValue | null>(null);
+const UploadProgressContext =
+  React.createContext<UploadProgressContextValue | null>(null);
 
-export function UploadProgressProvider({ children }: { children: React.ReactNode }) {
+export function UploadProgressProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [items, setItems] = React.useState<UploadLoteItem[]>([]);
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -65,13 +73,19 @@ export function UploadProgressProvider({ children }: { children: React.ReactNode
     [items, isOpen, seedItems, limparFinalizados, dismiss],
   );
 
-  return React.createElement(UploadProgressContext.Provider, { value }, children);
+  return React.createElement(
+    UploadProgressContext.Provider,
+    { value },
+    children,
+  );
 }
 
 export function useUploadProgress(): UploadProgressContextValue {
   const context = React.useContext(UploadProgressContext);
   if (!context) {
-    throw new Error("useUploadProgress must be used within an UploadProgressProvider");
+    throw new Error(
+      "useUploadProgress must be used within an UploadProgressProvider",
+    );
   }
   return context;
 }

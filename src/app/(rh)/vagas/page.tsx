@@ -1,6 +1,14 @@
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Briefcase, Eye, Building2, MapPin, Users, DollarSign } from "lucide-react";
+import {
+  Plus,
+  Briefcase,
+  Eye,
+  Building2,
+  MapPin,
+  Users,
+  DollarSign,
+} from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
@@ -32,7 +40,10 @@ export default async function VagasPage(props: VagasPageProps) {
   const allVagas = await vagaRepository.findAllWithCargoAndDepartamento();
 
   const totalAbertas = allVagas.filter((v) => v.status === "aberta").length;
-  const totalPosicoes = allVagas.reduce((acc, v) => acc + (v.posicoesDisponiveis || 0), 0);
+  const totalPosicoes = allVagas.reduce(
+    (acc, v) => acc + (v.posicoesDisponiveis || 0),
+    0,
+  );
 
   const filteredVagas = allVagas.filter((vaga) => {
     const matchesQuery =
@@ -92,7 +103,9 @@ export default async function VagasPage(props: VagasPageProps) {
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Total de Vagas
               </p>
-              <p className="text-2xl font-bold text-foreground">{allVagas.length}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {allVagas.length}
+              </p>
             </div>
             <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Briefcase className="size-5" />
@@ -122,7 +135,9 @@ export default async function VagasPage(props: VagasPageProps) {
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Posições Totais
               </p>
-              <p className="text-2xl font-bold text-foreground">{totalPosicoes}</p>
+              <p className="text-2xl font-bold text-foreground">
+                {totalPosicoes}
+              </p>
             </div>
             <div className="size-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <Users className="size-5" />
@@ -191,13 +206,17 @@ export default async function VagasPage(props: VagasPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableHead className="w-[260px]">Cargo / Departamento</TableHead>
+                      <TableHead className="w-[260px]">
+                        Cargo / Departamento
+                      </TableHead>
                       <TableHead className="w-[180px]">Localização</TableHead>
                       <TableHead className="w-[100px]">Posições</TableHead>
                       <TableHead className="w-[150px]">Remuneração</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
                       <TableHead className="w-[120px]">Criada em</TableHead>
-                      <TableHead className="w-[120px] text-right">Ações</TableHead>
+                      <TableHead className="w-[120px] text-right">
+                        Ações
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -248,7 +267,8 @@ export default async function VagasPage(props: VagasPageProps) {
                               className={buttonVariants({
                                 variant: "ghost",
                                 size: "icon-sm",
-                                className: "text-muted-foreground hover:text-primary",
+                                className:
+                                  "text-muted-foreground hover:text-primary",
                               })}
                               title={`Ver detalhes da vaga`}
                               aria-label={`Ver detalhes da vaga`}
@@ -299,7 +319,12 @@ export default async function VagasPage(props: VagasPageProps) {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Users className="size-3.5 text-muted-foreground" />
-                        <span>{vaga.posicoesDisponiveis} {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}</span>
+                        <span>
+                          {vaga.posicoesDisponiveis}{" "}
+                          {vaga.posicoesDisponiveis === 1
+                            ? "posição"
+                            : "posições"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 col-span-2">
                         <DollarSign className="size-3.5 text-muted-foreground" />
@@ -340,4 +365,3 @@ export default async function VagasPage(props: VagasPageProps) {
     </div>
   );
 }
-

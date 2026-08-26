@@ -18,7 +18,7 @@ describe("DepartamentoForm - Validation Integration", () => {
     if (result.success) {
       expect(result.data.nome).toBe("Engenharia de Software");
       expect(result.data.descricao).toBe(
-        "Equipe responsável pelo desenvolvimento de sistemas."
+        "Equipe responsável pelo desenvolvimento de sistemas.",
       );
     }
   });
@@ -42,7 +42,9 @@ describe("DepartamentoForm - Validation Integration", () => {
   it("validates onBlur field schema for 'descricao'", () => {
     const descricaoSchema = departamentoSchema.shape.descricao;
 
-    const validDescricao = descricaoSchema.safeParse("Descrição do departamento");
+    const validDescricao = descricaoSchema.safeParse(
+      "Descrição do departamento",
+    );
     expect(validDescricao.success).toBe(true);
 
     const emptyDescricao = descricaoSchema.safeParse("");

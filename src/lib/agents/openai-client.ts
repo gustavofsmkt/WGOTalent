@@ -20,7 +20,9 @@ export async function gerarRespostaEstruturada<T>(
   return comRetry(() => tentarGerarResposta(input));
 }
 
-function montarConteudoUsuario(input: GerarRespostaEstruturadaInput<unknown>): unknown[] {
+function montarConteudoUsuario(
+  input: GerarRespostaEstruturadaInput<unknown>,
+): unknown[] {
   const partes: unknown[] = [{ type: "input_text", text: input.userPrompt }];
 
   if (input.arquivo) {
@@ -47,7 +49,11 @@ function extrairTextoDaResposta(body: unknown): string | undefined {
     if (!Array.isArray(content)) continue;
 
     for (const part of content) {
-      if (part && typeof part === "object" && (part as { type?: unknown }).type === "output_text") {
+      if (
+        part &&
+        typeof part === "object" &&
+        (part as { type?: unknown }).type === "output_text"
+      ) {
         const text = (part as { text?: unknown }).text;
         if (typeof text === "string") return text;
       }
@@ -72,7 +78,11 @@ async function tentarGerarResposta<T>(
         model: input.model,
         input: [
           { type: "message", role: "system", content: input.systemPrompt },
-          { type: "message", role: "user", content: montarConteudoUsuario(input) },
+          {
+            type: "message",
+            role: "user",
+            content: montarConteudoUsuario(input),
+          },
         ],
         text: {
           format: {
@@ -85,7 +95,10 @@ async function tentarGerarResposta<T>(
       }),
     });
   } catch (error) {
-    console.error("[openai-client] Falha de rede ao chamar a Responses API:", error);
+    console.error(
+      "[openai-client] Falha de rede ao chamar a Responses API:",
+      error,
+    );
     throw new AgenteChamadaError(error);
   }
 
@@ -97,7 +110,9 @@ async function tentarGerarResposta<T>(
   if (!response.ok) {
     const corpo = await response.text();
     console.error(`[openai-client] HTTP ${response.status}:`, corpo);
-    throw new AgenteChamadaError(new Error(`HTTP ${response.status}: ${corpo}`));
+    throw new AgenteChamadaError(
+      new Error(`HTTP ${response.status}: ${corpo}`),
+    );
   }
 
   const responseText = extrairTextoDaResposta(await response.json());

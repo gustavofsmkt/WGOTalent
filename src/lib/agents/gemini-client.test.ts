@@ -58,7 +58,9 @@ describe("gerarRespostaEstruturada", () => {
     });
 
     const call = generateContentMock.mock.calls[0]![0];
-    expect(call.contents[0].parts[0].inlineData.mimeType).toBe("application/pdf");
+    expect(call.contents[0].parts[0].inlineData.mimeType).toBe(
+      "application/pdf",
+    );
   });
 
   it("throws AgenteChamadaError when the provider call fails on every attempt", async () => {
@@ -73,7 +75,8 @@ describe("gerarRespostaEstruturada", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
+    const expectation =
+      expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
     await vi.runAllTimersAsync();
     await expectation;
     expect(generateContentMock).toHaveBeenCalledTimes(3);
@@ -82,7 +85,10 @@ describe("gerarRespostaEstruturada", () => {
   it("throws AgenteQuotaExcedidaError when the provider returns a 429 status on every attempt", async () => {
     vi.useFakeTimers();
     generateContentMock.mockRejectedValue(
-      Object.assign(new Error('{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}'), { status: 429 }),
+      Object.assign(
+        new Error('{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}'),
+        { status: 429 },
+      ),
     );
 
     const promise = gerarRespostaEstruturada({
@@ -93,7 +99,9 @@ describe("gerarRespostaEstruturada", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteQuotaExcedidaError);
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      AgenteQuotaExcedidaError,
+    );
     await vi.runAllTimersAsync();
     await expectation;
     expect(generateContentMock).toHaveBeenCalledTimes(3);
@@ -113,14 +121,18 @@ describe("gerarRespostaEstruturada", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteQuotaExcedidaError);
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      AgenteQuotaExcedidaError,
+    );
     await vi.runAllTimersAsync();
     await expectation;
   });
 
   it("throws AgenteRespostaInvalidaError when the response fails schema validation on every attempt", async () => {
     vi.useFakeTimers();
-    generateContentMock.mockResolvedValue({ text: '{"score": "not-a-number"}' });
+    generateContentMock.mockResolvedValue({
+      text: '{"score": "not-a-number"}',
+    });
 
     const promise = gerarRespostaEstruturada({
       apiKey: "fake-key",
@@ -130,7 +142,9 @@ describe("gerarRespostaEstruturada", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteRespostaInvalidaError);
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      AgenteRespostaInvalidaError,
+    );
     await vi.runAllTimersAsync();
     await expectation;
     expect(generateContentMock).toHaveBeenCalledTimes(3);

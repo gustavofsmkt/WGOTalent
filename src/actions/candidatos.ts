@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { candidatoRepository, type CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
+import {
+  candidatoRepository,
+  type CandidatoDetailCompleto,
+} from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { triagemRepository } from "~/server/db/repositories/triagem";
@@ -13,7 +16,10 @@ import {
 } from "~/lib/validation/candidato";
 import { storage } from "~/lib/storage";
 import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
-import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from "~/lib/validation/candidato-arquivo";
+import {
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+} from "~/lib/validation/candidato-arquivo";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import { processarCurriculoRecebido } from "~/server/candidatos/processar-curriculo-recebido";
 import crypto from "crypto";
@@ -28,21 +34,27 @@ async function handleFileUpload(file: File): Promise<string | null> {
     throw new Error("Arquivo excede o limite de 5MB.");
   }
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error("Tipo de arquivo não suportado. Use PDF, DOCX, PNG ou JPEG.");
+    throw new Error(
+      "Tipo de arquivo não suportado. Use PDF, DOCX, PNG ou JPEG.",
+    );
   }
 
   const ext = path.extname(file.name) || "";
   const key = `resumes/${crypto.randomUUID()}${ext}`;
-  
+
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
   await storage.save(key, buffer, file.type);
-  
+
   return key;
 }
 
-function parsePayload(payload: unknown): { data: unknown; file: File | null; error?: string } {
+function parsePayload(payload: unknown): {
+  data: unknown;
+  file: File | null;
+  error?: string;
+} {
   if (typeof FormData !== "undefined" && payload instanceof FormData) {
     const dataStr = payload.get("data");
     let data: unknown;
@@ -53,13 +65,17 @@ function parsePayload(payload: unknown): { data: unknown; file: File | null; err
         return { data: null, file: null, error: "JSON inválido no campo data" };
       }
     } else {
-      return { data: null, file: null, error: "Campo data ausente ou inválido" };
+      return {
+        data: null,
+        file: null,
+        error: "Campo data ausente ou inválido",
+      };
     }
-    
+
     const file = payload.get("file");
-    return { 
-      data, 
-      file: file instanceof File && file.size > 0 ? file : null 
+    return {
+      data,
+      file: file instanceof File && file.size > 0 ? file : null,
     };
   }
   return { data: payload, file: null };
@@ -80,7 +96,7 @@ export async function createCandidato(
   payload: unknown,
 ): Promise<ActionState<Candidato>> {
   const { data, file, error } = parsePayload(payload);
-  
+
   if (error) {
     return { success: false, message: error };
   }
@@ -99,25 +115,38 @@ export async function createCandidato(
     const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
 
     if (!email && !celular) {
-      return { success: false, message: "Informe pelo menos um e-mail ou celular." };
+      return {
+        success: false,
+        message: "Informe pelo menos um e-mail ou celular.",
+      };
     }
 
     const existing =
-      (email ? await candidatoRepository.findByEmailIncludingDeleted(email) : null) ??
-      (celular ? await candidatoRepository.findByCelularIncludingDeleted(celular) : null);
+      (email
+        ? await candidatoRepository.findByEmailIncludingDeleted(email)
+        : null) ??
+      (celular
+        ? await candidatoRepository.findByCelularIncludingDeleted(celular)
+        : null);
 
     // Validar referências
     if (cargoInteresseId) {
       const cargo = await cargoRepository.findById(cargoInteresseId);
       if (!cargo || !cargo.ativo) {
-        return { success: false, message: "O cargo selecionado é inválido ou está inativo." };
+        return {
+          success: false,
+          message: "O cargo selecionado é inválido ou está inativo.",
+        };
       }
     }
 
     if (areaInteresseId) {
       const depto = await departamentoRepository.findById(areaInteresseId);
       if (!depto) {
-        return { success: false, message: "O departamento selecionado é inválido." };
+        return {
+          success: false,
+          message: "O departamento selecionado é inválido.",
+        };
       }
     }
 
@@ -129,7 +158,10 @@ export async function createCandidato(
       } catch (e) {
         return {
           success: false,
-          message: e instanceof Error ? e.message : "Erro ao fazer upload do currículo.",
+          message:
+            e instanceof Error
+              ? e.message
+              : "Erro ao fazer upload do currículo.",
         };
       }
     }
@@ -138,10 +170,16 @@ export async function createCandidato(
     let message: string | undefined;
     try {
       if (existing?.deletedAt) {
-        result = await candidatoRepository.restoreAggregate(existing.id, parsed.data);
+        result = await candidatoRepository.restoreAggregate(
+          existing.id,
+          parsed.data,
+        );
         message = "Candidato restaurado com sucesso.";
       } else if (existing) {
-        const merged = await candidatoRepository.mergeAggregate(existing.id, parsed.data);
+        const merged = await candidatoRepository.mergeAggregate(
+          existing.id,
+          parsed.data,
+        );
         result = merged.candidato;
         if (merged.houveMudanca) {
           await resetTriagensEmCurriculo(existing.id);
@@ -165,7 +203,10 @@ export async function createCandidato(
     // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade). Fire-and-forget:
     // não bloqueia a resposta desta action, e o próprio orquestrador limita concorrência internamente.
     orquestrarParaCandidatoNovo(result.id).catch((err) =>
-      console.error("[createCandidato] Falha na orquestração de matching:", err),
+      console.error(
+        "[createCandidato] Falha na orquestração de matching:",
+        err,
+      ),
     );
 
     revalidatePath("/candidatos");
@@ -213,7 +254,8 @@ export async function updateCandidato(
     }
 
     if (email && email !== existingCandidato.email) {
-      const emailExists = await candidatoRepository.findByEmailIncludingDeleted(email);
+      const emailExists =
+        await candidatoRepository.findByEmailIncludingDeleted(email);
       if (emailExists) {
         return {
           success: false,
@@ -223,7 +265,8 @@ export async function updateCandidato(
     }
 
     if (celular && celular !== existingCandidato.celular) {
-      const celularExists = await candidatoRepository.findByCelularIncludingDeleted(celular);
+      const celularExists =
+        await candidatoRepository.findByCelularIncludingDeleted(celular);
       if (celularExists) {
         return {
           success: false,
@@ -236,14 +279,20 @@ export async function updateCandidato(
     if (cargoInteresseId) {
       const cargo = await cargoRepository.findById(cargoInteresseId);
       if (!cargo || !cargo.ativo) {
-        return { success: false, message: "O cargo selecionado é inválido ou está inativo." };
+        return {
+          success: false,
+          message: "O cargo selecionado é inválido ou está inativo.",
+        };
       }
     }
 
     if (areaInteresseId) {
       const depto = await departamentoRepository.findById(areaInteresseId);
       if (!depto) {
-        return { success: false, message: "O departamento selecionado é inválido." };
+        return {
+          success: false,
+          message: "O departamento selecionado é inválido.",
+        };
       }
     }
 
@@ -257,7 +306,10 @@ export async function updateCandidato(
       } catch (e) {
         return {
           success: false,
-          message: e instanceof Error ? e.message : "Erro ao fazer upload do currículo.",
+          message:
+            e instanceof Error
+              ? e.message
+              : "Erro ao fazer upload do currículo.",
         };
       }
     } else {
@@ -268,11 +320,11 @@ export async function updateCandidato(
     // Certificar-se que filhos pertencem a esse candidato caso possuam IDs na request
     // A validação de IDs de filhos está sendo tratada no repository (atualizando apenas com and(eq(id), eq(candidatoId)))
     // Evitando duplicações ou modificação de filhos de outro candidato.
-    
+
     let result: CandidatoDetailCompleto | undefined | null;
     try {
       result = await candidatoRepository.updateAggregate(id, parsed.data);
-      
+
       // Cleanup old file only after DB updated successfully
       if (newFileKey && oldFileKey) {
         await storage.delete(oldFileKey).catch(console.error);
@@ -288,7 +340,7 @@ export async function updateCandidato(
     if (!result) {
       throw new Error("Falha ao retornar o candidato atualizado.");
     }
-    
+
     revalidatePath("/candidatos");
     revalidatePath(`/candidatos/${id}`);
 
@@ -321,8 +373,13 @@ const CONCORRENCIA_LOTE = 3;
  * merge para `processarCurriculoRecebido`, compartilhada com a captação por
  * e-mail — só muda `origem` ("manual" aqui, "email" lá).
  */
-export async function processarItemLote(itemId: string, file: File): Promise<void> {
-  await uploadLoteItemRepository.updateStatus(itemId, { status: "processando" });
+export async function processarItemLote(
+  itemId: string,
+  file: File,
+): Promise<void> {
+  await uploadLoteItemRepository.updateStatus(itemId, {
+    status: "processando",
+  });
 
   const arrayBuffer = await file.arrayBuffer();
   const resultado = await processarCurriculoRecebido({
@@ -336,7 +393,9 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
     await uploadLoteItemRepository.updateStatus(itemId, {
       status: "erro",
       mensagem: resultado.mensagem,
-      ...(resultado.errorType !== undefined ? { errorType: resultado.errorType } : {}),
+      ...(resultado.errorType !== undefined
+        ? { errorType: resultado.errorType }
+        : {}),
     });
     return;
   }
@@ -362,7 +421,9 @@ export async function processarItemLote(itemId: string, file: File): Promise<voi
 export async function iniciarUploadLote(
   formData: FormData,
 ): Promise<ActionState<UploadLoteItem[]>> {
-  const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0);
 
   if (files.length === 0) {
     return { success: false, message: "Nenhum arquivo enviado." };
@@ -376,7 +437,10 @@ export async function iniciarUploadLote(
 
   const itens = await Promise.all(
     files.map((file) =>
-      uploadLoteItemRepository.create({ fileName: file.name, status: "pendente" }),
+      uploadLoteItemRepository.create({
+        fileName: file.name,
+        status: "pendente",
+      }),
     ),
   );
 
@@ -385,7 +449,10 @@ export async function iniciarUploadLote(
     CONCORRENCIA_LOTE,
     ({ item, file }) => processarItemLote(item.id, file),
   ).catch((err) =>
-    console.error("[iniciarUploadLote] Falha inesperada no processamento do lote:", err),
+    console.error(
+      "[iniciarUploadLote] Falha inesperada no processamento do lote:",
+      err,
+    ),
   );
 
   return { success: true, data: itens };
@@ -400,9 +467,7 @@ export async function limparUploadLoteFinalizados(): Promise<void> {
   await uploadLoteItemRepository.softDeleteFinalizados();
 }
 
-export async function deleteCandidato(
-  id: string,
-): Promise<ActionState<void>> {
+export async function deleteCandidato(id: string): Promise<ActionState<void>> {
   try {
     const existingCandidato = await candidatoRepository.findById(id);
     if (!existingCandidato) {
@@ -412,7 +477,7 @@ export async function deleteCandidato(
     await candidatoRepository.softDelete(id);
 
     revalidatePath("/candidatos");
-    
+
     return {
       success: true,
       message: "Candidato excluído com sucesso.",

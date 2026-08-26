@@ -13,14 +13,17 @@ describe("T3 Typed Environment Validation", () => {
   });
 
   it("exports validated env properties when environment variables are set correctly", async () => {
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
+    process.env.DATABASE_URL =
+      "postgresql://postgres:password@localhost:5432/wgotalent";
     process.env.STORAGE_ROOT = "./storage";
     process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = "a".repeat(32);
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
 
     const { env } = await import("~/env");
 
-    expect(env.DATABASE_URL).toBe("postgresql://postgres:password@localhost:5432/wgotalent");
+    expect(env.DATABASE_URL).toBe(
+      "postgresql://postgres:password@localhost:5432/wgotalent",
+    );
     expect(env.STORAGE_ROOT).toBe("./storage");
     expect(env.NODE_ENV).toBe("test");
   });
@@ -33,14 +36,16 @@ describe("T3 Typed Environment Validation", () => {
   });
 
   it("fails validation when STORAGE_ROOT is missing", async () => {
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
+    process.env.DATABASE_URL =
+      "postgresql://postgres:password@localhost:5432/wgotalent";
     delete process.env.STORAGE_ROOT;
 
     await expect(import("~/env")).rejects.toThrow();
   });
 
   it("fails validation when empty string is passed for required variable", async () => {
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
+    process.env.DATABASE_URL =
+      "postgresql://postgres:password@localhost:5432/wgotalent";
     process.env.STORAGE_ROOT = "";
 
     await expect(import("~/env")).rejects.toThrow();
@@ -55,7 +60,8 @@ describe("T3 Typed Environment Validation", () => {
       await import("~/env");
       expect.fail("Expected environment validation to throw an error");
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       expect(errorMessage).not.toContain(sensitiveSecret);
     }
   });

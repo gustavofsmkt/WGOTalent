@@ -127,7 +127,14 @@ export const dateStringSchema = z
       const month = Number(monthStr);
       const day = Number(dayStr);
 
-      if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+      if (
+        year < 1900 ||
+        year > 2100 ||
+        month < 1 ||
+        month > 12 ||
+        day < 1 ||
+        day > 31
+      ) {
         return false;
       }
 

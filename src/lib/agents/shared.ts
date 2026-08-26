@@ -33,7 +33,9 @@ export class AgenteChamadaError extends Error {
 
 export class AgenteQuotaExcedidaError extends Error {
   constructor(cause: unknown) {
-    super("Limite de requisições do provedor de IA atingido. Tente novamente em instantes.");
+    super(
+      "Limite de requisições do provedor de IA atingido. Tente novamente em instantes.",
+    );
     this.cause = cause;
   }
 }
@@ -81,7 +83,10 @@ export function parseRespostaEstruturada<T>(
   try {
     parsed = JSON.parse(responseText);
   } catch (error) {
-    console.error("[parseRespostaEstruturada] JSON inválido na resposta do agente:", responseText);
+    console.error(
+      "[parseRespostaEstruturada] JSON inválido na resposta do agente:",
+      responseText,
+    );
     throw new AgenteRespostaInvalidaError(error);
   }
 

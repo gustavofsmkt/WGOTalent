@@ -54,7 +54,9 @@ describe("executarAvaliadorTriagem", () => {
     findActiveByProviderMock.mockResolvedValueOnce(credencial);
     findByIdWithJoinsMock.mockResolvedValueOnce(null);
 
-    await expect(executarAvaliadorTriagem("missing")).rejects.toThrow(/não encontrada/);
+    await expect(executarAvaliadorTriagem("missing")).rejects.toThrow(
+      /não encontrada/,
+    );
   });
 
   it("returns the evaluation with triagemId attached and score as a string", async () => {

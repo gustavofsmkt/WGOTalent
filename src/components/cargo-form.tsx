@@ -4,14 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import type { z } from "zod";
-import {
-  cargoSchema,
-  type CreateCargoInput,
-} from "~/lib/validation/cargo";
-import {
-  createCargo,
-  updateCargo,
-} from "~/actions/cargos";
+import { cargoSchema, type CreateCargoInput } from "~/lib/validation/cargo";
+import { createCargo, updateCargo } from "~/actions/cargos";
 import type { Cargo } from "~/server/db/schema";
 import {
   Card,
@@ -89,7 +83,9 @@ export function CargoForm({
       titulo: cargo?.titulo ?? "",
       descricao: cargo?.descricao ?? "",
       ativo: cargo?.ativo ?? true,
-      faixaSalarial: (cargo?.faixaSalarial ? String(cargo.faixaSalarial) : "") as string,
+      faixaSalarial: (cargo?.faixaSalarial
+        ? String(cargo.faixaSalarial)
+        : "") as string,
       requisitos: cargo?.requisitos ?? "",
       requisitosDesejaveis: cargo?.requisitosDesejaveis ?? "",
       criteriosEliminatorios: cargo?.criteriosEliminatorios ?? "",
@@ -168,7 +164,9 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "cargo-titulo";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -210,16 +208,16 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "cargo-departamento-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
 
                   return (
                     <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>
-                        Departamento *
-                      </FieldLabel>
+                      <FieldLabel htmlFor={fieldId}>Departamento *</FieldLabel>
                       <Select
                         value={field.state.value || ""}
                         onValueChange={(val) => {
@@ -238,9 +236,14 @@ export function CargoForm({
                         >
                           <SelectValue placeholder="Selecione um departamento...">
                             {(val: string | null) => {
-                              if (!val || val === "none") return "Selecione um departamento...";
-                              const dept = departamentoOptions.find((d) => d.id === val);
-                              return dept ? dept.nome : "Selecione um departamento...";
+                              if (!val || val === "none")
+                                return "Selecione um departamento...";
+                              const dept = departamentoOptions.find(
+                                (d) => d.id === val,
+                              );
+                              return dept
+                                ? dept.nome
+                                : "Selecione um departamento...";
                             }}
                           </SelectValue>
                         </SelectTrigger>
@@ -280,7 +283,9 @@ export function CargoForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "cargo-faixa-salarial";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -326,7 +331,10 @@ export function CargoForm({
                   const descId = `${fieldId}-description`;
 
                   return (
-                    <Field orientation="horizontal" className="items-start gap-3 pt-2">
+                    <Field
+                      orientation="horizontal"
+                      className="items-start gap-3 pt-2"
+                    >
                       <Checkbox
                         id={fieldId}
                         name={field.name}
@@ -362,7 +370,9 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "cargo-descricao";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -388,10 +398,7 @@ export function CargoForm({
                     <FieldDescription id={descId}>
                       Síntese das atividades e escopo de atuação.
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}
@@ -405,7 +412,9 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "cargo-requisitos";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -431,10 +440,7 @@ export function CargoForm({
                     <FieldDescription id={descId}>
                       Requisitos mínimos e mandatórios para o cargo.
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}
@@ -448,7 +454,9 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "cargo-requisitos-desejaveis";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -474,10 +482,7 @@ export function CargoForm({
                     <FieldDescription id={descId}>
                       Diferenciais que agregam valor na triagem.
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}
@@ -491,7 +496,9 @@ export function CargoForm({
               }}
             >
               {(field) => {
-                const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                const hasErrors =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 const fieldId = "cargo-criterios-eliminatorios";
                 const errorId = `${fieldId}-error`;
                 const descId = `${fieldId}-description`;
@@ -517,10 +524,7 @@ export function CargoForm({
                     <FieldDescription id={descId}>
                       Condições que impedem a aprovação do candidato.
                     </FieldDescription>
-                    <FieldError
-                      id={errorId}
-                      errors={field.state.meta.errors}
-                    />
+                    <FieldError id={errorId} errors={field.state.meta.errors} />
                   </Field>
                 );
               }}

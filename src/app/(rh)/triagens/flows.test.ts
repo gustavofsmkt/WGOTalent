@@ -40,8 +40,13 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
       },
     ];
 
-    vi.spyOn(triagemRepository, "findActiveCandidatoOptions").mockResolvedValueOnce(mockCandidatos);
-    vi.spyOn(triagemRepository, "findActiveVagaOptions").mockResolvedValueOnce(mockVagas);
+    vi.spyOn(
+      triagemRepository,
+      "findActiveCandidatoOptions",
+    ).mockResolvedValueOnce(mockCandidatos);
+    vi.spyOn(triagemRepository, "findActiveVagaOptions").mockResolvedValueOnce(
+      mockVagas,
+    );
 
     const [candidatos, vagas] = await Promise.all([
       triagemRepository.findActiveCandidatoOptions(),
@@ -64,7 +69,8 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
       motivo: null,
       parecerRhCurriculo: null,
       parecerRhTestes: null,
-      parecerRhEntrevistaRh: "Candidato demonstrou excelente comunicação e interesse.",
+      parecerRhEntrevistaRh:
+        "Candidato demonstrou excelente comunicação e interesse.",
       parecerRhEntrevistaGestor: null,
       parecerRhFinalizado: null,
       createdAt: "2025-01-10T10:00:00.000Z",
@@ -143,7 +149,9 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
       avaliacao_ia: null,
     };
 
-    vi.spyOn(triagemRepository, "findByIdWithJoins").mockResolvedValueOnce(mockTriagem);
+    vi.spyOn(triagemRepository, "findByIdWithJoins").mockResolvedValueOnce(
+      mockTriagem,
+    );
 
     const result = await triagemRepository.findByIdWithJoins("triagem-1");
 
@@ -155,9 +163,13 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
   });
 
   it("retorna null se a triagem não existir ou estiver deletada", async () => {
-    vi.spyOn(triagemRepository, "findByIdWithJoins").mockResolvedValueOnce(null);
+    vi.spyOn(triagemRepository, "findByIdWithJoins").mockResolvedValueOnce(
+      null,
+    );
 
-    const result = await triagemRepository.findByIdWithJoins("triagem-inexistente");
+    const result = await triagemRepository.findByIdWithJoins(
+      "triagem-inexistente",
+    );
     expect(result).toBeNull();
   });
 });

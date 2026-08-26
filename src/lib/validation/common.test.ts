@@ -72,13 +72,17 @@ describe("common validation schemas", () => {
       const resultEmpty = schema.safeParse("");
       expect(resultEmpty.success).toBe(false);
       if (!resultEmpty.success) {
-        expect(resultEmpty.error.errors[0]?.message).toBe("Título é obrigatório");
+        expect(resultEmpty.error.errors[0]?.message).toBe(
+          "Título é obrigatório",
+        );
       }
 
       const resultWhitespace = schema.safeParse("    ");
       expect(resultWhitespace.success).toBe(false);
       if (!resultWhitespace.success) {
-        expect(resultWhitespace.error.errors[0]?.message).toBe("Título é obrigatório");
+        expect(resultWhitespace.error.errors[0]?.message).toBe(
+          "Título é obrigatório",
+        );
       }
     });
   });
@@ -197,7 +201,9 @@ describe("common validation schemas", () => {
         const result = coerceInt.safeParse("42.5");
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.error.errors[0]?.message).toBe("Valor deve ser um número inteiro");
+          expect(result.error.errors[0]?.message).toBe(
+            "Valor deve ser um número inteiro",
+          );
         }
       });
     });

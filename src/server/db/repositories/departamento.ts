@@ -18,9 +18,10 @@ export interface DepartamentoWithCargosCount extends Departamento {
 
 export const departamentoRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Departamento[]> => {
-    return notDeleted(dbOrTx.select().from(departamentos), departamentos).orderBy(
-      asc(departamentos.nome),
-    );
+    return notDeleted(
+      dbOrTx.select().from(departamentos),
+      departamentos,
+    ).orderBy(asc(departamentos.nome));
   },
 
   findAllWithActiveCargosCount: async (
@@ -66,10 +67,7 @@ export const departamentoRepository = {
     data: NovoDepartamento,
     dbOrTx: DbOrTx = db,
   ): Promise<Departamento> => {
-    const rows = await dbOrTx
-      .insert(departamentos)
-      .values(data)
-      .returning();
+    const rows = await dbOrTx.insert(departamentos).values(data).returning();
     const created = rows[0];
     if (!created) {
       throw new Error("Falha ao criar departamento.");

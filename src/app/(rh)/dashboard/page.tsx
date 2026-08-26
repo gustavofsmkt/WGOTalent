@@ -42,11 +42,36 @@ import { cn } from "~/lib/utils";
 export const dynamic = "force-dynamic";
 
 const ETAPAS_CONFIG = [
-  { key: "curriculo", label: "Currículo", color: "bg-blue-500", barColor: "bg-blue-500/20" },
-  { key: "testes", label: "Testes", color: "bg-amber-500", barColor: "bg-amber-500/20" },
-  { key: "entrevista_rh", label: "Entrevista RH", color: "bg-purple-500", barColor: "bg-purple-500/20" },
-  { key: "entrevista_gestor", label: "Entrevista Gestor", color: "bg-indigo-500", barColor: "bg-indigo-500/20" },
-  { key: "finalizado", label: "Finalizado", color: "bg-emerald-500", barColor: "bg-emerald-500/20" },
+  {
+    key: "curriculo",
+    label: "Currículo",
+    color: "bg-blue-500",
+    barColor: "bg-blue-500/20",
+  },
+  {
+    key: "testes",
+    label: "Testes",
+    color: "bg-amber-500",
+    barColor: "bg-amber-500/20",
+  },
+  {
+    key: "entrevista_rh",
+    label: "Entrevista RH",
+    color: "bg-purple-500",
+    barColor: "bg-purple-500/20",
+  },
+  {
+    key: "entrevista_gestor",
+    label: "Entrevista Gestor",
+    color: "bg-indigo-500",
+    barColor: "bg-indigo-500/20",
+  },
+  {
+    key: "finalizado",
+    label: "Finalizado",
+    color: "bg-emerald-500",
+    barColor: "bg-emerald-500/20",
+  },
 ] as const;
 
 const RESULTADOS_CONFIG = [
@@ -103,7 +128,8 @@ function formatDate(dateStr: string | Date | null): string {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
+  if (parts.length === 1)
+    return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
   const first = parts[0]?.charAt(0) ?? "";
   const last = parts[parts.length - 1]?.charAt(0) ?? "";
   return `${first}${last}`.toUpperCase();
@@ -112,7 +138,10 @@ function getInitials(name: string): string {
 export default async function DashboardPage() {
   const summary = await dashboardRepository.getDashboardSummary();
 
-  const totalEtapas = Object.values(summary.triagensPorEtapa).reduce((acc, count) => acc + count, 0);
+  const totalEtapas = Object.values(summary.triagensPorEtapa).reduce(
+    (acc, count) => acc + count,
+    0,
+  );
   const maxEtapaCount = Math.max(...Object.values(summary.triagensPorEtapa), 1);
   const totalResultados = summary.triagensTotais;
 
@@ -244,17 +273,23 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-bold tracking-tight text-primary">
-                {summary.mediaScoreIa.media !== null ? summary.mediaScoreIa.media : "—"}
+                {summary.mediaScoreIa.media !== null
+                  ? summary.mediaScoreIa.media
+                  : "—"}
               </span>
               {summary.mediaScoreIa.media !== null && (
-                <span className="text-sm font-semibold text-muted-foreground">/100</span>
+                <span className="text-sm font-semibold text-muted-foreground">
+                  /100
+                </span>
               )}
             </div>
             <div className="mt-2 space-y-1">
               <div className="h-2 w-full bg-primary/15 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(0, summary.mediaScoreIa.media ?? 0))}%` }}
+                  style={{
+                    width: `${Math.min(100, Math.max(0, summary.mediaScoreIa.media ?? 0))}%`,
+                  }}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -279,7 +314,8 @@ export default async function DashboardPage() {
                   Triagens por Etapa do Funil
                 </CardTitle>
                 <CardDescription>
-                  Distribuição de candidatos em cada fase do processo seletivo ({totalEtapas} no funil)
+                  Distribuição de candidatos em cada fase do processo seletivo (
+                  {totalEtapas} no funil)
                 </CardDescription>
               </div>
               <Link
@@ -303,17 +339,29 @@ export default async function DashboardPage() {
                 <div className="grid grid-cols-5 gap-2 sm:gap-3 text-center">
                   {ETAPAS_CONFIG.map((etapa) => {
                     const count = summary.triagensPorEtapa[etapa.key] ?? 0;
-                    const heightPercent = totalEtapas > 0 ? Math.max(12, Math.round((count / maxEtapaCount) * 100)) : 0;
-                    const percentageOfTotal = totalEtapas > 0 ? Math.round((count / totalEtapas) * 100) : 0;
+                    const heightPercent =
+                      totalEtapas > 0
+                        ? Math.max(
+                            12,
+                            Math.round((count / maxEtapaCount) * 100),
+                          )
+                        : 0;
+                    const percentageOfTotal =
+                      totalEtapas > 0
+                        ? Math.round((count / totalEtapas) * 100)
+                        : 0;
 
                     return (
-                      <div key={etapa.key} className="flex flex-col items-center gap-2">
+                      <div
+                        key={etapa.key}
+                        className="flex flex-col items-center gap-2"
+                      >
                         {/* Vertical Bar Container */}
                         <div className="w-full h-36 bg-muted/40 rounded-lg p-1.5 flex flex-col justify-end items-center relative group">
                           <div
                             className={cn(
                               "w-full rounded-md transition-all duration-500 flex items-center justify-center text-xs font-bold text-white shadow-sm",
-                              count > 0 ? etapa.color : "bg-muted"
+                              count > 0 ? etapa.color : "bg-muted",
                             )}
                             style={{ height: `${heightPercent}%` }}
                           >
@@ -323,10 +371,15 @@ export default async function DashboardPage() {
 
                         {/* Label & Details */}
                         <div className="w-full">
-                          <p className="text-xs font-medium text-foreground truncate" title={etapa.label}>
+                          <p
+                            className="text-xs font-medium text-foreground truncate"
+                            title={etapa.label}
+                          >
                             {etapa.label}
                           </p>
-                          <p className="text-[11px] text-muted-foreground">{percentageOfTotal}%</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {percentageOfTotal}%
+                          </p>
                         </div>
                       </div>
                     );
@@ -345,7 +398,8 @@ export default async function DashboardPage() {
               Desfecho das Triagens
             </CardTitle>
             <CardDescription>
-              Status de resolução de todos os processos ({totalResultados} totais)
+              Status de resolução de todos os processos ({totalResultados}{" "}
+              totais)
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-center">
@@ -359,23 +413,38 @@ export default async function DashboardPage() {
               <div className="space-y-3.5">
                 {RESULTADOS_CONFIG.map((res) => {
                   const count = summary.triagensPorResultado[res.key] ?? 0;
-                  const pct = totalResultados > 0 ? Math.round((count / totalResultados) * 100) : 0;
+                  const pct =
+                    totalResultados > 0
+                      ? Math.round((count / totalResultados) * 100)
+                      : 0;
 
                   return (
                     <div key={res.key} className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-medium">
                         <span className="flex items-center gap-2 text-foreground">
-                          <span className={cn("h-2.5 w-2.5 rounded-full", res.dotColor)} />
+                          <span
+                            className={cn(
+                              "h-2.5 w-2.5 rounded-full",
+                              res.dotColor,
+                            )}
+                          />
                           {res.label}
                         </span>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-foreground">{count}</span>
-                          <span className="text-muted-foreground">({pct}%)</span>
+                          <span className="font-semibold text-foreground">
+                            {count}
+                          </span>
+                          <span className="text-muted-foreground">
+                            ({pct}%)
+                          </span>
                         </div>
                       </div>
                       <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden">
                         <div
-                          className={cn("h-full rounded-full transition-all duration-500", res.progressColor)}
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            res.progressColor,
+                          )}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -398,7 +467,9 @@ export default async function DashboardPage() {
                 <Briefcase className="h-4 w-4 text-primary" />
                 Vagas com Mais Candidatos
               </CardTitle>
-              <CardDescription>Posições com maior volume de candidatos associados</CardDescription>
+              <CardDescription>
+                Posições com maior volume de candidatos associados
+              </CardDescription>
             </div>
             <Link
               href="/vagas"
@@ -448,13 +519,23 @@ export default async function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className="font-normal text-xs">
-                          {vaga.posicoesDisponiveis} {vaga.posicoesDisponiveis === 1 ? "vaga" : "vagas"}
+                        <Badge
+                          variant="outline"
+                          className="font-normal text-xs"
+                        >
+                          {vaga.posicoesDisponiveis}{" "}
+                          {vaga.posicoesDisponiveis === 1 ? "vaga" : "vagas"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Badge variant="secondary" className="font-semibold text-xs">
-                          {vaga.totalCandidatos} {vaga.totalCandidatos === 1 ? "candidato" : "candidatos"}
+                        <Badge
+                          variant="secondary"
+                          className="font-semibold text-xs"
+                        >
+                          {vaga.totalCandidatos}{" "}
+                          {vaga.totalCandidatos === 1
+                            ? "candidato"
+                            : "candidatos"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -473,7 +554,9 @@ export default async function DashboardPage() {
                 <Clock className="h-4 w-4 text-primary" />
                 Atividade Recente de Triagem
               </CardTitle>
-              <CardDescription>Últimas movimentações no funil de seleção</CardDescription>
+              <CardDescription>
+                Últimas movimentações no funil de seleção
+              </CardDescription>
             </div>
             <Link
               href="/triagens"
@@ -525,7 +608,10 @@ export default async function DashboardPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
-                          <StatusBadge status={item.resultado} className="text-[11px] py-0 px-1.5" />
+                          <StatusBadge
+                            status={item.resultado}
+                            className="text-[11px] py-0 px-1.5"
+                          />
                           <span className="text-[11px] text-muted-foreground capitalize">
                             {item.etapa.replace("_", " ")}
                           </span>
@@ -541,7 +627,9 @@ export default async function DashboardPage() {
                             {item.scoreIa}
                           </Badge>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">

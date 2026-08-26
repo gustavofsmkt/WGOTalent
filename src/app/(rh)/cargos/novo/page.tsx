@@ -33,8 +33,8 @@ export default async function NovoCargoPage() {
       />
 
       <div className="flex justify-center">
-        <CargoForm 
-          departamentoOptions={departamentos} 
+        <CargoForm
+          departamentoOptions={departamentos}
           className="max-w-2xl w-full"
         />
       </div>

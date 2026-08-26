@@ -139,7 +139,9 @@ describe("CandidatoDetailPage - Server Logic", () => {
   });
 
   it("returns null when candidate is not found", async () => {
-    vi.spyOn(candidatoRepository, "findByIdComplete").mockResolvedValueOnce(null);
+    vi.spyOn(candidatoRepository, "findByIdComplete").mockResolvedValueOnce(
+      null,
+    );
 
     const result = await candidatoRepository.findByIdComplete("non-existent");
     expect(result).toBeNull();

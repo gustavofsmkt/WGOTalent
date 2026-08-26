@@ -8,7 +8,9 @@ interface CandidateExperienceProps {
   experiencias: CandidatoExperiencia[];
 }
 
-export function CandidateExperience({ experiencias }: CandidateExperienceProps) {
+export function CandidateExperience({
+  experiencias,
+}: CandidateExperienceProps) {
   const formatDateYearMonth = (dateStr?: string | null) => {
     if (!dateStr) return "";
     try {

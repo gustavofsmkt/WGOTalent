@@ -13,7 +13,11 @@ export const env = createEnv({
       .default("development"),
     STORAGE_ROOT: z.string().min(1),
     AGENT_CREDENTIALS_ENCRYPTION_KEY: z.string().min(32),
-    EMAIL_CAPTURA_INTERVALO_MS: z.coerce.number().int().positive().default(60000),
+    EMAIL_CAPTURA_INTERVALO_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60000),
   },
 
   /**
@@ -21,8 +25,7 @@ export const env = createEnv({
    * isn't built with invalid env vars. To expose them to the client, prefix them with
    * `NEXT_PUBLIC_`.
    */
-  client: {
-  },
+  client: {},
 
   /**
    * You can't destruct `process.env` as a regular object in the Next.js edge runtimes (e.g.
@@ -32,7 +35,8 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     STORAGE_ROOT: process.env.STORAGE_ROOT,
-    AGENT_CREDENTIALS_ENCRYPTION_KEY: process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY,
+    AGENT_CREDENTIALS_ENCRYPTION_KEY:
+      process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY,
     EMAIL_CAPTURA_INTERVALO_MS: process.env.EMAIL_CAPTURA_INTERVALO_MS,
   },
   /**

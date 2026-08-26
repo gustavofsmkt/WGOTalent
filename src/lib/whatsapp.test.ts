@@ -11,8 +11,12 @@ describe("getWhatsAppUrl", () => {
   });
 
   it("should handle formatting characters", () => {
-    expect(getWhatsAppUrl("(11) 98765-4321")).toBe("https://wa.me/5511987654321");
-    expect(getWhatsAppUrl("+55 (11) 98765-4321")).toBe("https://wa.me/5511987654321");
+    expect(getWhatsAppUrl("(11) 98765-4321")).toBe(
+      "https://wa.me/5511987654321",
+    );
+    expect(getWhatsAppUrl("+55 (11) 98765-4321")).toBe(
+      "https://wa.me/5511987654321",
+    );
     expect(getWhatsAppUrl("11 98765 4321")).toBe("https://wa.me/5511987654321");
   });
 
@@ -20,7 +24,7 @@ describe("getWhatsAppUrl", () => {
     // Area code 55: (55) 98765-4321
     expect(getWhatsAppUrl("55987654321")).toBe("https://wa.me/5555987654321");
   });
-  
+
   it("should handle empty or null input gracefully", () => {
     expect(getWhatsAppUrl("")).toBe("");
     expect(getWhatsAppUrl(null)).toBe("");

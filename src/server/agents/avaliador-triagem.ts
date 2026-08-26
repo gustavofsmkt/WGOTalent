@@ -52,9 +52,13 @@ export async function executarAvaliadorTriagem(
     throw new Error("Agente avaliador_triagem não está configurado/ativo.");
   }
 
-  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
+  const credencial = await llmCredencialRepository.findActiveByProvider(
+    config.provider,
+  );
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
+    throw new Error(
+      `Nenhuma credencial ativa para o provider "${config.provider}".`,
+    );
   }
   if (!triagem) {
     throw new Error(`Triagem "${triagemId}" não encontrada.`);

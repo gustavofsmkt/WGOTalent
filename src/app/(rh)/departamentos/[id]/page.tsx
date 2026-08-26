@@ -146,13 +146,19 @@ export default async function DepartamentoDetailPage(
                   <CardTitle className="text-xl font-semibold">
                     {departamento.nome}
                   </CardTitle>
-                  <Badge variant="outline" className="gap-1 text-xs text-primary border-primary/30 bg-primary/5">
+                  <Badge
+                    variant="outline"
+                    className="gap-1 text-xs text-primary border-primary/30 bg-primary/5"
+                  >
                     <CheckCircle2 className="size-3 text-primary" />
                     Ativo
                   </Badge>
                 </div>
                 <CardDescription className="text-xs">
-                  Identificador: <span className="font-mono text-muted-foreground">{departamento.id}</span>
+                  Identificador:{" "}
+                  <span className="font-mono text-muted-foreground">
+                    {departamento.id}
+                  </span>
                 </CardDescription>
               </div>
             </CardHeader>
@@ -203,7 +209,10 @@ export default async function DepartamentoDetailPage(
                     action={
                       <Link
                         href={`/cargos/novo?departamentoId=${departamento.id}`}
-                        className={buttonVariants({ variant: "default", size: "sm" })}
+                        className={buttonVariants({
+                          variant: "default",
+                          size: "sm",
+                        })}
                       >
                         <Plus className="size-4 mr-1.5" />
                         Cadastrar Cargo
@@ -218,8 +227,12 @@ export default async function DepartamentoDetailPage(
                       <TableRow className="bg-muted/40 hover:bg-muted/40">
                         <TableHead>Título do Cargo</TableHead>
                         <TableHead className="w-[120px]">Status</TableHead>
-                        <TableHead className="w-[180px]">Faixa Salarial</TableHead>
-                        <TableHead className="w-[100px] text-right">Ações</TableHead>
+                        <TableHead className="w-[180px]">
+                          Faixa Salarial
+                        </TableHead>
+                        <TableHead className="w-[100px] text-right">
+                          Ações
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -281,7 +294,9 @@ export default async function DepartamentoDetailPage(
               <div className="flex items-start gap-3">
                 <Calendar className="size-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Cadastrado em</div>
+                  <div className="text-xs text-muted-foreground">
+                    Cadastrado em
+                  </div>
                   <div className="font-medium text-foreground">
                     {formatDate(departamento.createdAt)}
                   </div>
@@ -291,7 +306,9 @@ export default async function DepartamentoDetailPage(
               <div className="flex items-start gap-3">
                 <Clock className="size-4 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-xs text-muted-foreground">Última atualização</div>
+                  <div className="text-xs text-muted-foreground">
+                    Última atualização
+                  </div>
                   <div className="font-medium text-foreground">
                     {formatDate(departamento.updatedAt)}
                   </div>
@@ -300,7 +317,9 @@ export default async function DepartamentoDetailPage(
 
               <div className="pt-2 border-t border-border/60">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Total de cargos ativos:</span>
+                  <span className="text-muted-foreground">
+                    Total de cargos ativos:
+                  </span>
                   <span className="font-semibold text-foreground">
                     {cargosVinculados.length}
                   </span>

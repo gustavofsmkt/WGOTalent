@@ -17,13 +17,17 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("triagemRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(typeof triagemRepository.existsForPar).toBe("function");
-    expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe("function");
+    expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe(
+      "function",
+    );
     expect(typeof triagemRepository.softDelete).toBe("function");
   });
 

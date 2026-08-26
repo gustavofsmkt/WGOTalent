@@ -33,7 +33,10 @@ export default function NovoDepartamentoPage() {
       />
 
       <div className="flex justify-center">
-        <DepartamentoForm redirectTo="/departamentos" className="max-w-2xl w-full" />
+        <DepartamentoForm
+          redirectTo="/departamentos"
+          className="max-w-2xl w-full"
+        />
       </div>
     </div>
   );

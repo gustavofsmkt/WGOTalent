@@ -39,7 +39,8 @@ export async function createEmailCredencial(
     if (isDuplicate) {
       return {
         success: false,
-        message: "Esta credencial de e-mail já foi cadastrada (envio duplicado detectado).",
+        message:
+          "Esta credencial de e-mail já foi cadastrada (envio duplicado detectado).",
       };
     }
 
@@ -82,25 +83,37 @@ export async function createEmailCredencial(
   }
 }
 
-export async function deactivateEmailCredencial(id: string): Promise<ActionState<void>> {
+export async function deactivateEmailCredencial(
+  id: string,
+): Promise<ActionState<void>> {
   try {
     await emailCredencialRepository.deactivate(id);
     revalidatePath("/admin");
-    return { success: true, data: undefined, message: "Credencial de e-mail desativada." };
+    return {
+      success: true,
+      data: undefined,
+      message: "Credencial de e-mail desativada.",
+    };
   } catch (error) {
     console.error("[deactivateEmailCredencial] Erro:", error);
     return {
       success: false,
-      message: "Ocorreu um erro inesperado ao desativar a credencial de e-mail.",
+      message:
+        "Ocorreu um erro inesperado ao desativar a credencial de e-mail.",
     };
   }
 }
 
-export async function deleteEmailCredencial(id: string): Promise<ActionState<void>> {
+export async function deleteEmailCredencial(
+  id: string,
+): Promise<ActionState<void>> {
   try {
     const credencial = await emailCredencialRepository.findById(id);
     if (!credencial) {
-      return { success: false, message: "Credencial de e-mail não encontrada." };
+      return {
+        success: false,
+        message: "Credencial de e-mail não encontrada.",
+      };
     }
     if (credencial.ativo) {
       return {
@@ -111,7 +124,11 @@ export async function deleteEmailCredencial(id: string): Promise<ActionState<voi
 
     await emailCredencialRepository.softDelete(id);
     revalidatePath("/admin");
-    return { success: true, data: undefined, message: "Credencial de e-mail excluída." };
+    return {
+      success: true,
+      data: undefined,
+      message: "Credencial de e-mail excluída.",
+    };
   } catch (error) {
     console.error("[deleteEmailCredencial] Erro:", error);
     return {

@@ -13,7 +13,10 @@ function isErroDeQuota(error: unknown): boolean {
   const status = (error as { status?: unknown }).status;
   if (status === 429 || status === "429") return true;
   const message = (error as { message?: unknown }).message;
-  return typeof message === "string" && /RESOURCE_EXHAUSTED|"code":\s*429/.test(message);
+  return (
+    typeof message === "string" &&
+    /RESOURCE_EXHAUSTED|"code":\s*429/.test(message)
+  );
 }
 
 /**

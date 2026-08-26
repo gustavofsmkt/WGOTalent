@@ -112,9 +112,7 @@ export const cargos = createTable(
     criteriosEliminatorios: text("criterios_eliminatorios").notNull(),
     ...timestamps,
   },
-  (table) => [
-    index("cargos_departamento_id_idx").on(table.departamentoId),
-  ],
+  (table) => [index("cargos_departamento_id_idx").on(table.departamentoId)],
 );
 
 export type Cargo = typeof cargos.$inferSelect;
@@ -139,7 +137,10 @@ export const vagas = createTable(
   },
   (table) => [
     index("vagas_cargo_id_idx").on(table.cargoId),
-    check("vagas_posicoes_disponiveis_check", sql`${table.posicoesDisponiveis} > 0`),
+    check(
+      "vagas_posicoes_disponiveis_check",
+      sql`${table.posicoesDisponiveis} > 0`,
+    ),
   ],
 );
 
@@ -152,13 +153,17 @@ export const candidatos = createTable(
     id: uuid("id").primaryKey().defaultRandom(),
     nome: varchar("nome", { length: 150 }).notNull(),
     nomeSocial: varchar("nome_social", { length: 150 }),
-    nacionalidade: varchar("nacionalidade", { length: 60 }).default("brasileira").notNull(),
+    nacionalidade: varchar("nacionalidade", { length: 60 })
+      .default("brasileira")
+      .notNull(),
     // dataNascimento/cep/bairro/logradouro são nullable: um currículo raramente
     // traz endereço postal completo ou data de nascimento. Decisão de produto
     // (2026-08-19): o Candidato segue no fluxo normal de triagem mesmo assim;
     // dadosPendentes lista o que falta para o RH completar depois.
     dataNascimento: date("data_nascimento", { mode: "string" }),
-    estadoCivil: estadoCivilEnum("estado_civil").default("nao_informado").notNull(),
+    estadoCivil: estadoCivilEnum("estado_civil")
+      .default("nao_informado")
+      .notNull(),
     pcd: text("pcd"),
     email: varchar("email", { length: 254 }).unique(),
     celular: varchar("celular", { length: 20 }).unique(),
@@ -171,9 +176,13 @@ export const candidatos = createTable(
     resumoProfissional: text("resumo_profissional").notNull(),
     cnh: cnhEnum("cnh"),
     possuiVeiculo: boolean("possui_veiculo").default(false).notNull(),
-    ensinoMedioConcluido: boolean("ensino_medio_concluido").default(false).notNull(),
+    ensinoMedioConcluido: boolean("ensino_medio_concluido")
+      .default(false)
+      .notNull(),
     cargoInteresseId: uuid("cargo_interesse_id").references(() => cargos.id),
-    areaInteresseId: uuid("area_interesse_id").references(() => departamentos.id),
+    areaInteresseId: uuid("area_interesse_id").references(
+      () => departamentos.id,
+    ),
     disponivelViagens: boolean("disponivel_viagens").default(false).notNull(),
     disponivelMudanca: boolean("disponivel_mudanca").default(false).notNull(),
     disponibilidadeHorarios: text("disponibilidade_horarios"),
@@ -237,7 +246,8 @@ export const candidatoExperiencias = createTable(
 );
 
 export type CandidatoExperiencia = typeof candidatoExperiencias.$inferSelect;
-export type NovaCandidatoExperiencia = typeof candidatoExperiencias.$inferInsert;
+export type NovaCandidatoExperiencia =
+  typeof candidatoExperiencias.$inferInsert;
 export type CandidatoExperienciaProfissional = CandidatoExperiencia;
 
 export const uploadLoteStatusEnum = pgEnum("upload_lote_status", [
@@ -286,7 +296,8 @@ export const candidatoCertificacoes = createTable(
 );
 
 export type CandidatoCertificacao = typeof candidatoCertificacoes.$inferSelect;
-export type NovaCandidatoCertificacao = typeof candidatoCertificacoes.$inferInsert;
+export type NovaCandidatoCertificacao =
+  typeof candidatoCertificacoes.$inferInsert;
 
 export const triagens = createTable(
   "triagens",
@@ -299,7 +310,9 @@ export const triagens = createTable(
       .notNull()
       .references(() => candidatos.id),
     etapa: triagemEtapaEnum("etapa").notNull(),
-    resultado: triagemResultadoEnum("resultado").default("em_andamento").notNull(),
+    resultado: triagemResultadoEnum("resultado")
+      .default("em_andamento")
+      .notNull(),
     motivo: triagemMotivoEnum("motivo"),
     parecerRhCurriculo: text("parecer_rh_curriculo"),
     parecerRhTestes: text("parecer_rh_testes"),
@@ -313,7 +326,9 @@ export const triagens = createTable(
     index("triagens_candidato_id_idx").on(table.candidatoId),
     uniqueIndex("triagens_candidato_vaga_idx")
       .on(table.candidatoId, table.vagaId)
-      .where(and(eq(table.resultado, "em_andamento"), isNull(table.deletedAt))!),
+      .where(
+        and(eq(table.resultado, "em_andamento"), isNull(table.deletedAt))!,
+      ),
   ],
 );
 
@@ -338,8 +353,11 @@ export const avaliacaoIA = createTable(
     ...timestamps,
   },
   (table) => [
-    check("avaliacao_ia_score_check", sql`${table.scoreIa} >= 0 AND ${table.scoreIa} <= 100`),
-  ]
+    check(
+      "avaliacao_ia_score_check",
+      sql`${table.scoreIa} >= 0 AND ${table.scoreIa} <= 100`,
+    ),
+  ],
 );
 
 export type AvaliacaoIA = typeof avaliacaoIA.$inferSelect;
@@ -438,26 +456,35 @@ export const candidatosRelations = relations(candidatos, ({ one, many }) => ({
   }),
 }));
 
-export const candidatoFormacoesRelations = relations(candidatoFormacoes, ({ one }) => ({
-  candidato: one(candidatos, {
-    fields: [candidatoFormacoes.candidatoId],
-    references: [candidatos.id],
+export const candidatoFormacoesRelations = relations(
+  candidatoFormacoes,
+  ({ one }) => ({
+    candidato: one(candidatos, {
+      fields: [candidatoFormacoes.candidatoId],
+      references: [candidatos.id],
+    }),
   }),
-}));
+);
 
-export const candidatoExperienciasRelations = relations(candidatoExperiencias, ({ one }) => ({
-  candidato: one(candidatos, {
-    fields: [candidatoExperiencias.candidatoId],
-    references: [candidatos.id],
+export const candidatoExperienciasRelations = relations(
+  candidatoExperiencias,
+  ({ one }) => ({
+    candidato: one(candidatos, {
+      fields: [candidatoExperiencias.candidatoId],
+      references: [candidatos.id],
+    }),
   }),
-}));
+);
 
-export const candidatoCertificacoesRelations = relations(candidatoCertificacoes, ({ one }) => ({
-  candidato: one(candidatos, {
-    fields: [candidatoCertificacoes.candidatoId],
-    references: [candidatos.id],
+export const candidatoCertificacoesRelations = relations(
+  candidatoCertificacoes,
+  ({ one }) => ({
+    candidato: one(candidatos, {
+      fields: [candidatoCertificacoes.candidatoId],
+      references: [candidatos.id],
+    }),
   }),
-}));
+);
 
 export const triagensRelations = relations(triagens, ({ one }) => ({
   candidato: one(candidatos, {

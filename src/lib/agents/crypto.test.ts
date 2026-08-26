@@ -6,9 +6,12 @@ describe("Credential encryption (AES-256-GCM)", () => {
   beforeEach(() => {
     vi.resetModules();
     process.env = { ...originalEnv };
-    process.env.DATABASE_URL = "postgresql://postgres:password@localhost:5432/wgotalent";
+    process.env.DATABASE_URL =
+      "postgresql://postgres:password@localhost:5432/wgotalent";
     process.env.STORAGE_ROOT = "./storage";
-    process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+    process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
+      "base64",
+    );
   });
 
   afterEach(() => {

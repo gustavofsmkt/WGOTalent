@@ -10,7 +10,11 @@ describe("cn utility helper", () => {
   it("handles conditional class names", () => {
     const isActive = true;
     const isDisabled = false;
-    const result = cn("base-class", isActive && "active-class", isDisabled && "disabled-class");
+    const result = cn(
+      "base-class",
+      isActive && "active-class",
+      isDisabled && "disabled-class",
+    );
     expect(result).toBe("base-class active-class");
   });
 

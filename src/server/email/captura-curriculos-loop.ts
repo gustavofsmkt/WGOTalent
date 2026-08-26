@@ -44,7 +44,9 @@ export function iniciarLoopDeCaptura(): void {
     }
     state.emExecucao = true;
     executarCicloDeCaptura()
-      .catch((err) => console.error("[captura-curriculos-loop] Ciclo falhou:", err))
+      .catch((err) =>
+        console.error("[captura-curriculos-loop] Ciclo falhou:", err),
+      )
       .finally(() => {
         state.emExecucao = false;
       });

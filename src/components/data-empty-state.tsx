@@ -29,7 +29,7 @@ export function DataEmptyState({
     <Empty
       className={cn(
         "border border-dashed border-border/60 bg-muted/20 py-12 px-6 rounded-xl",
-        className
+        className,
       )}
       {...props}
     >

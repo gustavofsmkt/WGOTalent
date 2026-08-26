@@ -11,7 +11,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Nova Triagem | WGOTalent",
-  description: "Inicie um novo processo de triagem vinculando um candidato a uma vaga.",
+  description:
+    "Inicie um novo processo de triagem vinculando um candidato a uma vaga.",
 };
 
 export default async function NovaTriagemPage() {

@@ -40,7 +40,10 @@ const MOTIVO_OPTIONS = [
   { value: "testes", label: "Reprovação: Testes Técnicos" },
   { value: "rh", label: "Reprovação: Avaliação RH" },
   { value: "gestor", label: "Reprovação: Avaliação Gestor" },
-  { value: "incompatibilidade_salarial", label: "Desistência: Incompatibilidade Salarial" },
+  {
+    value: "incompatibilidade_salarial",
+    label: "Desistência: Incompatibilidade Salarial",
+  },
   { value: "aceitou_outra_proposta", label: "Desistência: Outra Proposta" },
   { value: "nao_atendeu_contato", label: "Desistência: Não Atendeu Contato" },
   { value: "motivos_pessoais", label: "Desistência: Motivos Pessoais" },
@@ -93,10 +96,12 @@ export function TriagensFilter({
     const params = new URLSearchParams(searchParams.toString());
 
     const nextQuery = updates.q !== undefined ? updates.q : searchTerm;
-    const nextEtapa = updates.etapa !== undefined ? updates.etapa : currentEtapa;
+    const nextEtapa =
+      updates.etapa !== undefined ? updates.etapa : currentEtapa;
     const nextResultado =
       updates.resultado !== undefined ? updates.resultado : currentResultado;
-    const nextMotivo = updates.motivo !== undefined ? updates.motivo : currentMotivo;
+    const nextMotivo =
+      updates.motivo !== undefined ? updates.motivo : currentMotivo;
     const nextView = updates.view !== undefined ? updates.view : currentView;
     const nextVagaAtiva =
       updates.vagaAtiva !== undefined ? updates.vagaAtiva : currentVagaAtiva;
@@ -265,8 +270,14 @@ export function TriagensFilter({
             </SelectTrigger>
             <SelectContent className="min-w-[300px]">
               {VAGA_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  <span className="whitespace-normal break-words">{opt.label}</span>
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="text-xs"
+                >
+                  <span className="whitespace-normal break-words">
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -282,14 +293,21 @@ export function TriagensFilter({
             <SelectTrigger className="h-8 text-xs bg-background">
               <SelectValue placeholder="Etapa">
                 {(val: string | null) =>
-                  ETAPA_OPTIONS.find((opt) => opt.value === val)?.label ?? "Etapa"
+                  ETAPA_OPTIONS.find((opt) => opt.value === val)?.label ??
+                  "Etapa"
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="min-w-[190px]">
               {ETAPA_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  <span className="whitespace-normal break-words">{opt.label}</span>
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="text-xs"
+                >
+                  <span className="whitespace-normal break-words">
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -300,19 +318,28 @@ export function TriagensFilter({
         <div className="w-full sm:w-auto min-w-[170px]">
           <Select
             value={currentResultado}
-            onValueChange={(val) => updateFilters({ resultado: val ?? "todas" })}
+            onValueChange={(val) =>
+              updateFilters({ resultado: val ?? "todas" })
+            }
           >
             <SelectTrigger className="h-8 text-xs bg-background">
               <SelectValue placeholder="Resultado">
                 {(val: string | null) =>
-                  RESULTADO_OPTIONS.find((opt) => opt.value === val)?.label ?? "Resultado"
+                  RESULTADO_OPTIONS.find((opt) => opt.value === val)?.label ??
+                  "Resultado"
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="min-w-[190px]">
               {RESULTADO_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  <span className="whitespace-normal break-words">{opt.label}</span>
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="text-xs"
+                >
+                  <span className="whitespace-normal break-words">
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -328,14 +355,21 @@ export function TriagensFilter({
             <SelectTrigger className="h-8 text-xs bg-background">
               <SelectValue placeholder="Motivo">
                 {(val: string | null) =>
-                  MOTIVO_OPTIONS.find((opt) => opt.value === val)?.label ?? "Motivo"
+                  MOTIVO_OPTIONS.find((opt) => opt.value === val)?.label ??
+                  "Motivo"
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="min-w-[280px]">
               {MOTIVO_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  <span className="whitespace-normal break-words">{opt.label}</span>
+                <SelectItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="text-xs"
+                >
+                  <span className="whitespace-normal break-words">
+                    {opt.label}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

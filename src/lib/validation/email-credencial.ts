@@ -19,5 +19,9 @@ export const emailCredencialCreateSchema = z.object({
     .transform((val) => (val === "" || val === undefined ? undefined : val)),
 });
 
-export type EmailCredencialCreateInput = z.input<typeof emailCredencialCreateSchema>;
-export type EmailCredencialCreateOutput = z.output<typeof emailCredencialCreateSchema>;
+export type EmailCredencialCreateInput = z.input<
+  typeof emailCredencialCreateSchema
+>;
+export type EmailCredencialCreateOutput = z.output<
+  typeof emailCredencialCreateSchema
+>;

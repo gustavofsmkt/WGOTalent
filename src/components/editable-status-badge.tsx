@@ -34,9 +34,11 @@ export function EditableStatusBadge<T extends string>({
   disabled,
   ...props
 }: EditableStatusBadgeProps<T>) {
-  const config = value in statusConfigMap ? statusConfigMap[value as DomainStatus] : null;
+  const config =
+    value in statusConfigMap ? statusConfigMap[value as DomainStatus] : null;
   const tone = config?.tone ?? "neutral";
-  const label = config?.label ?? options.find((o) => o.value === value)?.label ?? value;
+  const label =
+    config?.label ?? options.find((o) => o.value === value)?.label ?? value;
 
   return (
     <Select
@@ -53,7 +55,7 @@ export function EditableStatusBadge<T extends string>({
         aria-label={props["aria-label"]}
         className={cn(
           "h-6 gap-1 rounded-4xl border px-2.5 py-0 text-xs font-medium tracking-wide",
-          toneStyles[tone]
+          toneStyles[tone],
         )}
       >
         <SelectValue>{() => label}</SelectValue>

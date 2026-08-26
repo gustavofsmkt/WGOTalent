@@ -8,7 +8,9 @@ import { z } from "zod";
 export const faixaSalarialSchema = z
   .union([
     z.number({ invalid_type_error: "Faixa salarial deve ser um número" }),
-    z.string({ invalid_type_error: "Faixa salarial deve ser um texto ou número" }),
+    z.string({
+      invalid_type_error: "Faixa salarial deve ser um texto ou número",
+    }),
   ])
   .nullish()
   .transform((val, ctx) => {

@@ -193,8 +193,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                               >
                                 <Eye className="size-4" />
                               </Link>
-                              <Link
-                                href={`/departamentos/${dept.id}/editar`}>
+                              <Link href={`/departamentos/${dept.id}/editar`}>
                                 <Button
                                   variant="ghost"
                                   size="icon-sm"

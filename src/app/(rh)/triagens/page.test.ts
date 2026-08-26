@@ -138,7 +138,9 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
   it("groups items correctly into pipeline stages", () => {
     const curriculoItems = mockTriagens.filter((t) => t.etapa === "curriculo");
     const testesItems = mockTriagens.filter((t) => t.etapa === "testes");
-    const finalizadoItems = mockTriagens.filter((t) => t.etapa === "finalizado");
+    const finalizadoItems = mockTriagens.filter(
+      (t) => t.etapa === "finalizado",
+    );
 
     expect(curriculoItems).toHaveLength(1);
     expect(testesItems).toHaveLength(1);

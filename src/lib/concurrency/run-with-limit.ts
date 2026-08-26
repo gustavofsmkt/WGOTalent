@@ -1,6 +1,5 @@
 export type LimitedResult<R> =
-  | { ok: true; value: R }
-  | { ok: false; error: unknown };
+  { ok: true; value: R } | { ok: false; error: unknown };
 
 /**
  * Processa `items` respeitando no máximo `limit` execuções simultâneas de

@@ -109,7 +109,10 @@ export function VagasFilter() {
 
       <div className="w-full sm:w-48">
         <Select value={currentStatus} onValueChange={handleStatusChange}>
-          <SelectTrigger className="h-9 text-sm bg-background shadow-xs" aria-label="Filtrar por status">
+          <SelectTrigger
+            className="h-9 text-sm bg-background shadow-xs"
+            aria-label="Filtrar por status"
+          >
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

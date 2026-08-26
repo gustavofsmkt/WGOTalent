@@ -2,8 +2,9 @@ import { gerarRespostaEstruturada as gerarRespostaGemini } from "./gemini-client
 import { gerarRespostaEstruturada as gerarRespostaOpenAI } from "./openai-client";
 import type { GerarRespostaEstruturadaInput } from "./shared";
 
-export interface GerarRespostaEstruturadaComProviderInput<T>
-  extends GerarRespostaEstruturadaInput<T> {
+export interface GerarRespostaEstruturadaComProviderInput<
+  T,
+> extends GerarRespostaEstruturadaInput<T> {
   provider: string;
 }
 

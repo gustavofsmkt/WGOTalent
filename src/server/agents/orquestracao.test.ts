@@ -59,7 +59,10 @@ vi.mock("./avaliador-triagem", () => ({
   executarAvaliadorTriagem: executarAvaliadorTriagemMock,
 }));
 
-import { orquestrarParaCandidatoNovo, orquestrarParaVagaNova } from "./orquestracao";
+import {
+  orquestrarParaCandidatoNovo,
+  orquestrarParaVagaNova,
+} from "./orquestracao";
 
 const cargoBase = {
   titulo: "Dev",
@@ -75,7 +78,11 @@ describe("orquestrarParaCandidatoNovo", () => {
   });
 
   it("marks candidato as banco de talentos when there are no open vagas in the same city", async () => {
-    findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+    });
     findOpenByCidadeMock.mockResolvedValueOnce([]);
 
     await orquestrarParaCandidatoNovo("c1");
@@ -85,10 +92,18 @@ describe("orquestrarParaCandidatoNovo", () => {
   });
 
   it("marks candidato as banco de talentos when no vaga passes the threshold", async () => {
-    findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
-    findOpenByCidadeMock.mockResolvedValueOnce([{ id: "v1", cargo: cargoBase }]);
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+    });
+    findOpenByCidadeMock.mockResolvedValueOnce([
+      { id: "v1", cargo: cargoBase },
+    ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([{ id: "v1", score: 40 }]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce([
+      { id: "v1", score: 40 },
+    ]);
 
     await orquestrarParaCandidatoNovo("c1");
 
@@ -97,7 +112,11 @@ describe("orquestrarParaCandidatoNovo", () => {
   });
 
   it("creates a triagem and runs phase 2 only for scores at or above the threshold", async () => {
-    findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+    });
     findOpenByCidadeMock.mockResolvedValueOnce([
       { id: "v1", cargo: cargoBase },
       { id: "v2", cargo: cargoBase },
@@ -109,25 +128,44 @@ describe("orquestrarParaCandidatoNovo", () => {
     ]);
     existsForParMock.mockResolvedValueOnce(false);
     createTriagemMock.mockResolvedValueOnce({ id: "t1" });
-    executarAvaliadorTriagemMock.mockResolvedValueOnce({ triagemId: "t1", scoreIa: "80" });
+    executarAvaliadorTriagemMock.mockResolvedValueOnce({
+      triagemId: "t1",
+      scoreIa: "80",
+    });
     gravarAvaliacaoIAMock.mockResolvedValueOnce({ id: "a1" });
 
     await orquestrarParaCandidatoNovo("c1");
 
     expect(createTriagemMock).toHaveBeenCalledTimes(1);
     expect(createTriagemMock).toHaveBeenCalledWith(
-      expect.objectContaining({ candidatoId: "c1", vagaId: "v1", etapa: "curriculo", resultado: "em_andamento" }),
+      expect.objectContaining({
+        candidatoId: "c1",
+        vagaId: "v1",
+        etapa: "curriculo",
+        resultado: "em_andamento",
+      }),
     );
     expect(executarAvaliadorTriagemMock).toHaveBeenCalledWith("t1");
-    expect(gravarAvaliacaoIAMock).toHaveBeenCalledWith({ triagemId: "t1", scoreIa: "80" });
+    expect(gravarAvaliacaoIAMock).toHaveBeenCalledWith({
+      triagemId: "t1",
+      scoreIa: "80",
+    });
     expect(desmarcarBancoTalentosMock).toHaveBeenCalledWith("c1");
   });
 
   it("skips creating a triagem when one already exists for the pair", async () => {
-    findByIdMock.mockResolvedValueOnce({ id: "c1", cidade: "Goiânia", resumoProfissional: "r" });
-    findOpenByCidadeMock.mockResolvedValueOnce([{ id: "v1", cargo: cargoBase }]);
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+    });
+    findOpenByCidadeMock.mockResolvedValueOnce([
+      { id: "v1", cargo: cargoBase },
+    ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([{ id: "v1", score: 90 }]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce([
+      { id: "v1", score: 90 },
+    ]);
     existsForParMock.mockResolvedValueOnce(true);
 
     await orquestrarParaCandidatoNovo("c1");
@@ -147,12 +185,19 @@ describe("orquestrarParaVagaNova", () => {
       cidade: "Goiânia",
       cargo: cargoBase,
     });
-    findActiveByCidadeMock.mockResolvedValueOnce([{ id: "c1", resumoProfissional: "r" }]);
+    findActiveByCidadeMock.mockResolvedValueOnce([
+      { id: "c1", resumoProfissional: "r" },
+    ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([{ id: "c1", score: 70 }]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce([
+      { id: "c1", score: 70 },
+    ]);
     existsForParMock.mockResolvedValueOnce(false);
     createTriagemMock.mockResolvedValueOnce({ id: "t1" });
-    executarAvaliadorTriagemMock.mockResolvedValueOnce({ triagemId: "t1", scoreIa: "70" });
+    executarAvaliadorTriagemMock.mockResolvedValueOnce({
+      triagemId: "t1",
+      scoreIa: "70",
+    });
     gravarAvaliacaoIAMock.mockResolvedValueOnce({ id: "a1" });
 
     await orquestrarParaVagaNova("v1");

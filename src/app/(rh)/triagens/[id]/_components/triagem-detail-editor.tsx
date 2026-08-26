@@ -3,12 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Briefcase,
-  MapPin,
-  Save,
-  Loader2,
-} from "lucide-react";
+import { Briefcase, MapPin, Save, Loader2 } from "lucide-react";
 
 import { updateTriagem } from "~/actions/triagens";
 import { PageHeader } from "~/components/page-header";
@@ -83,11 +78,15 @@ function buildInitialState(triagem: TriagemEditorData): PendingState {
 }
 
 const ETAPA_OPTIONS = ETAPAS.map((e) => ({ value: e.value, label: e.label }));
-const RESULTADO_OPTIONS = (Object.keys(resultadoLabels) as TriagemResultado[]).map(
-  (value) => ({ value, label: resultadoLabels[value] }),
-);
+const RESULTADO_OPTIONS = (
+  Object.keys(resultadoLabels) as TriagemResultado[]
+).map((value) => ({ value, label: resultadoLabels[value] }));
 
-export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData }) {
+export function TriagemDetailEditor({
+  triagem,
+}: {
+  triagem: TriagemEditorData;
+}) {
   const router = useRouter();
   const [pending, setPending] = React.useState<PendingState>(() =>
     buildInitialState(triagem),
@@ -113,9 +112,15 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData })
     pending.resultado === "reprovado" || pending.resultado === "desistente";
   const motivoOptions =
     pending.resultado === "reprovado"
-      ? motivosReprovacao.map((v) => ({ value: v, label: motivoReprovacaoLabels[v] }))
+      ? motivosReprovacao.map((v) => ({
+          value: v,
+          label: motivoReprovacaoLabels[v],
+        }))
       : pending.resultado === "desistente"
-        ? motivosDesistencia.map((v) => ({ value: v, label: motivoDesistenciaLabels[v] }))
+        ? motivosDesistencia.map((v) => ({
+            value: v,
+            label: motivoDesistenciaLabels[v],
+          }))
         : [];
 
   const handleResultadoChange = (novoResultado: TriagemResultado) => {
@@ -171,7 +176,8 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData })
             <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
               <Briefcase className="h-4 w-4" />
               <span>
-                {triagem.vaga.cargo.titulo} • {triagem.vaga.cargo.departamento.nome}
+                {triagem.vaga.cargo.titulo} •{" "}
+                {triagem.vaga.cargo.departamento.nome}
               </span>
               <span className="hidden sm:inline mx-1">•</span>
               <MapPin className="h-4 w-4 hidden sm:block" />
@@ -207,23 +213,36 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData })
                     }
                   }}
                 >
-                  <SelectTrigger size="sm" className="h-7 text-xs" aria-invalid={Boolean(motivoError)}>
+                  <SelectTrigger
+                    size="sm"
+                    className="h-7 text-xs"
+                    aria-invalid={Boolean(motivoError)}
+                  >
                     <SelectValue placeholder="Motivo...">
                       {(val: string | null) =>
-                        motivoOptions.find((opt) => opt.value === val)?.label ?? "Motivo..."
+                        motivoOptions.find((opt) => opt.value === val)?.label ??
+                        "Motivo..."
                       }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="end" className="min-w-[260px]">
                     {motivoOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                        <span className="whitespace-normal break-words">{opt.label}</span>
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="text-xs"
+                      >
+                        <span className="whitespace-normal break-words">
+                          {opt.label}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {motivoError && (
-                  <span className="text-xs text-destructive">{motivoError}</span>
+                  <span className="text-xs text-destructive">
+                    {motivoError}
+                  </span>
                 )}
               </div>
             )}
@@ -255,7 +274,11 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData })
               {ETAPAS.map((etapa) => {
                 const Icon = etapa.Icon;
                 return (
-                  <TabsTrigger key={etapa.value} value={etapa.value} className="gap-1.5">
+                  <TabsTrigger
+                    key={etapa.value}
+                    value={etapa.value}
+                    className="gap-1.5"
+                  >
                     <Icon className="size-4" />
                     {etapa.label}
                     {pending.etapa === etapa.value && (
@@ -271,7 +294,11 @@ export function TriagemDetailEditor({ triagem }: { triagem: TriagemEditorData })
             {ETAPAS.map((etapa) => {
               const field = PARECER_FIELD_BY_ETAPA[etapa.value];
               return (
-                <TabsContent key={etapa.value} value={etapa.value} className="mt-4">
+                <TabsContent
+                  key={etapa.value}
+                  value={etapa.value}
+                  className="mt-4"
+                >
                   <Field>
                     <FieldLabel htmlFor={`parecer-${etapa.value}`}>
                       Parecer do RH — {etapa.label}

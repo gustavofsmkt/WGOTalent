@@ -79,32 +79,47 @@ export async function executarCicloDeCaptura(): Promise<void> {
 
   if (resultado.mensagens.length === 0) {
     if (pisoWatermark > watermarkAtual) {
-      await emailCredencialRepository.atualizarWatermark(credencial.id, pisoWatermark);
+      await emailCredencialRepository.atualizarWatermark(
+        credencial.id,
+        pisoWatermark,
+      );
     }
     return;
   }
 
-  const mensagensOrdenadas = resultado.mensagens.slice().sort((a, b) => a.uid - b.uid);
+  const mensagensOrdenadas = resultado.mensagens
+    .slice()
+    .sort((a, b) => a.uid - b.uid);
   const itens = mensagensOrdenadas.flatMap((mensagem) =>
     mensagem.anexos.map((anexo) => ({ uid: mensagem.uid, anexo })),
   );
 
-  const processados = await runWithLimit(itens, CONCORRENCIA_CAPTURA_EMAIL, async (item) => ({
-    uid: item.uid,
-    resultado: await processarCurriculoRecebido({
-      buffer: item.anexo.buffer,
-      filename: item.anexo.filename,
-      mimeType: item.anexo.mimeType,
-      origem: "email",
+  const processados = await runWithLimit(
+    itens,
+    CONCORRENCIA_CAPTURA_EMAIL,
+    async (item) => ({
+      uid: item.uid,
+      resultado: await processarCurriculoRecebido({
+        buffer: item.anexo.buffer,
+        filename: item.anexo.filename,
+        mimeType: item.anexo.mimeType,
+        origem: "email",
+      }),
     }),
-  }));
+  );
 
-  const sucesso = processados.filter((r) => r.ok && r.value.resultado.status === "sucesso").length;
+  const sucesso = processados.filter(
+    (r) => r.ok && r.value.resultado.status === "sucesso",
+  ).length;
   const erro = processados.length - sucesso;
 
   const uidsComFalhaDeQuota = new Set<number>();
   for (const r of processados) {
-    if (r.ok && r.value.resultado.status === "erro" && r.value.resultado.errorType === "quota") {
+    if (
+      r.ok &&
+      r.value.resultado.status === "erro" &&
+      r.value.resultado.errorType === "quota"
+    ) {
       uidsComFalhaDeQuota.add(r.value.uid);
     }
   }
@@ -119,7 +134,9 @@ export async function executarCicloDeCaptura(): Promise<void> {
     maiorUidResolvido = Math.max(maiorUidResolvido, mensagem.uid);
   }
 
-  const maiorUid = bloqueadoPorQuota ? maiorUidResolvido : Math.max(maiorUidResolvido, pisoWatermark);
+  const maiorUid = bloqueadoPorQuota
+    ? maiorUidResolvido
+    : Math.max(maiorUidResolvido, pisoWatermark);
   if (maiorUid > watermarkAtual) {
     await emailCredencialRepository.atualizarWatermark(credencial.id, maiorUid);
   }

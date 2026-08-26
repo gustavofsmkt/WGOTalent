@@ -39,45 +39,38 @@ export async function seed() {
     await db.delete(departamentos);
 
     console.log("🏢 Seeding Departamentos...");
-    const [depTI, depRH, depComercial, depOperacoes, depFinanceiro] =
-      await db
-        .insert(departamentos)
-        .values([
-          {
-            nome: "Tecnologia da Informação",
-            descricao:
-              "Departamento responsável pelo desenvolvimento de software, infraestrutura de TI, segurança da informação e suporte tecnológico corporativo.",
-          },
-          {
-            nome: "Recursos Humanos",
-            descricao:
-              "Departamento encarregado de atração e seleção de talentos, desenvolvimento organizacional, treinamento e gestão de pessoas.",
-          },
-          {
-            nome: "Comercial & Vendas",
-            descricao:
-              "Departamento responsável por prospecção de novos clientes, expansão de contas corporativas B2B e atendimento comercial.",
-          },
-          {
-            nome: "Operações & Logística",
-            descricao:
-              "Departamento responsável pela gestão operacional, logística integrada, cadeia de suprimentos e atendimento de campo.",
-          },
-          {
-            nome: "Financeiro & Controladoria",
-            descricao:
-              "Departamento responsável pelo planejamento financeiro, contabilidade, controladoria e rotinas de tesouraria.",
-          },
-        ])
-        .returning();
+    const [depTI, depRH, depComercial, depOperacoes, depFinanceiro] = await db
+      .insert(departamentos)
+      .values([
+        {
+          nome: "Tecnologia da Informação",
+          descricao:
+            "Departamento responsável pelo desenvolvimento de software, infraestrutura de TI, segurança da informação e suporte tecnológico corporativo.",
+        },
+        {
+          nome: "Recursos Humanos",
+          descricao:
+            "Departamento encarregado de atração e seleção de talentos, desenvolvimento organizacional, treinamento e gestão de pessoas.",
+        },
+        {
+          nome: "Comercial & Vendas",
+          descricao:
+            "Departamento responsável por prospecção de novos clientes, expansão de contas corporativas B2B e atendimento comercial.",
+        },
+        {
+          nome: "Operações & Logística",
+          descricao:
+            "Departamento responsável pela gestão operacional, logística integrada, cadeia de suprimentos e atendimento de campo.",
+        },
+        {
+          nome: "Financeiro & Controladoria",
+          descricao:
+            "Departamento responsável pelo planejamento financeiro, contabilidade, controladoria e rotinas de tesouraria.",
+        },
+      ])
+      .returning();
 
-    if (
-      !depTI ||
-      !depRH ||
-      !depComercial ||
-      !depOperacoes ||
-      !depFinanceiro
-    ) {
+    if (!depTI || !depRH || !depComercial || !depOperacoes || !depFinanceiro) {
       throw new Error("Failed to insert departamentos");
     }
 
@@ -190,60 +183,66 @@ export async function seed() {
     }
 
     console.log("📌 Seeding Vagas...");
-    const [vagaDevSP, vagaDevopsBH, vagaRHPR, vagaVendasSP, vagaLogRJ, vagaDevFloripa] =
-      await db
-        .insert(vagas)
-        .values([
-          {
-            cargoId: cargoDevSenior.id,
-            status: "aberta",
-            posicoesDisponiveis: 2,
-            remuneracaoOferecida: "14500.00",
-            cidade: "São Paulo",
-            uf: "SP",
-          },
-          {
-            cargoId: cargoDevops.id,
-            status: "aberta",
-            posicoesDisponiveis: 1,
-            remuneracaoOferecida: "10500.00",
-            cidade: "Belo Horizonte",
-            uf: "MG",
-          },
-          {
-            cargoId: cargoAnalistaRH.id,
-            status: "pausada",
-            posicoesDisponiveis: 1,
-            remuneracaoOferecida: "6500.00",
-            cidade: "Curitiba",
-            uf: "PR",
-          },
-          {
-            cargoId: cargoExecutivoVendas.id,
-            status: "concluida",
-            posicoesDisponiveis: 1,
-            remuneracaoOferecida: "8500.00",
-            cidade: "São Paulo",
-            uf: "SP",
-          },
-          {
-            cargoId: cargoCoordLogistica.id,
-            status: "cancelada",
-            posicoesDisponiveis: 1,
-            remuneracaoOferecida: "9000.00",
-            cidade: "Rio de Janeiro",
-            uf: "RJ",
-          },
-          {
-            cargoId: cargoDevSenior.id,
-            status: "incompleta",
-            posicoesDisponiveis: 1,
-            remuneracaoOferecida: null,
-            cidade: "Florianópolis",
-            uf: "SC",
-          },
-        ])
-        .returning();
+    const [
+      vagaDevSP,
+      vagaDevopsBH,
+      vagaRHPR,
+      vagaVendasSP,
+      vagaLogRJ,
+      vagaDevFloripa,
+    ] = await db
+      .insert(vagas)
+      .values([
+        {
+          cargoId: cargoDevSenior.id,
+          status: "aberta",
+          posicoesDisponiveis: 2,
+          remuneracaoOferecida: "14500.00",
+          cidade: "São Paulo",
+          uf: "SP",
+        },
+        {
+          cargoId: cargoDevops.id,
+          status: "aberta",
+          posicoesDisponiveis: 1,
+          remuneracaoOferecida: "10500.00",
+          cidade: "Belo Horizonte",
+          uf: "MG",
+        },
+        {
+          cargoId: cargoAnalistaRH.id,
+          status: "pausada",
+          posicoesDisponiveis: 1,
+          remuneracaoOferecida: "6500.00",
+          cidade: "Curitiba",
+          uf: "PR",
+        },
+        {
+          cargoId: cargoExecutivoVendas.id,
+          status: "concluida",
+          posicoesDisponiveis: 1,
+          remuneracaoOferecida: "8500.00",
+          cidade: "São Paulo",
+          uf: "SP",
+        },
+        {
+          cargoId: cargoCoordLogistica.id,
+          status: "cancelada",
+          posicoesDisponiveis: 1,
+          remuneracaoOferecida: "9000.00",
+          cidade: "Rio de Janeiro",
+          uf: "RJ",
+        },
+        {
+          cargoId: cargoDevSenior.id,
+          status: "incompleta",
+          posicoesDisponiveis: 1,
+          remuneracaoOferecida: null,
+          cidade: "Florianópolis",
+          uf: "SC",
+        },
+      ])
+      .returning();
 
     if (
       !vagaDevSP ||
@@ -257,204 +256,210 @@ export async function seed() {
     }
 
     console.log("👤 Seeding Candidatos (Dados Fictícios)...");
-    const [candLucas, candMariana, candJuliana, candRoberto, candPatricia, candThiago] =
-      await db
-        .insert(candidatos)
-        .values([
-          {
-            nome: "Lucas Albuquerque Silva",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1991-04-12",
-            estadoCivil: "casado",
-            pcd: null,
-            email: "lucas.albuquerque.dev@exemplo.com.br",
-            celular: "(11) 98765-1001",
-            cep: "05422-000",
-            uf: "SP",
-            cidade: "São Paulo",
-            bairro: "Pinheiros",
-            logradouro: "Rua dos Pinheiros, 100",
-            resumoProfissional:
-              "Engenheiro de software com mais de 8 anos de experiência em desenvolvimento web full stack com React, Node.js e PostgreSQL.",
-            cnh: "b",
-            possuiVeiculo: true,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoDevSenior.id,
-            areaInteresseId: depTI.id,
-            disponivelViagens: true,
-            disponivelMudanca: false,
-            disponibilidadeHorarios: "Comercial flexível / Híbrido",
-            inicioImediato: true,
-            linkedin: "https://linkedin.com/in/lucas-silva-ficticio",
-            portfolio: "https://lucasdev.ficticio.io",
-            origem: "indicacao",
-            curriculoArquivoKey: "curriculos/lucas-albuquerque-silva.pdf",
-            textoCurriculoExtraido:
-              "LUCAS ALBUQUERQUE SILVA\nDesenvolvedor Full Stack Sênior\nSão Paulo - SP | lucas.albuquerque.dev@exemplo.com.br\n\nResumo:\nProfissional com 8 anos de atuação em TypeScript, React, Next.js, Node.js e PostgreSQL.",
-          },
-          {
-            nome: "Mariana Vasconcelos Costa",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1994-08-23",
-            estadoCivil: "solteiro",
-            pcd: null,
-            email: "mariana.costa.devops@exemplo.com.br",
-            celular: "(31) 98765-2002",
-            cep: "30140-060",
-            uf: "MG",
-            cidade: "Belo Horizonte",
-            bairro: "Savassi",
-            logradouro: "Avenida Getúlio Vargas, 250",
-            resumoProfissional:
-              "Especialista em infraestrutura em nuvem, automação CI/CD com GitHub Actions e orquestração de containers Docker e Kubernetes.",
-            cnh: "b",
-            possuiVeiculo: false,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoDevops.id,
-            areaInteresseId: depTI.id,
-            disponivelViagens: false,
-            disponivelMudanca: true,
-            disponibilidadeHorarios: "Horário comercial",
-            inicioImediato: false,
-            linkedin: "https://linkedin.com/in/mariana-costa-ficticio",
-            portfolio: null,
-            origem: "email",
-            curriculoArquivoKey: "curriculos/mariana-vasconcelos-costa.pdf",
-            textoCurriculoExtraido:
-              "MARIANA VASCONCELOS COSTA\nEngenheira de DevOps\nBelo Horizonte - MG | mariana.costa.devops@exemplo.com.br\n\nExperiência em AWS, Terraform, Docker, Kubernetes e CI/CD.",
-          },
-          {
-            nome: "Juliana Mendes Ferreira",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1993-11-15",
-            estadoCivil: "uniao_estavel",
-            pcd: null,
-            email: "juliana.ferreira.rh@exemplo.com.br",
-            celular: "(41) 98765-3003",
-            cep: "80420-010",
-            uf: "PR",
-            cidade: "Curitiba",
-            bairro: "Batel",
-            logradouro: "Rua Bispo Dom José, 400",
-            resumoProfissional:
-              "Analista de Recursos Humanos com foco em atração de talentos de tecnologia, aplicação de dinâmicas e entrevistas por competências.",
-            cnh: "a",
-            possuiVeiculo: true,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoAnalistaRH.id,
-            areaInteresseId: depRH.id,
-            disponivelViagens: true,
-            disponivelMudanca: true,
-            disponibilidadeHorarios: "Integral",
-            inicioImediato: true,
-            linkedin: "https://linkedin.com/in/juliana-mendes-ficticio",
-            portfolio: null,
-            origem: "manual",
-            curriculoArquivoKey: "curriculos/juliana-mendes-ferreira.pdf",
-            textoCurriculoExtraido:
-              "JULIANA MENDES FERREIRA\nAnalista de Recursos Humanos\nCuritiba - PR | juliana.ferreira.rh@exemplo.com.br\n\nExperiência de 4 anos em Recrutamento e Seleção de Tecnologia.",
-          },
-          {
-            nome: "Roberto Carlos Santos",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1988-02-28",
-            estadoCivil: "casado",
-            pcd: null,
-            email: "roberto.santos.vendas@exemplo.com.br",
-            celular: "(11) 98765-4004",
-            cep: "04543-000",
-            uf: "SP",
-            cidade: "São Paulo",
-            bairro: "Vila Olímpia",
-            logradouro: "Rua Funchal, 500",
-            resumoProfissional:
-              "Executivo comercial sênior com 10 anos de experiência em vendas corporativas de software B2B e expansão de mercado.",
-            cnh: "ab",
-            possuiVeiculo: true,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoExecutivoVendas.id,
-            areaInteresseId: depComercial.id,
-            disponivelViagens: true,
-            disponivelMudanca: false,
-            disponibilidadeHorarios: "Comercial / Viagens",
-            inicioImediato: true,
-            linkedin: "https://linkedin.com/in/roberto-santos-ficticio",
-            portfolio: null,
-            origem: "manual",
-            curriculoArquivoKey: "curriculos/roberto-carlos-santos.pdf",
-            textoCurriculoExtraido:
-              "ROBERTO CARLOS SANTOS\nExecutivo de Contas Corporativas B2B\nSão Paulo - SP | roberto.santos.vendas@exemplo.com.br\n\nEspecialista em vendas complexas, CRM Salesforce e prospecção Enterprise.",
-          },
-          {
-            nome: "Patricia Helena Souza",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1990-06-10",
-            estadoCivil: "solteiro",
-            pcd: "Deficiência auditiva leve unilateral",
-            email: "patricia.souza.log@exemplo.com.br",
-            celular: "(21) 98765-5005",
-            cep: "22640-100",
-            uf: "RJ",
-            cidade: "Rio de Janeiro",
-            bairro: "Barra da Tijuca",
-            logradouro: "Avenida das Américas, 800",
-            resumoProfissional:
-              "Supervisora logística com ampla vivência em centros de distribuição e gestão de frotas comerciais.",
-            cnh: "c",
-            possuiVeiculo: true,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoCoordLogistica.id,
-            areaInteresseId: depOperacoes.id,
-            disponivelViagens: false,
-            disponivelMudanca: false,
-            disponibilidadeHorarios: "Turno diurno / Escala",
-            inicioImediato: false,
-            linkedin: "https://linkedin.com/in/patricia-souza-ficticio",
-            portfolio: null,
-            origem: "email",
-            curriculoArquivoKey: "curriculos/patricia-helena-souza.pdf",
-            textoCurriculoExtraido:
-              "PATRICIA HELENA SOUZA\nCoordenadora de Logística\nRio de Janeiro - RJ | patricia.souza.log@exemplo.com.br\n\nGestão de CDs, indicadores de frete e liderança de equipes operacionais.",
-          },
-          {
-            nome: "Thiago Nogueira Lima",
-            nomeSocial: null,
-            nacionalidade: "brasileira",
-            dataNascimento: "1998-05-18",
-            estadoCivil: "solteiro",
-            pcd: null,
-            email: "thiago.nogueira.dev@exemplo.com.br",
-            celular: "(48) 98765-6006",
-            cep: "88034-000",
-            uf: "SC",
-            cidade: "Florianópolis",
-            bairro: "Itacorubi",
-            logradouro: "Rodovia Amaro Antônio Vieira, 120",
-            resumoProfissional:
-              "Desenvolvedor frontend júnior em transição para full stack com conhecimentos em JavaScript, React e Node.js.",
-            cnh: null,
-            possuiVeiculo: false,
-            ensinoMedioConcluido: true,
-            cargoInteresseId: cargoDevSenior.id,
-            areaInteresseId: depTI.id,
-            disponivelViagens: false,
-            disponivelMudanca: true,
-            disponibilidadeHorarios: "Período integral",
-            inicioImediato: true,
-            linkedin: "https://linkedin.com/in/thiago-lima-ficticio",
-            portfolio: "https://thiagolima.ficticio.dev",
-            origem: "email",
-            curriculoArquivoKey: "curriculos/thiago-nogueira-lima.pdf",
-            textoCurriculoExtraido:
-              "THIAGO NOGUEIRA LIMA\nDesenvolvedor Júnior\nFlorianópolis - SC | thiago.nogueira.dev@exemplo.com.br\n\nConhecimento em React, JavaScript, HTML/CSS e Git.",
-          },
-        ])
-        .returning();
+    const [
+      candLucas,
+      candMariana,
+      candJuliana,
+      candRoberto,
+      candPatricia,
+      candThiago,
+    ] = await db
+      .insert(candidatos)
+      .values([
+        {
+          nome: "Lucas Albuquerque Silva",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1991-04-12",
+          estadoCivil: "casado",
+          pcd: null,
+          email: "lucas.albuquerque.dev@exemplo.com.br",
+          celular: "(11) 98765-1001",
+          cep: "05422-000",
+          uf: "SP",
+          cidade: "São Paulo",
+          bairro: "Pinheiros",
+          logradouro: "Rua dos Pinheiros, 100",
+          resumoProfissional:
+            "Engenheiro de software com mais de 8 anos de experiência em desenvolvimento web full stack com React, Node.js e PostgreSQL.",
+          cnh: "b",
+          possuiVeiculo: true,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoDevSenior.id,
+          areaInteresseId: depTI.id,
+          disponivelViagens: true,
+          disponivelMudanca: false,
+          disponibilidadeHorarios: "Comercial flexível / Híbrido",
+          inicioImediato: true,
+          linkedin: "https://linkedin.com/in/lucas-silva-ficticio",
+          portfolio: "https://lucasdev.ficticio.io",
+          origem: "indicacao",
+          curriculoArquivoKey: "curriculos/lucas-albuquerque-silva.pdf",
+          textoCurriculoExtraido:
+            "LUCAS ALBUQUERQUE SILVA\nDesenvolvedor Full Stack Sênior\nSão Paulo - SP | lucas.albuquerque.dev@exemplo.com.br\n\nResumo:\nProfissional com 8 anos de atuação em TypeScript, React, Next.js, Node.js e PostgreSQL.",
+        },
+        {
+          nome: "Mariana Vasconcelos Costa",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1994-08-23",
+          estadoCivil: "solteiro",
+          pcd: null,
+          email: "mariana.costa.devops@exemplo.com.br",
+          celular: "(31) 98765-2002",
+          cep: "30140-060",
+          uf: "MG",
+          cidade: "Belo Horizonte",
+          bairro: "Savassi",
+          logradouro: "Avenida Getúlio Vargas, 250",
+          resumoProfissional:
+            "Especialista em infraestrutura em nuvem, automação CI/CD com GitHub Actions e orquestração de containers Docker e Kubernetes.",
+          cnh: "b",
+          possuiVeiculo: false,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoDevops.id,
+          areaInteresseId: depTI.id,
+          disponivelViagens: false,
+          disponivelMudanca: true,
+          disponibilidadeHorarios: "Horário comercial",
+          inicioImediato: false,
+          linkedin: "https://linkedin.com/in/mariana-costa-ficticio",
+          portfolio: null,
+          origem: "email",
+          curriculoArquivoKey: "curriculos/mariana-vasconcelos-costa.pdf",
+          textoCurriculoExtraido:
+            "MARIANA VASCONCELOS COSTA\nEngenheira de DevOps\nBelo Horizonte - MG | mariana.costa.devops@exemplo.com.br\n\nExperiência em AWS, Terraform, Docker, Kubernetes e CI/CD.",
+        },
+        {
+          nome: "Juliana Mendes Ferreira",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1993-11-15",
+          estadoCivil: "uniao_estavel",
+          pcd: null,
+          email: "juliana.ferreira.rh@exemplo.com.br",
+          celular: "(41) 98765-3003",
+          cep: "80420-010",
+          uf: "PR",
+          cidade: "Curitiba",
+          bairro: "Batel",
+          logradouro: "Rua Bispo Dom José, 400",
+          resumoProfissional:
+            "Analista de Recursos Humanos com foco em atração de talentos de tecnologia, aplicação de dinâmicas e entrevistas por competências.",
+          cnh: "a",
+          possuiVeiculo: true,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoAnalistaRH.id,
+          areaInteresseId: depRH.id,
+          disponivelViagens: true,
+          disponivelMudanca: true,
+          disponibilidadeHorarios: "Integral",
+          inicioImediato: true,
+          linkedin: "https://linkedin.com/in/juliana-mendes-ficticio",
+          portfolio: null,
+          origem: "manual",
+          curriculoArquivoKey: "curriculos/juliana-mendes-ferreira.pdf",
+          textoCurriculoExtraido:
+            "JULIANA MENDES FERREIRA\nAnalista de Recursos Humanos\nCuritiba - PR | juliana.ferreira.rh@exemplo.com.br\n\nExperiência de 4 anos em Recrutamento e Seleção de Tecnologia.",
+        },
+        {
+          nome: "Roberto Carlos Santos",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1988-02-28",
+          estadoCivil: "casado",
+          pcd: null,
+          email: "roberto.santos.vendas@exemplo.com.br",
+          celular: "(11) 98765-4004",
+          cep: "04543-000",
+          uf: "SP",
+          cidade: "São Paulo",
+          bairro: "Vila Olímpia",
+          logradouro: "Rua Funchal, 500",
+          resumoProfissional:
+            "Executivo comercial sênior com 10 anos de experiência em vendas corporativas de software B2B e expansão de mercado.",
+          cnh: "ab",
+          possuiVeiculo: true,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoExecutivoVendas.id,
+          areaInteresseId: depComercial.id,
+          disponivelViagens: true,
+          disponivelMudanca: false,
+          disponibilidadeHorarios: "Comercial / Viagens",
+          inicioImediato: true,
+          linkedin: "https://linkedin.com/in/roberto-santos-ficticio",
+          portfolio: null,
+          origem: "manual",
+          curriculoArquivoKey: "curriculos/roberto-carlos-santos.pdf",
+          textoCurriculoExtraido:
+            "ROBERTO CARLOS SANTOS\nExecutivo de Contas Corporativas B2B\nSão Paulo - SP | roberto.santos.vendas@exemplo.com.br\n\nEspecialista em vendas complexas, CRM Salesforce e prospecção Enterprise.",
+        },
+        {
+          nome: "Patricia Helena Souza",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1990-06-10",
+          estadoCivil: "solteiro",
+          pcd: "Deficiência auditiva leve unilateral",
+          email: "patricia.souza.log@exemplo.com.br",
+          celular: "(21) 98765-5005",
+          cep: "22640-100",
+          uf: "RJ",
+          cidade: "Rio de Janeiro",
+          bairro: "Barra da Tijuca",
+          logradouro: "Avenida das Américas, 800",
+          resumoProfissional:
+            "Supervisora logística com ampla vivência em centros de distribuição e gestão de frotas comerciais.",
+          cnh: "c",
+          possuiVeiculo: true,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoCoordLogistica.id,
+          areaInteresseId: depOperacoes.id,
+          disponivelViagens: false,
+          disponivelMudanca: false,
+          disponibilidadeHorarios: "Turno diurno / Escala",
+          inicioImediato: false,
+          linkedin: "https://linkedin.com/in/patricia-souza-ficticio",
+          portfolio: null,
+          origem: "email",
+          curriculoArquivoKey: "curriculos/patricia-helena-souza.pdf",
+          textoCurriculoExtraido:
+            "PATRICIA HELENA SOUZA\nCoordenadora de Logística\nRio de Janeiro - RJ | patricia.souza.log@exemplo.com.br\n\nGestão de CDs, indicadores de frete e liderança de equipes operacionais.",
+        },
+        {
+          nome: "Thiago Nogueira Lima",
+          nomeSocial: null,
+          nacionalidade: "brasileira",
+          dataNascimento: "1998-05-18",
+          estadoCivil: "solteiro",
+          pcd: null,
+          email: "thiago.nogueira.dev@exemplo.com.br",
+          celular: "(48) 98765-6006",
+          cep: "88034-000",
+          uf: "SC",
+          cidade: "Florianópolis",
+          bairro: "Itacorubi",
+          logradouro: "Rodovia Amaro Antônio Vieira, 120",
+          resumoProfissional:
+            "Desenvolvedor frontend júnior em transição para full stack com conhecimentos em JavaScript, React e Node.js.",
+          cnh: null,
+          possuiVeiculo: false,
+          ensinoMedioConcluido: true,
+          cargoInteresseId: cargoDevSenior.id,
+          areaInteresseId: depTI.id,
+          disponivelViagens: false,
+          disponivelMudanca: true,
+          disponibilidadeHorarios: "Período integral",
+          inicioImediato: true,
+          linkedin: "https://linkedin.com/in/thiago-lima-ficticio",
+          portfolio: "https://thiagolima.ficticio.dev",
+          origem: "email",
+          curriculoArquivoKey: "curriculos/thiago-nogueira-lima.pdf",
+          textoCurriculoExtraido:
+            "THIAGO NOGUEIRA LIMA\nDesenvolvedor Júnior\nFlorianópolis - SC | thiago.nogueira.dev@exemplo.com.br\n\nConhecimento em React, JavaScript, HTML/CSS e Git.",
+        },
+      ])
+      .returning();
 
     if (
       !candLucas ||
@@ -776,8 +781,7 @@ export async function seed() {
         scoreIa: "88.00",
         pontosFortes:
           "Vasta experiência em vendas corporativas B2B de software, metodologia SPIN Selling e histórico comprovado de superação de metas.",
-        requisitosFaltantes:
-          "Inglês avançado (requisito apenas desejável).",
+        requisitosFaltantes: "Inglês avançado (requisito apenas desejável).",
         eliminatoriosFalhos: "Nenhum critério eliminatório violado.",
         alertas: "Disponibilidade imediata confirmada.",
         parecerIa:
@@ -795,6 +799,3 @@ export async function seed() {
 }
 
 void seed();
-
-
-

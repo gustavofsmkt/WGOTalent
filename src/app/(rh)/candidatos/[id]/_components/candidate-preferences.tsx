@@ -1,5 +1,14 @@
 import * as React from "react";
-import { Sliders, Briefcase, Building2, Clock, Plane, Truck, Zap, FileText } from "lucide-react";
+import {
+  Sliders,
+  Briefcase,
+  Building2,
+  Clock,
+  Plane,
+  Truck,
+  Zap,
+  FileText,
+} from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 

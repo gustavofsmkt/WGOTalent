@@ -170,7 +170,9 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "triagem-candidato-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -240,7 +242,9 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "triagem-vaga-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -283,7 +287,8 @@ export function TriagemForm({
                           ) : (
                             vagaOptions.map((v) => (
                               <SelectItem key={v.id} value={v.id}>
-                                {v.cargo.titulo} — {v.cargo.departamento.nome} ({v.cidade}/{v.uf})
+                                {v.cargo.titulo} — {v.cargo.departamento.nome} (
+                                {v.cidade}/{v.uf})
                               </SelectItem>
                             ))
                           )}
@@ -311,14 +316,18 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "triagem-etapa";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
 
                   return (
                     <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>Etapa do Processo *</FieldLabel>
+                      <FieldLabel htmlFor={fieldId}>
+                        Etapa do Processo *
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(val) => {
@@ -344,13 +353,15 @@ export function TriagemForm({
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {(Object.keys(etapaLabels) as (keyof typeof etapaLabels)[]).map(
-                            (etapa) => (
-                              <SelectItem key={etapa} value={etapa}>
-                                {etapaLabels[etapa]}
-                              </SelectItem>
-                            ),
-                          )}
+                          {(
+                            Object.keys(
+                              etapaLabels,
+                            ) as (keyof typeof etapaLabels)[]
+                          ).map((etapa) => (
+                            <SelectItem key={etapa} value={etapa}>
+                              {etapaLabels[etapa]}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FieldDescription id={descId}>
@@ -372,7 +383,9 @@ export function TriagemForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "triagem-resultado";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -387,7 +400,10 @@ export function TriagemForm({
                             const newRes = val as typeof field.state.value;
                             field.handleChange(newRes);
                             // Limpa o motivo se não for reprovado nem desistente
-                            if (newRes !== "reprovado" && newRes !== "desistente") {
+                            if (
+                              newRes !== "reprovado" &&
+                              newRes !== "desistente"
+                            ) {
                               form.setFieldValue("motivo", null);
                             }
                           }
@@ -404,14 +420,18 @@ export function TriagemForm({
                           <SelectValue placeholder="Selecione o resultado...">
                             {(val: string | null) =>
                               val && val in resultadoLabels
-                                ? resultadoLabels[val as keyof typeof resultadoLabels]
+                                ? resultadoLabels[
+                                    val as keyof typeof resultadoLabels
+                                  ]
                                 : "Selecione o resultado..."
                             }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {(
-                            Object.keys(resultadoLabels) as (keyof typeof resultadoLabels)[]
+                            Object.keys(
+                              resultadoLabels,
+                            ) as (keyof typeof resultadoLabels)[]
                           ).map((res) => (
                             <SelectItem key={res} value={res}>
                               {resultadoLabels[res]}
@@ -433,9 +453,7 @@ export function TriagemForm({
             </div>
 
             {/* Seção 3: Motivo Condicional (Exibido apenas para Reprovado ou Desistente) */}
-            <form.Subscribe
-              selector={(state) => state.values.resultado}
-            >
+            <form.Subscribe selector={(state) => state.values.resultado}>
               {(resultado) => {
                 const isReprovado = resultado === "reprovado";
                 const isDesistente = resultado === "desistente";
@@ -449,7 +467,9 @@ export function TriagemForm({
                   // pelo validator onBlur do form — não duplicar a regra aqui.
                   <form.Field name="motivo">
                     {(field) => {
-                      const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                      const hasErrors =
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                       const fieldId = "triagem-motivo";
                       const errorId = `${fieldId}-error`;
                       const descId = `${fieldId}-description`;
@@ -464,7 +484,8 @@ export function TriagemForm({
                       return (
                         <Field data-invalid={hasErrors}>
                           <FieldLabel htmlFor={fieldId}>
-                            Motivo da {isReprovado ? "Reprovação" : "Desistência"} *
+                            Motivo da{" "}
+                            {isReprovado ? "Reprovação" : "Desistência"} *
                           </FieldLabel>
                           <Select
                             value={field.state.value || ""}
@@ -487,21 +508,30 @@ export function TriagemForm({
                                   if (!val || val === "none") {
                                     return "Selecione o motivo...";
                                   }
-                                  return (currentLabels as Record<string, string>)[val] ?? val;
+                                  return (
+                                    (currentLabels as Record<string, string>)[
+                                      val
+                                    ] ?? val
+                                  );
                                 }}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {currentOptions.map((motivo) => (
                                 <SelectItem key={motivo} value={motivo}>
-                                  {(currentLabels as Record<string, string>)[motivo]}
+                                  {
+                                    (currentLabels as Record<string, string>)[
+                                      motivo
+                                    ]
+                                  }
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                           <FieldDescription id={descId}>
                             Justificativa obrigatória para{" "}
-                            {isReprovado ? "reprovação" : "desistência"} do processo.
+                            {isReprovado ? "reprovação" : "desistência"} do
+                            processo.
                           </FieldDescription>
                           <FieldError
                             id={errorId}

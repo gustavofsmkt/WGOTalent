@@ -50,10 +50,7 @@ export default async function NovaVagaPage() {
         />
       ) : (
         <div className="flex justify-center">
-          <VagaForm
-            cargoOptions={cargoOptions}
-            className="max-w-2xl w-full"
-          />
+          <VagaForm cargoOptions={cargoOptions} className="max-w-2xl w-full" />
         </div>
       )}
     </div>

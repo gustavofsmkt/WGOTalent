@@ -16,4 +16,6 @@ export const agenteConfigUpdateSchema = z.object({
 });
 
 export type AgenteConfigUpdateInput = z.input<typeof agenteConfigUpdateSchema>;
-export type AgenteConfigUpdateOutput = z.output<typeof agenteConfigUpdateSchema>;
+export type AgenteConfigUpdateOutput = z.output<
+  typeof agenteConfigUpdateSchema
+>;

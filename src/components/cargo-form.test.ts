@@ -19,7 +19,8 @@ describe("CargoForm - Validation Integration", () => {
       faixaSalarial: "9500.00",
       requisitos: "Experiência com TypeScript, React e Node.js.",
       requisitosDesejaveis: "Conhecimento em Docker e AWS.",
-      criteriosEliminatorios: "Não residir no Brasil ou não ter disponibilidade.",
+      criteriosEliminatorios:
+        "Não residir no Brasil ou não ter disponibilidade.",
     };
 
     const result = cargoSchema.safeParse(input);

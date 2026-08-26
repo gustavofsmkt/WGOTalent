@@ -16,7 +16,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
 
 export type TriagemEtapaKey = (typeof triagemEtapaEnum.enumValues)[number];
-export type TriagemResultadoKey = (typeof triagemResultadoEnum.enumValues)[number];
+export type TriagemResultadoKey =
+  (typeof triagemResultadoEnum.enumValues)[number];
 
 export type TriagensPorEtapaCount = Record<TriagemEtapaKey, number>;
 export type TriagensPorResultadoCount = Record<TriagemResultadoKey, number>;
@@ -216,13 +217,13 @@ export const dashboardRepository = {
    * ignorando avaliações descartadas (`deletedAt IS NULL`).
    * Retorna `media: null` se nenhuma avaliação foi realizada.
    */
-  getMediaScoreIa: async (
-    dbOrTx: DbOrTx = db,
-  ): Promise<MediaScoreIaResult> => {
+  getMediaScoreIa: async (dbOrTx: DbOrTx = db): Promise<MediaScoreIaResult> => {
     const rows = await notDeleted(
       dbOrTx
         .select({
-          media: sql<number | null>`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
+          media: sql<
+            number | null
+          >`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
           total: sql<number>`count(*)::int`,
         })
         .from(avaliacaoIA)
@@ -233,9 +234,10 @@ export const dashboardRepository = {
 
     const first = rows[0];
     const total = Number(first?.total ?? 0);
-    const media = total > 0 && first?.media !== null && first?.media !== undefined
-      ? Number(first.media)
-      : null;
+    const media =
+      total > 0 && first?.media !== null && first?.media !== undefined
+        ? Number(first.media)
+        : null;
 
     return {
       media,
@@ -267,7 +269,8 @@ export const dashboardRepository = {
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
         .leftJoin(triagens, eq(vagas.id, triagens.vagaId)),
       vagas,
-    ).groupBy(
+    )
+      .groupBy(
         vagas.id,
         cargos.titulo,
         departamentos.nome,
@@ -276,7 +279,9 @@ export const dashboardRepository = {
         vagas.posicoesDisponiveis,
       )
       .orderBy(
-        desc(sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`),
+        desc(
+          sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
+        ),
         desc(vagas.createdAt),
       )
       .limit(limit);

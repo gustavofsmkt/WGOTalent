@@ -22,7 +22,9 @@ describe("LocalStorageProvider", () => {
   });
 
   it("should fail if constructed with empty root dir", () => {
-    expect(() => new LocalStorageProvider("")).toThrow("Local storage root directory must be specified");
+    expect(() => new LocalStorageProvider("")).toThrow(
+      "Local storage root directory must be specified",
+    );
   });
 
   it("should successfully save and read a file", async () => {
@@ -47,7 +49,9 @@ describe("LocalStorageProvider", () => {
 
   it("should throw an error when reading a non-existent file", async () => {
     const key = "non-existent.txt";
-    await expect(provider.read(key)).rejects.toThrow("File not found for key: non-existent.txt");
+    await expect(provider.read(key)).rejects.toThrow(
+      "File not found for key: non-existent.txt",
+    );
   });
 
   it("should successfully delete a file", async () => {
@@ -57,7 +61,9 @@ describe("LocalStorageProvider", () => {
     await provider.save(key, content);
     await provider.delete(key);
 
-    await expect(provider.read(key)).rejects.toThrow("File not found for key: test-key.txt");
+    await expect(provider.read(key)).rejects.toThrow(
+      "File not found for key: test-key.txt",
+    );
   });
 
   it("should be idempotent when deleting non-existent file", async () => {
@@ -66,10 +72,18 @@ describe("LocalStorageProvider", () => {
   });
 
   it("should prevent path traversal attacks in save", async () => {
-    await expect(provider.save("../traversal.txt", "data")).rejects.toThrow("Invalid storage key");
-    await expect(provider.save("curriculos/../../traversal.txt", "data")).rejects.toThrow("Invalid storage key");
-    await expect(provider.save("folder\\file.txt", "data")).rejects.toThrow("Invalid storage key");
-    await expect(provider.save("/etc/passwd", "data")).rejects.toThrow("Invalid storage key");
+    await expect(provider.save("../traversal.txt", "data")).rejects.toThrow(
+      "Invalid storage key",
+    );
+    await expect(
+      provider.save("curriculos/../../traversal.txt", "data"),
+    ).rejects.toThrow("Invalid storage key");
+    await expect(provider.save("folder\\file.txt", "data")).rejects.toThrow(
+      "Invalid storage key",
+    );
+    await expect(provider.save("/etc/passwd", "data")).rejects.toThrow(
+      "Invalid storage key",
+    );
   });
 
   it("should save and read a file namespaced in a subdirectory", async () => {

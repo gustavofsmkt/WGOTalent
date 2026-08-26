@@ -8,7 +8,9 @@ interface CandidatePersonalInfoProps {
   candidato: CandidatoDetailCompleto;
 }
 
-export function CandidatePersonalInfo({ candidato }: CandidatePersonalInfoProps) {
+export function CandidatePersonalInfo({
+  candidato,
+}: CandidatePersonalInfoProps) {
   const calculateAge = (birthDateStr: string | null) => {
     if (!birthDateStr) return null;
     try {
@@ -164,7 +166,9 @@ export function CandidatePersonalInfo({ candidato }: CandidatePersonalInfoProps)
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm pt-1">
             <div className="sm:col-span-2">
-              <p className="text-xs text-muted-foreground">Logradouro / Bairro</p>
+              <p className="text-xs text-muted-foreground">
+                Logradouro / Bairro
+              </p>
               <p className="font-medium text-foreground mt-0.5">
                 {candidato.logradouro}
                 {candidato.bairro ? ` - ${candidato.bairro}` : ""}

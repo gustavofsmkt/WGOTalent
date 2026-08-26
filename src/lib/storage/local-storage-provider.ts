@@ -42,7 +42,7 @@ export class LocalStorageProvider implements StorageProvider {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
     } catch (error) {
       throw new Error(
-        `Failed to create storage directory: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to create storage directory: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -50,7 +50,7 @@ export class LocalStorageProvider implements StorageProvider {
   async save(
     key: string,
     data: Buffer | Uint8Array | string,
-    _contentType?: string
+    _contentType?: string,
   ): Promise<void> {
     const filePath = this.getFilePath(key);
     await this.ensureDir(filePath);
@@ -59,7 +59,7 @@ export class LocalStorageProvider implements StorageProvider {
       await fs.writeFile(filePath, data);
     } catch (error) {
       throw new Error(
-        `Failed to save file: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to save file: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -70,11 +70,15 @@ export class LocalStorageProvider implements StorageProvider {
     try {
       return await fs.readFile(filePath);
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
         throw new Error(`File not found for key: ${key}`);
       }
       throw new Error(
-        `Failed to read file: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to read file: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -86,9 +90,13 @@ export class LocalStorageProvider implements StorageProvider {
       await fs.unlink(filePath);
     } catch (error) {
       // Idempotent: ignore if file doesn't exist
-      if (error instanceof Error && "code" in error && error.code !== "ENOENT") {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code !== "ENOENT"
+      ) {
         throw new Error(
-          `Failed to delete file: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to delete file: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }

@@ -111,7 +111,8 @@ describe("gerarRespostaEstruturada (openai)", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
+    const expectation =
+      expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
     await vi.runAllTimersAsync();
     await expectation;
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -119,7 +120,9 @@ describe("gerarRespostaEstruturada (openai)", () => {
 
   it("throws AgenteQuotaExcedidaError when the provider returns HTTP 429 on every attempt", async () => {
     vi.useFakeTimers();
-    fetchMock.mockImplementation(async () => jsonResponse(429, { error: { message: "rate limit" } }));
+    fetchMock.mockImplementation(async () =>
+      jsonResponse(429, { error: { message: "rate limit" } }),
+    );
 
     const promise = gerarRespostaEstruturada({
       apiKey: "fake-key",
@@ -129,7 +132,9 @@ describe("gerarRespostaEstruturada (openai)", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteQuotaExcedidaError);
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      AgenteQuotaExcedidaError,
+    );
     await vi.runAllTimersAsync();
     await expectation;
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -137,7 +142,9 @@ describe("gerarRespostaEstruturada (openai)", () => {
 
   it("throws AgenteChamadaError for other non-2xx HTTP statuses", async () => {
     vi.useFakeTimers();
-    fetchMock.mockImplementation(async () => jsonResponse(500, { error: { message: "server error" } }));
+    fetchMock.mockImplementation(async () =>
+      jsonResponse(500, { error: { message: "server error" } }),
+    );
 
     const promise = gerarRespostaEstruturada({
       apiKey: "fake-key",
@@ -147,14 +154,17 @@ describe("gerarRespostaEstruturada (openai)", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
+    const expectation =
+      expect(promise).rejects.toBeInstanceOf(AgenteChamadaError);
     await vi.runAllTimersAsync();
     await expectation;
   });
 
   it("throws AgenteRespostaInvalidaError when the response fails schema validation on every attempt", async () => {
     vi.useFakeTimers();
-    fetchMock.mockImplementation(async () => respostaComTexto('{"score": "not-a-number"}'));
+    fetchMock.mockImplementation(async () =>
+      respostaComTexto('{"score": "not-a-number"}'),
+    );
 
     const promise = gerarRespostaEstruturada({
       apiKey: "fake-key",
@@ -164,7 +174,9 @@ describe("gerarRespostaEstruturada (openai)", () => {
       responseJsonSchema: jsonSchema,
       responseZodSchema: schema,
     });
-    const expectation = expect(promise).rejects.toBeInstanceOf(AgenteRespostaInvalidaError);
+    const expectation = expect(promise).rejects.toBeInstanceOf(
+      AgenteRespostaInvalidaError,
+    );
     await vi.runAllTimersAsync();
     await expectation;
     expect(fetchMock).toHaveBeenCalledTimes(3);

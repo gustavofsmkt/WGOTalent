@@ -3,18 +3,26 @@ import { vagaRepository } from "~/server/db/repositories/vaga";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
-import { executarClassificadorAderencia, type ItemAderencia } from "./classificador-aderencia";
+import {
+  executarClassificadorAderencia,
+  type ItemAderencia,
+} from "./classificador-aderencia";
 import { executarAvaliadorTriagem } from "./avaliador-triagem";
 
 const CONCORRENCIA_FASE2 = 3;
 
 async function getThreshold(): Promise<number> {
-  const config = await agenteConfigRepository.findBySlot("classificador_aderencia");
+  const config = await agenteConfigRepository.findBySlot(
+    "classificador_aderencia",
+  );
   return config?.thresholdScore ? Number(config.thresholdScore) : 65;
 }
 
 /** Cria a triagem (se ainda não existir para o par) e roda a fase 2, gravando avaliacao_ia. */
-async function processarParAprovado(candidatoId: string, vagaId: string): Promise<void> {
+async function processarParAprovado(
+  candidatoId: string,
+  vagaId: string,
+): Promise<void> {
   const jaExiste = await triagemRepository.existsForPar(candidatoId, vagaId);
   if (jaExiste) return;
 
@@ -34,7 +42,9 @@ async function processarParAprovado(candidatoId: string, vagaId: string): Promis
   await triagemRepository.gravarAvaliacaoIA(avaliacao);
 }
 
-export async function orquestrarParaCandidatoNovo(candidatoId: string): Promise<void> {
+export async function orquestrarParaCandidatoNovo(
+  candidatoId: string,
+): Promise<void> {
   const candidato = await candidatoRepository.findById(candidatoId);
   if (!candidato) return;
 
@@ -77,7 +87,9 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
   const vaga = await vagaRepository.findByIdWithCargoAndDepartamento(vagaId);
   if (!vaga) return;
 
-  const candidatosAtivos = await candidatoRepository.findActiveByCidade(vaga.cidade);
+  const candidatosAtivos = await candidatoRepository.findActiveByCidade(
+    vaga.cidade,
+  );
   if (candidatosAtivos.length === 0) return;
 
   const itensComparacao: ItemAderencia[] = candidatosAtivos.map((c) => ({

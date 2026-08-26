@@ -7,7 +7,10 @@ import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
 import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import { calcularDadosPendentes } from "~/lib/validation/extracao-curriculo";
-import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from "~/lib/validation/candidato-arquivo";
+import {
+  MAX_FILE_SIZE,
+  ALLOWED_MIME_TYPES,
+} from "~/lib/validation/candidato-arquivo";
 
 export interface ProcessarCurriculoRecebidoInput {
   buffer: Buffer;
@@ -40,7 +43,9 @@ async function salvarArquivoRecebido(
     throw new Error("Arquivo excede o limite de 5MB.");
   }
   if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
-    throw new Error("Tipo de arquivo não suportado. Use PDF, DOCX, PNG ou JPEG.");
+    throw new Error(
+      "Tipo de arquivo não suportado. Use PDF, DOCX, PNG ou JPEG.",
+    );
   }
 
   const ext = path.extname(filename) || "";
@@ -64,7 +69,11 @@ export async function processarCurriculoRecebido(
 ): Promise<ResultadoProcessamento> {
   let fileKey: string | null = null;
   try {
-    fileKey = await salvarArquivoRecebido(input.buffer, input.filename, input.mimeType);
+    fileKey = await salvarArquivoRecebido(
+      input.buffer,
+      input.filename,
+      input.mimeType,
+    );
   } catch (e) {
     return {
       status: "erro",
@@ -101,16 +110,30 @@ export async function processarCurriculoRecebido(
     };
 
     const existing =
-      (extraido.email ? await candidatoRepository.findByEmailIncludingDeleted(extraido.email) : null) ??
-      (extraido.celular ? await candidatoRepository.findByCelularIncludingDeleted(extraido.celular) : null);
+      (extraido.email
+        ? await candidatoRepository.findByEmailIncludingDeleted(extraido.email)
+        : null) ??
+      (extraido.celular
+        ? await candidatoRepository.findByCelularIncludingDeleted(
+            extraido.celular,
+          )
+        : null);
 
-    let candidato: Awaited<ReturnType<typeof candidatoRepository.createAggregate>>;
+    let candidato: Awaited<
+      ReturnType<typeof candidatoRepository.createAggregate>
+    >;
     let mensagem = "Candidato criado com sucesso.";
     if (existing?.deletedAt) {
-      candidato = await candidatoRepository.restoreAggregate(existing.id, dadosCandidato);
+      candidato = await candidatoRepository.restoreAggregate(
+        existing.id,
+        dadosCandidato,
+      );
       mensagem = "Candidato restaurado com sucesso.";
     } else if (existing) {
-      const merged = await candidatoRepository.mergeAggregate(existing.id, dadosCandidato);
+      const merged = await candidatoRepository.mergeAggregate(
+        existing.id,
+        dadosCandidato,
+      );
       candidato = merged.candidato;
       if (merged.houveMudanca) {
         await resetTriagensEmCurriculo(existing.id);
@@ -125,7 +148,10 @@ export async function processarCurriculoRecebido(
     }
 
     orquestrarParaCandidatoNovo(candidato.id).catch((err) =>
-      console.error("[processarCurriculoRecebido] Falha na orquestração de matching:", err),
+      console.error(
+        "[processarCurriculoRecebido] Falha na orquestração de matching:",
+        err,
+      ),
     );
 
     return { status: "sucesso", candidatoId: candidato.id, mensagem };
@@ -133,7 +159,10 @@ export async function processarCurriculoRecebido(
     await storage.delete(fileKey).catch(console.error);
     return {
       status: "erro",
-      mensagem: e instanceof Error ? e.message : "Erro ao processar extração do currículo.",
+      mensagem:
+        e instanceof Error
+          ? e.message
+          : "Erro ao processar extração do currículo.",
       errorType: e instanceof AgenteQuotaExcedidaError ? "quota" : null,
     };
   }

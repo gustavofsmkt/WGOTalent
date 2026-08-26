@@ -122,10 +122,7 @@ export function CandidatosFilter() {
       </form>
 
       <div className="w-full sm:w-48">
-        <Select
-          value={currentOrigem}
-          onValueChange={handleOrigemChange}
-        >
+        <Select value={currentOrigem} onValueChange={handleOrigemChange}>
           <SelectTrigger className="h-9 text-xs bg-background shadow-xs">
             <SelectValue placeholder="Origem" />
           </SelectTrigger>
@@ -140,10 +137,7 @@ export function CandidatosFilter() {
       </div>
 
       <div className="w-full sm:w-48">
-        <Select
-          value={currentPool}
-          onValueChange={handlePoolChange}
-        >
+        <Select value={currentPool} onValueChange={handlePoolChange}>
           <SelectTrigger className="h-9 text-xs bg-background shadow-xs">
             <SelectValue placeholder="Banco de Talentos" />
           </SelectTrigger>

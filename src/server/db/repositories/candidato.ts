@@ -41,7 +41,12 @@ export type CandidatoAgregadoInsercao = Omit<
 
 type CandidatoScalarKey = Exclude<
   keyof CandidatoAgregadoInsercao,
-  "id" | "formacoes" | "experiencias" | "certificacoes" | "origem" | "estadoCivil"
+  | "id"
+  | "formacoes"
+  | "experiencias"
+  | "certificacoes"
+  | "origem"
+  | "estadoCivil"
 >;
 
 /**
@@ -111,7 +116,10 @@ export function mergeScalarFields(
 
   for (const campo of CAMPOS_TEXTO_ADITIVOS) {
     const valorNovo = incoming[campo];
-    if (!estaVazio(valorNovo) && valorNovo !== (current as Record<string, unknown>)[campo]) {
+    if (
+      !estaVazio(valorNovo) &&
+      valorNovo !== (current as Record<string, unknown>)[campo]
+    ) {
       updates[campo] = valorNovo;
     }
   }
@@ -124,7 +132,10 @@ export function mergeScalarFields(
   }
 
   for (const campo of CAMPOS_BOOLEANOS_ADITIVOS) {
-    if (incoming[campo] === true && (current as Record<string, unknown>)[campo] === false) {
+    if (
+      incoming[campo] === true &&
+      (current as Record<string, unknown>)[campo] === false
+    ) {
       updates[campo] = true;
     }
   }
@@ -137,7 +148,10 @@ export function mergeScalarFields(
     updates.estadoCivil = incoming.estadoCivil;
   }
 
-  return { updates: updates as Partial<Candidato>, houveMudanca: Object.keys(updates).length > 0 };
+  return {
+    updates: updates as Partial<Candidato>,
+    houveMudanca: Object.keys(updates).length > 0,
+  };
 }
 
 // Return types
@@ -155,7 +169,7 @@ export interface CandidatoSummary {
 }
 
 export interface CandidatoDetailCompleto extends CandidatoCompleto {
-  triagens: (Triagem & { 
+  triagens: (Triagem & {
     vaga: { id: string; cargo: { titulo: string } };
     avaliacaoIA?: {
       id: string;
@@ -182,7 +196,9 @@ export interface CargoOption {
 }
 
 export const candidatoRepository = {
-  findAllActiveSummary: async (dbOrTx: DbOrTx = db): Promise<CandidatoSummary[]> => {
+  findAllActiveSummary: async (
+    dbOrTx: DbOrTx = db,
+  ): Promise<CandidatoSummary[]> => {
     const rows = await notDeleted(
       dbOrTx
         .select({
@@ -242,7 +258,10 @@ export const candidatoRepository = {
         })
         .from(candidatos)
         .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id))
-        .leftJoin(departamentos, eq(candidatos.areaInteresseId, departamentos.id)),
+        .leftJoin(
+          departamentos,
+          eq(candidatos.areaInteresseId, departamentos.id),
+        ),
       candidatos,
       eq(candidatos.id, id),
     );
@@ -253,62 +272,63 @@ export const candidatoRepository = {
     const { candidato, cargoTitulo, areaNome } = baseData;
 
     // Busca filhos sequencialmente para evitar N+1/produto cartesiano
-    const [formacoes, experiencias, certificacoes, triagensRows] = await Promise.all([
-      notDeleted(
-        dbOrTx.select().from(candidatoFormacoes),
-        candidatoFormacoes,
-        eq(candidatoFormacoes.candidatoId, id)
-      ).orderBy(desc(candidatoFormacoes.dataInicio)),
+    const [formacoes, experiencias, certificacoes, triagensRows] =
+      await Promise.all([
+        notDeleted(
+          dbOrTx.select().from(candidatoFormacoes),
+          candidatoFormacoes,
+          eq(candidatoFormacoes.candidatoId, id),
+        ).orderBy(desc(candidatoFormacoes.dataInicio)),
 
-      notDeleted(
-        dbOrTx.select().from(candidatoExperiencias),
-        candidatoExperiencias,
-        eq(candidatoExperiencias.candidatoId, id)
-      ).orderBy(desc(candidatoExperiencias.dataEntrada)),
+        notDeleted(
+          dbOrTx.select().from(candidatoExperiencias),
+          candidatoExperiencias,
+          eq(candidatoExperiencias.candidatoId, id),
+        ).orderBy(desc(candidatoExperiencias.dataEntrada)),
 
-      notDeleted(
-        dbOrTx.select().from(candidatoCertificacoes),
-        candidatoCertificacoes,
-        eq(candidatoCertificacoes.candidatoId, id)
-      ).orderBy(desc(candidatoCertificacoes.obtidaEm)),
+        notDeleted(
+          dbOrTx.select().from(candidatoCertificacoes),
+          candidatoCertificacoes,
+          eq(candidatoCertificacoes.candidatoId, id),
+        ).orderBy(desc(candidatoCertificacoes.obtidaEm)),
 
-      notDeleted(
-        dbOrTx
-          .select({
-            triagem: triagens,
-            vagaId: vagas.id,
-            cargoTitulo: cargos.titulo,
-            avaliacaoIaId: avaliacaoIA.id,
-            avaliacaoIaScore: avaliacaoIA.scoreIa,
-            avaliacaoIaParecer: avaliacaoIA.parecerIa,
-          })
-          .from(triagens)
-          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
-          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-          .leftJoin(
-            avaliacaoIA,
-            and(
-              eq(avaliacaoIA.triagemId, triagens.id),
-              isNull(avaliacaoIA.deletedAt),
+        notDeleted(
+          dbOrTx
+            .select({
+              triagem: triagens,
+              vagaId: vagas.id,
+              cargoTitulo: cargos.titulo,
+              avaliacaoIaId: avaliacaoIA.id,
+              avaliacaoIaScore: avaliacaoIA.scoreIa,
+              avaliacaoIaParecer: avaliacaoIA.parecerIa,
+            })
+            .from(triagens)
+            .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+            .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+            .leftJoin(
+              avaliacaoIA,
+              and(
+                eq(avaliacaoIA.triagemId, triagens.id),
+                isNull(avaliacaoIA.deletedAt),
+              ),
             ),
-          ),
-        triagens,
-        eq(triagens.candidatoId, id)
-      ).orderBy(desc(triagens.createdAt))
-    ]);
+          triagens,
+          eq(triagens.candidatoId, id),
+        ).orderBy(desc(triagens.createdAt)),
+      ]);
 
     return {
       ...candidato,
-      cargoInteresse: candidato.cargoInteresseId 
-        ? { id: candidato.cargoInteresseId, titulo: cargoTitulo! } 
+      cargoInteresse: candidato.cargoInteresseId
+        ? { id: candidato.cargoInteresseId, titulo: cargoTitulo! }
         : null,
-      areaInteresse: candidato.areaInteresseId 
-        ? { id: candidato.areaInteresseId, nome: areaNome! } 
+      areaInteresse: candidato.areaInteresseId
+        ? { id: candidato.areaInteresseId, nome: areaNome! }
         : null,
       formacoes,
       experiencias,
       certificacoes,
-      triagens: triagensRows.map(r => ({
+      triagens: triagensRows.map((r) => ({
         ...r.triagem,
         vaga: {
           id: r.vagaId,
@@ -374,7 +394,10 @@ export const candidatoRepository = {
   ): Promise<{ id: string; resumoProfissional: string }[]> => {
     return notDeleted(
       dbOrTx
-        .select({ id: candidatos.id, resumoProfissional: candidatos.resumoProfissional })
+        .select({
+          id: candidatos.id,
+          resumoProfissional: candidatos.resumoProfissional,
+        })
         .from(candidatos),
       candidatos,
       eq(candidatos.cidade, cidade),
@@ -424,7 +447,7 @@ export const candidatoRepository = {
           formacoes.map((f) => ({
             ...f,
             candidatoId: candidato.id,
-          }))
+          })),
         );
       }
 
@@ -433,7 +456,7 @@ export const candidatoRepository = {
           experiencias.map((e) => ({
             ...e,
             candidatoId: candidato.id,
-          }))
+          })),
         );
       }
 
@@ -442,7 +465,7 @@ export const candidatoRepository = {
           certificacoes.map((c) => ({
             ...c,
             candidatoId: candidato.id,
-          }))
+          })),
         );
       }
 
@@ -457,7 +480,13 @@ export const candidatoRepository = {
     dbOrTx: DbOrTx = db,
   ): Promise<CandidatoDetailCompleto | null> => {
     return dbOrTx.transaction(async (tx) => {
-      const { formacoes, experiencias, certificacoes, origem: _origem, ...candidatoData } = data;
+      const {
+        formacoes,
+        experiencias,
+        certificacoes,
+        origem: _origem,
+        ...candidatoData
+      } = data;
 
       // Ensure no id is passed in candidatoData just to be safe
       const { id: _, ...updateData } = candidatoData;
@@ -468,62 +497,121 @@ export const candidatoRepository = {
         .where(eq(candidatos.id, id));
 
       // Reconcile Formações
-      const currentFormacoes = await notDeleted(tx.select().from(candidatoFormacoes), candidatoFormacoes, eq(candidatoFormacoes.candidatoId, id));
-      const incomingFormacoesIds = formacoes.map(f => f.id).filter(Boolean);
-      const formacoesToDelete = currentFormacoes.filter(f => !incomingFormacoesIds.includes(f.id));
+      const currentFormacoes = await notDeleted(
+        tx.select().from(candidatoFormacoes),
+        candidatoFormacoes,
+        eq(candidatoFormacoes.candidatoId, id),
+      );
+      const incomingFormacoesIds = formacoes.map((f) => f.id).filter(Boolean);
+      const formacoesToDelete = currentFormacoes.filter(
+        (f) => !incomingFormacoesIds.includes(f.id),
+      );
 
       if (formacoesToDelete.length > 0) {
         for (const f of formacoesToDelete) {
-           await tx.update(candidatoFormacoes).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoFormacoes.id, f.id));
+          await tx
+            .update(candidatoFormacoes)
+            .set({ deletedAt: new Date().toISOString() })
+            .where(eq(candidatoFormacoes.id, f.id));
         }
       }
 
       for (const f of formacoes) {
         if (f.id) {
           const { id: fId, ...fData } = f;
-          await tx.update(candidatoFormacoes).set({ ...fData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoFormacoes.id, f.id), eq(candidatoFormacoes.candidatoId, id)));
+          await tx
+            .update(candidatoFormacoes)
+            .set({ ...fData, updatedAt: new Date().toISOString() })
+            .where(
+              and(
+                eq(candidatoFormacoes.id, f.id),
+                eq(candidatoFormacoes.candidatoId, id),
+              ),
+            );
         } else {
           await tx.insert(candidatoFormacoes).values({ ...f, candidatoId: id });
         }
       }
 
       // Reconcile Experiencias
-      const currentExperiencias = await notDeleted(tx.select().from(candidatoExperiencias), candidatoExperiencias, eq(candidatoExperiencias.candidatoId, id));
-      const incomingExperienciasIds = experiencias.map(e => e.id).filter(Boolean);
-      const experienciasToDelete = currentExperiencias.filter(e => !incomingExperienciasIds.includes(e.id));
+      const currentExperiencias = await notDeleted(
+        tx.select().from(candidatoExperiencias),
+        candidatoExperiencias,
+        eq(candidatoExperiencias.candidatoId, id),
+      );
+      const incomingExperienciasIds = experiencias
+        .map((e) => e.id)
+        .filter(Boolean);
+      const experienciasToDelete = currentExperiencias.filter(
+        (e) => !incomingExperienciasIds.includes(e.id),
+      );
 
       if (experienciasToDelete.length > 0) {
         for (const e of experienciasToDelete) {
-           await tx.update(candidatoExperiencias).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoExperiencias.id, e.id));
+          await tx
+            .update(candidatoExperiencias)
+            .set({ deletedAt: new Date().toISOString() })
+            .where(eq(candidatoExperiencias.id, e.id));
         }
       }
 
       for (const e of experiencias) {
         if (e.id) {
           const { id: eId, ...eData } = e;
-          await tx.update(candidatoExperiencias).set({ ...eData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoExperiencias.id, e.id), eq(candidatoExperiencias.candidatoId, id)));
+          await tx
+            .update(candidatoExperiencias)
+            .set({ ...eData, updatedAt: new Date().toISOString() })
+            .where(
+              and(
+                eq(candidatoExperiencias.id, e.id),
+                eq(candidatoExperiencias.candidatoId, id),
+              ),
+            );
         } else {
-          await tx.insert(candidatoExperiencias).values({ ...e, candidatoId: id });
+          await tx
+            .insert(candidatoExperiencias)
+            .values({ ...e, candidatoId: id });
         }
       }
 
       // Reconcile Certificacoes
-      const currentCertificacoes = await notDeleted(tx.select().from(candidatoCertificacoes), candidatoCertificacoes, eq(candidatoCertificacoes.candidatoId, id));
-      const incomingCertificacoesIds = certificacoes.map(c => c.id).filter(Boolean);
-      const certificacoesToDelete = currentCertificacoes.filter(c => !incomingCertificacoesIds.includes(c.id));
+      const currentCertificacoes = await notDeleted(
+        tx.select().from(candidatoCertificacoes),
+        candidatoCertificacoes,
+        eq(candidatoCertificacoes.candidatoId, id),
+      );
+      const incomingCertificacoesIds = certificacoes
+        .map((c) => c.id)
+        .filter(Boolean);
+      const certificacoesToDelete = currentCertificacoes.filter(
+        (c) => !incomingCertificacoesIds.includes(c.id),
+      );
 
       if (certificacoesToDelete.length > 0) {
         for (const c of certificacoesToDelete) {
-           await tx.update(candidatoCertificacoes).set({ deletedAt: new Date().toISOString() }).where(eq(candidatoCertificacoes.id, c.id));
+          await tx
+            .update(candidatoCertificacoes)
+            .set({ deletedAt: new Date().toISOString() })
+            .where(eq(candidatoCertificacoes.id, c.id));
         }
       }
 
       for (const c of certificacoes) {
         if (c.id) {
           const { id: cId, ...cData } = c;
-          await tx.update(candidatoCertificacoes).set({ ...cData, updatedAt: new Date().toISOString() }).where(and(eq(candidatoCertificacoes.id, c.id), eq(candidatoCertificacoes.candidatoId, id)));
+          await tx
+            .update(candidatoCertificacoes)
+            .set({ ...cData, updatedAt: new Date().toISOString() })
+            .where(
+              and(
+                eq(candidatoCertificacoes.id, c.id),
+                eq(candidatoCertificacoes.candidatoId, id),
+              ),
+            );
         } else {
-          await tx.insert(candidatoCertificacoes).values({ ...c, candidatoId: id });
+          await tx
+            .insert(candidatoCertificacoes)
+            .values({ ...c, candidatoId: id });
         }
       }
 
@@ -553,14 +641,22 @@ export const candidatoRepository = {
       // Leitura intencionalmente sem notDeleted(): o registro está
       // soft-deleted neste ponto (é exatamente por isso que estamos
       // restaurando) — mesma exceção documentada em findByEmailIncludingDeleted.
-      const [current] = await tx.select().from(candidatos).where(eq(candidatos.id, id));
-      if (!current) throw new Error("Candidato não encontrado para restauração");
+      const [current] = await tx
+        .select()
+        .from(candidatos)
+        .where(eq(candidatos.id, id));
+      if (!current)
+        throw new Error("Candidato não encontrado para restauração");
 
       const { updates } = mergeScalarFields(current, data);
 
       await tx
         .update(candidatos)
-        .set({ ...updates, deletedAt: null, updatedAt: new Date().toISOString() })
+        .set({
+          ...updates,
+          deletedAt: null,
+          updatedAt: new Date().toISOString(),
+        })
         .where(eq(candidatos.id, id));
 
       if (formacoes.length > 0) {
@@ -568,7 +664,7 @@ export const candidatoRepository = {
           formacoes.map((f) => ({
             ...f,
             candidatoId: id,
-          }))
+          })),
         );
       }
 
@@ -577,7 +673,7 @@ export const candidatoRepository = {
           experiencias.map((e) => ({
             ...e,
             candidatoId: id,
-          }))
+          })),
         );
       }
 
@@ -586,7 +682,7 @@ export const candidatoRepository = {
           certificacoes.map((c) => ({
             ...c,
             candidatoId: id,
-          }))
+          })),
         );
       }
 
@@ -608,7 +704,10 @@ export const candidatoRepository = {
     id: string,
     data: CandidatoAgregadoInsercao,
     dbOrTx: DbOrTx = db,
-  ): Promise<{ candidato: CandidatoDetailCompleto | null; houveMudanca: boolean }> => {
+  ): Promise<{
+    candidato: CandidatoDetailCompleto | null;
+    houveMudanca: boolean;
+  }> => {
     return dbOrTx.transaction(async (tx) => {
       const { formacoes, experiencias, certificacoes } = data;
 
@@ -619,7 +718,10 @@ export const candidatoRepository = {
       );
       if (!current) throw new Error("Candidato não encontrado para mesclagem");
 
-      const { updates, houveMudanca: houveMudancaEscalar } = mergeScalarFields(current, data);
+      const { updates, houveMudanca: houveMudancaEscalar } = mergeScalarFields(
+        current,
+        data,
+      );
 
       if (houveMudancaEscalar) {
         await tx
@@ -634,12 +736,16 @@ export const candidatoRepository = {
         eq(candidatoFormacoes.candidatoId, id),
       );
       const formacoesNovas = formacoes.filter(
-        (f) => !formacoesAtuais.some((atual) => atual.titulo === f.titulo && atual.dataInicio === f.dataInicio),
+        (f) =>
+          !formacoesAtuais.some(
+            (atual) =>
+              atual.titulo === f.titulo && atual.dataInicio === f.dataInicio,
+          ),
       );
       if (formacoesNovas.length > 0) {
-        await tx.insert(candidatoFormacoes).values(
-          formacoesNovas.map((f) => ({ ...f, candidatoId: id })),
-        );
+        await tx
+          .insert(candidatoFormacoes)
+          .values(formacoesNovas.map((f) => ({ ...f, candidatoId: id })));
       }
 
       const experienciasAtuais = await notDeleted(
@@ -650,13 +756,15 @@ export const candidatoRepository = {
       const experienciasNovas = experiencias.filter(
         (e) =>
           !experienciasAtuais.some(
-            (atual) => atual.cargoTitulo === e.cargoTitulo && atual.dataEntrada === e.dataEntrada,
+            (atual) =>
+              atual.cargoTitulo === e.cargoTitulo &&
+              atual.dataEntrada === e.dataEntrada,
           ),
       );
       if (experienciasNovas.length > 0) {
-        await tx.insert(candidatoExperiencias).values(
-          experienciasNovas.map((e) => ({ ...e, candidatoId: id })),
-        );
+        await tx
+          .insert(candidatoExperiencias)
+          .values(experienciasNovas.map((e) => ({ ...e, candidatoId: id })));
       }
 
       const certificacoesAtuais = await notDeleted(
@@ -665,12 +773,16 @@ export const candidatoRepository = {
         eq(candidatoCertificacoes.candidatoId, id),
       );
       const certificacoesNovas = certificacoes.filter(
-        (c) => !certificacoesAtuais.some((atual) => atual.titulo === c.titulo && atual.obtidaEm === c.obtidaEm),
+        (c) =>
+          !certificacoesAtuais.some(
+            (atual) =>
+              atual.titulo === c.titulo && atual.obtidaEm === c.obtidaEm,
+          ),
       );
       if (certificacoesNovas.length > 0) {
-        await tx.insert(candidatoCertificacoes).values(
-          certificacoesNovas.map((c) => ({ ...c, candidatoId: id })),
-        );
+        await tx
+          .insert(candidatoCertificacoes)
+          .values(certificacoesNovas.map((c) => ({ ...c, candidatoId: id })));
       }
 
       const candidato = await candidatoRepository.findByIdComplete(id, tx);
@@ -736,7 +848,7 @@ export const candidatoRepository = {
           .update(avaliacaoIA)
           .set({ deletedAt })
           .where(inArray(avaliacaoIA.triagemId, triagemIds));
-          
+
         // Soft delete triagens
         await tx
           .update(triagens)
@@ -746,11 +858,23 @@ export const candidatoRepository = {
     });
   },
 
-  marcarBancoTalentos: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
-    await dbOrTx.update(candidatos).set({ emBancoTalentos: true }).where(eq(candidatos.id, id));
+  marcarBancoTalentos: async (
+    id: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<void> => {
+    await dbOrTx
+      .update(candidatos)
+      .set({ emBancoTalentos: true })
+      .where(eq(candidatos.id, id));
   },
 
-  desmarcarBancoTalentos: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
-    await dbOrTx.update(candidatos).set({ emBancoTalentos: false }).where(eq(candidatos.id, id));
+  desmarcarBancoTalentos: async (
+    id: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<void> => {
+    await dbOrTx
+      .update(candidatos)
+      .set({ emBancoTalentos: false })
+      .where(eq(candidatos.id, id));
   },
 };

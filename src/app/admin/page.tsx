@@ -7,7 +7,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { emailCredencialRepository } from "~/server/db/repositories/email-credencial";
-import { getProviderLabel, getModelsForProvider } from "~/lib/agents/provider-catalog";
+import {
+  getProviderLabel,
+  getModelsForProvider,
+} from "~/lib/agents/provider-catalog";
 
 import { CreateCredencialForm } from "./credenciais/_components/create-credencial-form";
 import { DeactivateCredencialButton } from "./credenciais/_components/deactivate-credencial-button";
@@ -37,7 +40,7 @@ export default async function AdminPage() {
       />
 
       <Tabs defaultValue="agentes" className="mt-8">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="agentes">Agentes</TabsTrigger>
           <TabsTrigger value="credenciais">Credenciais</TabsTrigger>
           <TabsTrigger value="email">Captação de E-mail</TabsTrigger>
@@ -53,14 +56,18 @@ export default async function AdminPage() {
                     <div className="font-medium">{agente.slot}</div>
                     <div className="text-sm text-muted-foreground">
                       {getProviderLabel(agente.provider)} ·{" "}
-                      {getModelsForProvider(agente.provider).find((m) => m.value === agente.model)
-                        ?.label ?? agente.model}{" "}
+                      {getModelsForProvider(agente.provider).find(
+                        (m) => m.value === agente.model,
+                      )?.label ?? agente.model}{" "}
                       · {agente.ativo ? "ativo" : "inativo"}
                     </div>
                   </div>
                   <Link
                     href={`/admin/agentes/${agente.slot}`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                    })}
                   >
                     Editar
                   </Link>
@@ -73,13 +80,17 @@ export default async function AdminPage() {
         <TabsContent value="credenciais" className="mt-6 space-y-8">
           <div className="space-y-3">
             {credenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma credencial cadastrada.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma credencial cadastrada.
+              </p>
             ) : (
               credenciais.map((c) => (
                 <Card key={c.id}>
                   <CardContent className="flex items-center justify-between p-4">
                     <div>
-                      <div className="font-medium">{getProviderLabel(c.provider)}</div>
+                      <div className="font-medium">
+                        {getProviderLabel(c.provider)}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
                         {new Date(c.createdAt).toLocaleDateString("pt-BR")}
@@ -104,7 +115,9 @@ export default async function AdminPage() {
         <TabsContent value="email" className="mt-6 space-y-8">
           <div className="space-y-3">
             {emailCredenciais.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma credencial cadastrada.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma credencial cadastrada.
+              </p>
             ) : (
               emailCredenciais.map((c) => (
                 <Card key={c.id}>
@@ -114,7 +127,8 @@ export default async function AdminPage() {
                         {c.usuario} · {c.host}:{c.porta}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Pasta: {c.pasta} · {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
+                        Pasta: {c.pasta} · {c.ativo ? "ativa" : "inativa"} ·
+                        cadastrada em{" "}
                         {new Date(c.createdAt).toLocaleDateString("pt-BR")}
                       </div>
                     </div>

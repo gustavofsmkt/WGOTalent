@@ -1,7 +1,20 @@
 "use client";
 
-import { CheckCircle2, XCircle, Loader2, AlertTriangle, X, Trash2 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "~/components/ui/card";
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  AlertTriangle,
+  X,
+  Trash2,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { useUploadProgress } from "./upload-progress-store";
@@ -58,7 +71,9 @@ export function UploadProgressPopup() {
         <CardContent className="p-3 space-y-2 max-h-56 overflow-y-auto">
           {hasErrors && (
             <Alert variant="destructive" className="py-2 px-3 text-xs">
-              <AlertDescription>Alguns arquivos falharam no processamento.</AlertDescription>
+              <AlertDescription>
+                Alguns arquivos falharam no processamento.
+              </AlertDescription>
             </Alert>
           )}
 
@@ -68,7 +83,8 @@ export function UploadProgressPopup() {
                 key={item.id}
                 className="flex items-start gap-2 text-xs rounded-md border border-border/60 p-2 bg-muted/20"
               >
-                {(item.status === "pendente" || item.status === "processando") && (
+                {(item.status === "pendente" ||
+                  item.status === "processando") && (
                   <Loader2 className="size-3.5 animate-spin text-primary shrink-0 mt-0.5" />
                 )}
                 {item.status === "sucesso" && (
@@ -78,11 +94,15 @@ export function UploadProgressPopup() {
                   <XCircle className="size-3.5 text-destructive shrink-0 mt-0.5" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground truncate">{item.fileName}</p>
+                  <p className="font-medium text-foreground truncate">
+                    {item.fileName}
+                  </p>
                   {item.mensagem && (
                     <p
                       className={`text-[11px] truncate ${
-                        item.status === "erro" ? "text-destructive" : "text-muted-foreground"
+                        item.status === "erro"
+                          ? "text-destructive"
+                          : "text-muted-foreground"
                       }`}
                     >
                       {item.mensagem}

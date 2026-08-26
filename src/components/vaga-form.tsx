@@ -176,7 +176,9 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "vaga-cargo-id";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -251,7 +253,9 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "vaga-status";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -314,7 +318,9 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "vaga-posicoes-disponiveis";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -360,7 +366,9 @@ export function VagaForm({
                 }}
               >
                 {(field) => {
-                  const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   const fieldId = "vaga-remuneracao-oferecida";
                   const errorId = `${fieldId}-error`;
                   const descId = `${fieldId}-description`;
@@ -407,7 +415,9 @@ export function VagaForm({
                   }}
                 >
                   {(field) => {
-                    const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                    const hasErrors =
+                      field.state.meta.isTouched &&
+                      field.state.meta.errors.length > 0;
                     const fieldId = "vaga-cidade";
                     const errorId = `${fieldId}-error`;
                     const descId = `${fieldId}-description`;
@@ -450,7 +460,9 @@ export function VagaForm({
                   }}
                 >
                   {(field) => {
-                    const hasErrors = field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                    const hasErrors =
+                      field.state.meta.isTouched &&
+                      field.state.meta.errors.length > 0;
                     const fieldId = "vaga-uf";
                     const errorId = `${fieldId}-error`;
                     const descId = `${fieldId}-description`;
@@ -476,9 +488,7 @@ export function VagaForm({
                             }
                           >
                             <SelectValue placeholder="Selecione...">
-                              {(val: string | null) =>
-                                val || "Selecione..."
-                              }
+                              {(val: string | null) => val || "Selecione..."}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>

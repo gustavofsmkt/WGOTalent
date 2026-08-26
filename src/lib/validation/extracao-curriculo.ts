@@ -40,13 +40,21 @@ export const extracaoCurriculoOutputSchema = candidatoAgregadoSchema.extend({
   nacionalidade: nullToDefault(candidatoAgregadoSchema.shape.nacionalidade),
   estadoCivil: nullToDefault(candidatoAgregadoSchema.shape.estadoCivil),
   possuiVeiculo: nullToDefault(candidatoAgregadoSchema.shape.possuiVeiculo),
-  ensinoMedioConcluido: nullToDefault(candidatoAgregadoSchema.shape.ensinoMedioConcluido),
-  disponivelViagens: nullToDefault(candidatoAgregadoSchema.shape.disponivelViagens),
-  disponivelMudanca: nullToDefault(candidatoAgregadoSchema.shape.disponivelMudanca),
+  ensinoMedioConcluido: nullToDefault(
+    candidatoAgregadoSchema.shape.ensinoMedioConcluido,
+  ),
+  disponivelViagens: nullToDefault(
+    candidatoAgregadoSchema.shape.disponivelViagens,
+  ),
+  disponivelMudanca: nullToDefault(
+    candidatoAgregadoSchema.shape.disponivelMudanca,
+  ),
   inicioImediato: nullToDefault(candidatoAgregadoSchema.shape.inicioImediato),
 });
 
-export type ExtracaoCurriculoOutput = z.output<typeof extracaoCurriculoOutputSchema>;
+export type ExtracaoCurriculoOutput = z.output<
+  typeof extracaoCurriculoOutputSchema
+>;
 
 const CAMPOS_POTENCIALMENTE_FALTANTES = [
   { campo: "dataNascimento", label: "Data de nascimento" },
@@ -59,7 +67,10 @@ const CAMPOS_POTENCIALMENTE_FALTANTES = [
 
 /** Calcula o texto de `dados_pendentes` a partir dos campos nulos retornados pela extração. */
 export function calcularDadosPendentes(
-  extraido: Pick<ExtracaoCurriculoOutput, "dataNascimento" | "cep" | "bairro" | "logradouro" | "email" | "celular">,
+  extraido: Pick<
+    ExtracaoCurriculoOutput,
+    "dataNascimento" | "cep" | "bairro" | "logradouro" | "email" | "celular"
+  >,
 ): string | null {
   const faltantes = CAMPOS_POTENCIALMENTE_FALTANTES.filter(
     ({ campo }) => extraido[campo] === null || extraido[campo] === undefined,

@@ -9,7 +9,7 @@ import {
   Users,
   ClipboardCheck,
   Target,
-  Bot
+  Bot,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -44,7 +44,7 @@ export function NavLinks({ onItemClick, className }: NavLinksProps) {
               "flex items-center gap-3 px-3 py-2 rounded-md transition-colors font-medium",
               isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <item.icon className="h-5 w-5" />

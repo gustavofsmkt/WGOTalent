@@ -9,7 +9,8 @@ vi.mock("~/env", () => ({
   },
 }));
 vi.mock("~/server/db/query-helpers", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("~/server/db/query-helpers")>();
+  const actual =
+    await importOriginal<typeof import("~/server/db/query-helpers")>();
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
@@ -27,7 +28,9 @@ import { eq, and, isNull, sql, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("dashboardRepository", () => {
@@ -35,12 +38,16 @@ describe("dashboardRepository", () => {
     expect(dashboardRepository).toBeDefined();
     expect(typeof dashboardRepository.countVagasAbertas).toBe("function");
     expect(typeof dashboardRepository.countCandidatosAtivos).toBe("function");
-    expect(typeof dashboardRepository.countTriagensEmAndamento).toBe("function");
+    expect(typeof dashboardRepository.countTriagensEmAndamento).toBe(
+      "function",
+    );
     expect(typeof dashboardRepository.countTriagensTotais).toBe("function");
     expect(typeof dashboardRepository.getTriagensPorEtapa).toBe("function");
     expect(typeof dashboardRepository.getTriagensPorResultado).toBe("function");
     expect(typeof dashboardRepository.getMediaScoreIa).toBe("function");
-    expect(typeof dashboardRepository.getVagasComMaisCandidatos).toBe("function");
+    expect(typeof dashboardRepository.getVagasComMaisCandidatos).toBe(
+      "function",
+    );
     expect(typeof dashboardRepository.getAtividadeRecente).toBe("function");
     expect(typeof dashboardRepository.getDashboardSummary).toBe("function");
   });
@@ -135,16 +142,22 @@ describe("dashboardRepository", () => {
     it("builds getMediaScoreIa query joining triagens with deleted_at filters on both", () => {
       const qb = mockDb
         .select({
-          media: sql<number | null>`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
+          media: sql<
+            number | null
+          >`round(avg(${avaliacaoIA.scoreIa}::numeric), 1)::float`,
           total: sql<number>`count(*)::int`,
         })
         .from(avaliacaoIA)
         .innerJoin(triagens, eq(avaliacaoIA.triagemId, triagens.id))
         .where(and(isNull(avaliacaoIA.deletedAt), isNull(triagens.deletedAt)));
       const querySql = qb.toSQL().sql;
-      expect(querySql).toContain('"wgotalent_avaliacao_ia"."deleted_at" is null');
+      expect(querySql).toContain(
+        '"wgotalent_avaliacao_ia"."deleted_at" is null',
+      );
       expect(querySql).toContain('"wgotalent_triagens"."deleted_at" is null');
-      expect(querySql).toContain('"wgotalent_avaliacao_ia"."triagem_id" = "wgotalent_triagens"."id"');
+      expect(querySql).toContain(
+        '"wgotalent_avaliacao_ia"."triagem_id" = "wgotalent_triagens"."id"',
+      );
     });
 
     it("builds getVagasComMaisCandidatos query with joins, group by, and order by count", () => {
@@ -172,14 +185,16 @@ describe("dashboardRepository", () => {
           vagas.posicoesDisponiveis,
         )
         .orderBy(
-          desc(sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`),
+          desc(
+            sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
+          ),
           desc(vagas.createdAt),
         )
         .limit(5);
 
       const querySql = qb.toSQL().sql;
       expect(querySql).toContain('"wgotalent_vagas"."deleted_at" is null');
-      expect(querySql).toContain('limit $');
+      expect(querySql).toContain("limit $");
     });
 
     it("builds getAtividadeRecente query with notDeleted on triagens and limit", () => {
@@ -260,7 +275,8 @@ describe("dashboardRepository", () => {
         }),
       } as unknown as DbOrTx;
 
-      const result = await dashboardRepository.getTriagensPorResultado(mockFakeDb);
+      const result =
+        await dashboardRepository.getTriagensPorResultado(mockFakeDb);
       expect(result).toEqual({
         em_andamento: 20,
         aprovado: 4,

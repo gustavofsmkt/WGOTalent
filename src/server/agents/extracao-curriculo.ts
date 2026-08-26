@@ -31,7 +31,9 @@ function nullableEnumSchema(values: readonly string[]) {
   return { anyOf: [{ type: "string", enum: [...values] }, { type: "null" }] };
 }
 
-const nullableDateString = { anyOf: [{ type: "string", format: "date" }, { type: "null" }] };
+const nullableDateString = {
+  anyOf: [{ type: "string", format: "date" }, { type: "null" }],
+};
 
 /**
  * LinkedIn/portfólio: sem `format: "uri"` de propósito — a OpenAI rejeita
@@ -42,7 +44,9 @@ const nullableDateString = { anyOf: [{ type: "string", format: "date" }, { type:
  * inclusive normaliza esquema ausente — este schema é só uma dica pro
  * modelo, não a fronteira de validação.
  */
-const nullableUrlString = { anyOf: [{ type: "string", maxLength: 255 }, { type: "null" }] };
+const nullableUrlString = {
+  anyOf: [{ type: "string", maxLength: 255 }, { type: "null" }],
+};
 
 /**
  * `additionalProperties: false` + todo campo em `required` (nulável quando
@@ -60,7 +64,13 @@ const itemFormacao = {
     dataInicio: { type: "string", format: "date" },
     dataTermino: nullableDateString,
   },
-  required: ["titulo", "instituicao", "areaFormacao", "dataInicio", "dataTermino"],
+  required: [
+    "titulo",
+    "instituicao",
+    "areaFormacao",
+    "dataInicio",
+    "dataTermino",
+  ],
   additionalProperties: false,
 };
 
@@ -118,7 +128,12 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     bairro: nullableStringSchema(100),
     logradouro: nullableStringSchema(200),
     resumoProfissional: stringSchema(),
-    cnh: { anyOf: [{ type: "string", enum: ["a", "b", "ab", "c", "d", "e"] }, { type: "null" }] },
+    cnh: {
+      anyOf: [
+        { type: "string", enum: ["a", "b", "ab", "c", "d", "e"] },
+        { type: "null" },
+      ],
+    },
     possuiVeiculo: nullableBooleanSchema(),
     ensinoMedioConcluido: nullableBooleanSchema(),
     disponivelViagens: nullableBooleanSchema(),
@@ -129,7 +144,8 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     portfolio: nullableUrlString,
     textoCurriculoExtraido: {
       type: "string",
-      description: "Transcrição do texto do currículo feita pelo próprio modelo (ADR-0001, emenda ADR-0007).",
+      description:
+        "Transcrição do texto do currículo feita pelo próprio modelo (ADR-0001, emenda ADR-0007).",
     },
     formacoes: { type: "array", items: itemFormacao },
     experiencias: { type: "array", items: itemExperiencia },
@@ -179,9 +195,13 @@ export async function executarExtracaoCurriculo(
     throw new Error("Agente extracao_curriculo não está configurado/ativo.");
   }
 
-  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
+  const credencial = await llmCredencialRepository.findActiveByProvider(
+    config.provider,
+  );
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
+    throw new Error(
+      `Nenhuma credencial ativa para o provider "${config.provider}".`,
+    );
   }
 
   const ext = fileKey.split(".").pop()?.toLowerCase();
@@ -189,7 +209,9 @@ export async function executarExtracaoCurriculo(
   // DOCX não é lido nativamente pelo Gemini como PDF/imagem — convertido para
   // texto puro via mammoth (ADR-0007) e enviado como texto, não multimodal.
   if (ext === "docx") {
-    const { value: textoDocx } = await mammoth.extractRawText({ buffer: arquivoBuffer });
+    const { value: textoDocx } = await mammoth.extractRawText({
+      buffer: arquivoBuffer,
+    });
     return gerarRespostaEstruturada({
       provider: config.provider,
       apiKey: decryptCredential(credencial.apiKeyCifrada),
@@ -224,6 +246,8 @@ function inferMimeTypeMultimodal(ext: string | undefined): string {
     case "jpeg":
       return "image/jpeg";
     default:
-      throw new Error(`Extensão de arquivo não suportada para extração: "${ext}".`);
+      throw new Error(
+        `Extensão de arquivo não suportada para extração: "${ext}".`,
+      );
   }
 }

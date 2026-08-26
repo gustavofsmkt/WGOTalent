@@ -40,14 +40,22 @@ export async function executarClassificadorAderencia(
   tipoPrincipal: string,
   tipoComparacao: string,
 ): Promise<{ id: string; score: number }[]> {
-  const config = await agenteConfigRepository.findBySlot("classificador_aderencia");
+  const config = await agenteConfigRepository.findBySlot(
+    "classificador_aderencia",
+  );
   if (!config?.ativo) {
-    throw new Error("Agente classificador_aderencia não está configurado/ativo.");
+    throw new Error(
+      "Agente classificador_aderencia não está configurado/ativo.",
+    );
   }
 
-  const credencial = await llmCredencialRepository.findActiveByProvider(config.provider);
+  const credencial = await llmCredencialRepository.findActiveByProvider(
+    config.provider,
+  );
   if (!credencial) {
-    throw new Error(`Nenhuma credencial ativa para o provider "${config.provider}".`);
+    throw new Error(
+      `Nenhuma credencial ativa para o provider "${config.provider}".`,
+    );
   }
 
   const apiKey = decryptCredential(credencial.apiKeyCifrada);
@@ -58,28 +66,32 @@ export async function executarClassificadorAderencia(
     chunks.push(itensComparacao.slice(i, i + CHUNK_SIZE));
   }
 
-  const resultadosPorChunk = await runWithLimit(chunks, CONCORRENCIA, async (chunk) => {
-    const userPrompt = resolveTemplate(config.userPrompt, {
-      tipo_principal: tipoPrincipal,
-      tipo_comparacao: tipoComparacao,
-      item_principal: itemPrincipal,
-      itens_comparacao: chunk,
-    });
-    const systemPrompt = resolveTemplate(config.systemPrompt, {
-      tipo_principal: tipoPrincipal,
-      tipo_comparacao: tipoComparacao,
-    });
+  const resultadosPorChunk = await runWithLimit(
+    chunks,
+    CONCORRENCIA,
+    async (chunk) => {
+      const userPrompt = resolveTemplate(config.userPrompt, {
+        tipo_principal: tipoPrincipal,
+        tipo_comparacao: tipoComparacao,
+        item_principal: itemPrincipal,
+        itens_comparacao: chunk,
+      });
+      const systemPrompt = resolveTemplate(config.systemPrompt, {
+        tipo_principal: tipoPrincipal,
+        tipo_comparacao: tipoComparacao,
+      });
 
-    return gerarRespostaEstruturada({
-      provider: config.provider,
-      apiKey,
-      model: config.model,
-      systemPrompt,
-      userPrompt,
-      responseJsonSchema: RESPONSE_JSON_SCHEMA,
-      responseZodSchema: resultadoClassificadorSchema,
-    });
-  });
+      return gerarRespostaEstruturada({
+        provider: config.provider,
+        apiKey,
+        model: config.model,
+        systemPrompt,
+        userPrompt,
+        responseJsonSchema: RESPONSE_JSON_SCHEMA,
+        responseZodSchema: resultadoClassificadorSchema,
+      });
+    },
+  );
 
   return resultadosPorChunk
     .flatMap((r) => (r.ok ? r.value : []))

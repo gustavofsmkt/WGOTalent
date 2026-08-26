@@ -9,7 +9,8 @@ vi.mock("~/env", () => ({
   },
 }));
 vi.mock("~/server/db/query-helpers", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("~/server/db/query-helpers")>();
+  const actual =
+    await importOriginal<typeof import("~/server/db/query-helpers")>();
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
@@ -19,7 +20,9 @@ import { notDeleted } from "~/server/db/query-helpers";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("agenteConfigRepository", () => {

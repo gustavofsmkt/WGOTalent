@@ -44,9 +44,10 @@ export const uploadLoteItemRepository = {
   },
 
   findAtivos: async (dbOrTx: DbOrTx = db): Promise<UploadLoteItem[]> => {
-    return notDeleted(dbOrTx.select().from(uploadLoteItens), uploadLoteItens).orderBy(
-      asc(uploadLoteItens.createdAt),
-    );
+    return notDeleted(
+      dbOrTx.select().from(uploadLoteItens),
+      uploadLoteItens,
+    ).orderBy(asc(uploadLoteItens.createdAt));
   },
 
   /** Limpa itens já finalizados (sucesso ou erro) — nunca os que ainda estão em andamento. */

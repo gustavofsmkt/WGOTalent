@@ -75,7 +75,9 @@ const validateMotivo = (data: MotivoValidationInput, ctx: z.RefinementCtx) => {
         message: "Motivo é obrigatório quando o candidato é reprovado",
         path: ["motivo"],
       });
-    } else if (!(motivosReprovacao as readonly string[]).includes(data.motivo)) {
+    } else if (
+      !(motivosReprovacao as readonly string[]).includes(data.motivo)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Motivo de reprovação inválido",
@@ -89,7 +91,9 @@ const validateMotivo = (data: MotivoValidationInput, ctx: z.RefinementCtx) => {
         message: "Motivo é obrigatório quando o candidato é desistente",
         path: ["motivo"],
       });
-    } else if (!(motivosDesistencia as readonly string[]).includes(data.motivo)) {
+    } else if (
+      !(motivosDesistencia as readonly string[]).includes(data.motivo)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Motivo de desistência inválido",
@@ -108,7 +112,8 @@ const validateMotivo = (data: MotivoValidationInput, ctx: z.RefinementCtx) => {
 };
 
 export const triagemSchema = triagemBaseSchema.superRefine(validateMotivo);
-export const updateTriagemSchema = updateTriagemBaseSchema.superRefine(validateMotivo);
+export const updateTriagemSchema =
+  updateTriagemBaseSchema.superRefine(validateMotivo);
 
 export type TriagemSchema = z.infer<typeof triagemSchema>;
 export type CreateTriagemInput = z.infer<typeof triagemSchema>;

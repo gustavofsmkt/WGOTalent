@@ -4,13 +4,20 @@ import { Card, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import type { TriagemListItem } from "~/server/db/repositories/triagem";
 import { DeleteTriagemButton } from "~/app/(rh)/triagens/_components/delete-triagem-button";
-import { ETAPAS, MOTIVO_LABELS, getInitials, formatDate } from "~/lib/triagem-format";
+import {
+  ETAPAS,
+  MOTIVO_LABELS,
+  getInitials,
+  formatDate,
+} from "~/lib/triagem-format";
 
 export function TriagemPipelineBoard({ items }: { items: TriagemListItem[] }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory">
       {ETAPAS.map((etapaDef) => {
-        const etapaItems = items.filter((item) => item.etapa === etapaDef.value);
+        const etapaItems = items.filter(
+          (item) => item.etapa === etapaDef.value,
+        );
 
         return (
           <div
@@ -40,7 +47,9 @@ export function TriagemPipelineBoard({ items }: { items: TriagemListItem[] }) {
                   Nenhum candidato nesta etapa
                 </div>
               ) : (
-                etapaItems.map((item) => <PipelineCard key={item.id} item={item} />)
+                etapaItems.map((item) => (
+                  <PipelineCard key={item.id} item={item} />
+                ))
               )}
             </div>
           </div>

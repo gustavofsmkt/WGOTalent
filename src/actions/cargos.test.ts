@@ -12,11 +12,7 @@ vi.mock("~/env", () => ({
   },
 }));
 
-import {
-  createCargo,
-  updateCargo,
-  deleteCargo,
-} from "./cargos";
+import { createCargo, updateCargo, deleteCargo } from "./cargos";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { revalidatePath } from "next/cache";
@@ -124,7 +120,9 @@ describe("cargos server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Departamento selecionado não encontrado ou inativo.");
+      expect(result.message).toBe(
+        "Departamento selecionado não encontrado ou inativo.",
+      );
       expect(cargoRepository.create).not.toHaveBeenCalled();
     });
 
@@ -185,15 +183,15 @@ describe("cargos server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Departamento selecionado não encontrado ou inativo.");
+      expect(result.message).toBe(
+        "Departamento selecionado não encontrado ou inativo.",
+      );
     });
   });
 
   describe("deleteCargo", () => {
     it("blocks delete when role has active vagas", async () => {
-      vi.spyOn(cargoRepository, "hasActiveVagas").mockResolvedValueOnce(
-        true,
-      );
+      vi.spyOn(cargoRepository, "hasActiveVagas").mockResolvedValueOnce(true);
       vi.spyOn(cargoRepository, "softDelete");
 
       const result = await deleteCargo("cargo-with-vagas");
@@ -209,9 +207,7 @@ describe("cargos server actions", () => {
     });
 
     it("allows soft delete when role has no active vagas", async () => {
-      vi.spyOn(cargoRepository, "hasActiveVagas").mockResolvedValueOnce(
-        false,
-      );
+      vi.spyOn(cargoRepository, "hasActiveVagas").mockResolvedValueOnce(false);
       const mockDeleted = {
         id: "cargo-empty",
         departamentoId: "dept-1",
@@ -237,9 +233,7 @@ describe("cargos server actions", () => {
       expect(cargoRepository.hasActiveVagas).toHaveBeenCalledWith(
         "cargo-empty",
       );
-      expect(cargoRepository.softDelete).toHaveBeenCalledWith(
-        "cargo-empty",
-      );
+      expect(cargoRepository.softDelete).toHaveBeenCalledWith("cargo-empty");
       expect(revalidatePath).toHaveBeenCalledWith("/cargos");
     });
   });

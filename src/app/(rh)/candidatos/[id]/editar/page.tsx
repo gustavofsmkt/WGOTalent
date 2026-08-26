@@ -31,23 +31,28 @@ export async function generateMetadata(props: EditarCandidatoPageProps) {
   };
 }
 
-export default async function EditarCandidatoPage(props: EditarCandidatoPageProps) {
+export default async function EditarCandidatoPage(
+  props: EditarCandidatoPageProps,
+) {
   const { id } = await props.params;
-  const [candidato, activeCargoOptions, activeDepartamentoOptions] = await Promise.all([
-    candidatoRepository.findByIdComplete(id),
-    candidatoRepository.findActiveCargoOptions(),
-    candidatoRepository.findActiveDepartamentoOptions(),
-  ]);
+  const [candidato, activeCargoOptions, activeDepartamentoOptions] =
+    await Promise.all([
+      candidatoRepository.findByIdComplete(id),
+      candidatoRepository.findActiveCargoOptions(),
+      candidatoRepository.findActiveDepartamentoOptions(),
+    ]);
 
   if (!candidato) {
     notFound();
   }
 
   const [currentCargo, currentDept] = await Promise.all([
-    candidato.cargoInteresseId && !activeCargoOptions.some((c) => c.id === candidato.cargoInteresseId)
+    candidato.cargoInteresseId &&
+    !activeCargoOptions.some((c) => c.id === candidato.cargoInteresseId)
       ? cargoRepository.findByIdWithDepartamento(candidato.cargoInteresseId)
       : Promise.resolve(null),
-    candidato.areaInteresseId && !activeDepartamentoOptions.some((d) => d.id === candidato.areaInteresseId)
+    candidato.areaInteresseId &&
+    !activeDepartamentoOptions.some((d) => d.id === candidato.areaInteresseId)
       ? departamentoRepository.findById(candidato.areaInteresseId)
       : Promise.resolve(null),
   ]);

@@ -3,7 +3,9 @@ import { resolveTemplate } from "./template";
 
 describe("resolveTemplate", () => {
   it("substitutes a string variable inline", () => {
-    expect(resolveTemplate("Olá {{nome}}!", { nome: "Maria" })).toBe("Olá Maria!");
+    expect(resolveTemplate("Olá {{nome}}!", { nome: "Maria" })).toBe(
+      "Olá Maria!",
+    );
   });
 
   it("serializes non-string values as JSON", () => {

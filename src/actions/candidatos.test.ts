@@ -12,7 +12,10 @@ vi.mock("~/env", () => ({
   },
 }));
 vi.mock("~/lib/storage", () => ({
-  storage: { save: vi.fn().mockResolvedValue(undefined), delete: vi.fn().mockResolvedValue(undefined) },
+  storage: {
+    save: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 vi.mock("~/server/agents/extracao-curriculo", () => ({
   executarExtracaoCurriculo: vi.fn(),
@@ -76,9 +79,17 @@ describe("candidatos server actions", () => {
         deletedAt: null,
       };
 
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce(mockCandidato as unknown as CandidatoDetailCompleto);
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce(
+        mockCandidato as unknown as CandidatoDetailCompleto,
+      );
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -109,7 +120,10 @@ describe("candidatos server actions", () => {
     });
 
     it("merges data into the existing candidato when the email matches an active one without new info", async () => {
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "cand-2",
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
@@ -117,8 +131,14 @@ describe("candidatos server actions", () => {
       } as unknown as Candidato);
       const mergeAggregateSpy = vi
         .spyOn(candidatoRepository, "mergeAggregate")
-        .mockResolvedValueOnce({ candidato: { id: "cand-2" } as unknown as CandidatoDetailCompleto, houveMudanca: false });
-      const findEmCurriculoSpy = vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato");
+        .mockResolvedValueOnce({
+          candidato: { id: "cand-2" } as unknown as CandidatoDetailCompleto,
+          houveMudanca: false,
+        });
+      const findEmCurriculoSpy = vi.spyOn(
+        triagemRepository,
+        "findEmCurriculoPorCandidato",
+      );
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -138,14 +158,22 @@ describe("candidatos server actions", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe("Candidato já cadastrado — informações atualizadas.");
-      expect(mergeAggregateSpy).toHaveBeenCalledWith("cand-2", expect.anything());
+      expect(result.message).toBe(
+        "Candidato já cadastrado — informações atualizadas.",
+      );
+      expect(mergeAggregateSpy).toHaveBeenCalledWith(
+        "cand-2",
+        expect.anything(),
+      );
       expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
       expect(findEmCurriculoSpy).not.toHaveBeenCalled();
     });
 
     it("resets triagens still in the Currículo stage when the merge brings new info", async () => {
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "cand-2",
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
@@ -155,8 +183,13 @@ describe("candidatos server actions", () => {
         candidato: { id: "cand-2" } as unknown as CandidatoDetailCompleto,
         houveMudanca: true,
       });
-      vi.spyOn(triagemRepository, "findEmCurriculoPorCandidato").mockResolvedValueOnce(["triagem-1"]);
-      const softDeleteSpy = vi.spyOn(triagemRepository, "softDelete").mockResolvedValueOnce(undefined);
+      vi.spyOn(
+        triagemRepository,
+        "findEmCurriculoPorCandidato",
+      ).mockResolvedValueOnce(["triagem-1"]);
+      const softDeleteSpy = vi
+        .spyOn(triagemRepository, "softDelete")
+        .mockResolvedValueOnce(undefined);
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -180,7 +213,10 @@ describe("candidatos server actions", () => {
     });
 
     it("restores the candidato when the email matches a soft-deleted one", async () => {
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "cand-3",
         nome: "Maria Sousa",
         email: "joao.silva@example.com",
@@ -188,7 +224,9 @@ describe("candidatos server actions", () => {
       } as unknown as Candidato);
       const restoreAggregateSpy = vi
         .spyOn(candidatoRepository, "restoreAggregate")
-        .mockResolvedValueOnce({ id: "cand-3" } as unknown as CandidatoDetailCompleto);
+        .mockResolvedValueOnce({
+          id: "cand-3",
+        } as unknown as CandidatoDetailCompleto);
 
       const result = await createCandidato({
         nome: "João Silva",
@@ -209,7 +247,10 @@ describe("candidatos server actions", () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe("Candidato restaurado com sucesso.");
-      expect(restoreAggregateSpy).toHaveBeenCalledWith("cand-3", expect.anything());
+      expect(restoreAggregateSpy).toHaveBeenCalledWith(
+        "cand-3",
+        expect.anything(),
+      );
       expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
     });
   });
@@ -241,8 +282,13 @@ describe("candidatos server actions", () => {
         deletedAt: null,
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
-      vi.spyOn(candidatoRepository, "updateAggregate").mockResolvedValueOnce({ ...mockCandidato, nome: "João Pedro Silva" } as unknown as CandidatoDetailCompleto);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(
+        mockCandidato as unknown as Candidato,
+      );
+      vi.spyOn(candidatoRepository, "updateAggregate").mockResolvedValueOnce({
+        ...mockCandidato,
+        nome: "João Pedro Silva",
+      } as unknown as CandidatoDetailCompleto);
 
       const result = await updateCandidato("cand-1", {
         nome: "João Pedro Silva",
@@ -279,8 +325,13 @@ describe("candidatos server actions", () => {
         email: "joao.silva@example.com",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(
+        mockCandidato as unknown as Candidato,
+      );
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "cand-2",
         nome: "Maria",
         email: "maria@example.com",
@@ -304,7 +355,9 @@ describe("candidatos server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("O e-mail informado já está cadastrado no sistema.");
+      expect(result.message).toBe(
+        "O e-mail informado já está cadastrado no sistema.",
+      );
       expect(candidatoRepository.updateAggregate).not.toHaveBeenCalled();
     });
   });
@@ -316,8 +369,12 @@ describe("candidatos server actions", () => {
         nome: "João Silva",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
-      vi.spyOn(candidatoRepository, "softDelete").mockResolvedValueOnce(undefined);
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(
+        mockCandidato as unknown as Candidato,
+      );
+      vi.spyOn(candidatoRepository, "softDelete").mockResolvedValueOnce(
+        undefined,
+      );
 
       const result = await deleteCandidato("cand-1");
 
@@ -343,8 +400,12 @@ describe("candidatos server actions", () => {
         nome: "João Silva",
       };
 
-      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(mockCandidato as unknown as Candidato);
-      vi.spyOn(candidatoRepository, "softDelete").mockRejectedValueOnce(new Error("DB Error"));
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(
+        mockCandidato as unknown as Candidato,
+      );
+      vi.spyOn(candidatoRepository, "softDelete").mockRejectedValueOnce(
+        new Error("DB Error"),
+      );
 
       const result = await deleteCandidato("cand-1");
 
@@ -387,13 +448,19 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      const oversizedFile = new File([new Uint8Array(6 * 1024 * 1024)], "huge.pdf", {
-        type: "application/pdf",
-      });
+      const oversizedFile = new File(
+        [new Uint8Array(6 * 1024 * 1024)],
+        "huge.pdf",
+        {
+          type: "application/pdf",
+        },
+      );
 
       await processarItemLote("item-1", oversizedFile);
 
-      expect(updateStatusSpy).toHaveBeenNthCalledWith(1, "item-1", { status: "processando" });
+      expect(updateStatusSpy).toHaveBeenNthCalledWith(1, "item-1", {
+        status: "processando",
+      });
       expect(updateStatusSpy).toHaveBeenNthCalledWith(2, "item-1", {
         status: "erro",
         mensagem: expect.stringMatching(/5MB/i),
@@ -404,7 +471,9 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      const invalidFile = new File(["conteudo"], "cv.txt", { type: "text/plain" });
+      const invalidFile = new File(["conteudo"], "cv.txt", {
+        type: "text/plain",
+      });
 
       await processarItemLote("item-1", invalidFile);
 
@@ -418,10 +487,20 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({ id: "cand-1" } as unknown as CandidatoDetailCompleto);
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(candidatoRepository, "createAggregate").mockResolvedValueOnce({
+        id: "cand-1",
+      } as unknown as CandidatoDetailCompleto);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(
+        extraido as unknown as ExtracaoCurriculoOutput,
+      );
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -443,7 +522,9 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      vi.mocked(executarExtracaoCurriculo).mockRejectedValueOnce(new Error("falha no provider"));
+      vi.mocked(executarExtracaoCurriculo).mockRejectedValueOnce(
+        new Error("falha no provider"),
+      );
 
       await processarItemLote("item-1", fakeFile("ruim.pdf"));
 
@@ -475,15 +556,26 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "existing",
         deletedAt: null,
       } as unknown as Candidato);
-      const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
+      const createAggregateSpy = vi.spyOn(
+        candidatoRepository,
+        "createAggregate",
+      );
       const mergeAggregateSpy = vi
         .spyOn(candidatoRepository, "mergeAggregate")
-        .mockResolvedValueOnce({ candidato: { id: "existing" } as unknown as CandidatoDetailCompleto, houveMudanca: false });
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
+        .mockResolvedValueOnce({
+          candidato: { id: "existing" } as unknown as CandidatoDetailCompleto,
+          houveMudanca: false,
+        });
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(
+        extraido as unknown as ExtracaoCurriculoOutput,
+      );
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -491,7 +583,10 @@ describe("candidatos server actions", () => {
         "item-1",
         expect.objectContaining({ status: "sucesso", candidatoId: "existing" }),
       );
-      expect(mergeAggregateSpy).toHaveBeenCalledWith("existing", expect.anything());
+      expect(mergeAggregateSpy).toHaveBeenCalledWith(
+        "existing",
+        expect.anything(),
+      );
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
 
@@ -499,23 +594,39 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce({
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce({
         id: "existing-deleted",
         deletedAt: new Date().toISOString(),
       } as unknown as Candidato);
-      const createAggregateSpy = vi.spyOn(candidatoRepository, "createAggregate");
+      const createAggregateSpy = vi.spyOn(
+        candidatoRepository,
+        "createAggregate",
+      );
       const restoreAggregateSpy = vi
         .spyOn(candidatoRepository, "restoreAggregate")
-        .mockResolvedValueOnce({ id: "existing-deleted" } as unknown as CandidatoDetailCompleto);
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraido as unknown as ExtracaoCurriculoOutput);
+        .mockResolvedValueOnce({
+          id: "existing-deleted",
+        } as unknown as CandidatoDetailCompleto);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(
+        extraido as unknown as ExtracaoCurriculoOutput,
+      );
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
       expect(updateStatusSpy).toHaveBeenLastCalledWith(
         "item-1",
-        expect.objectContaining({ status: "sucesso", candidatoId: "existing-deleted" }),
+        expect.objectContaining({
+          status: "sucesso",
+          candidatoId: "existing-deleted",
+        }),
       );
-      expect(restoreAggregateSpy).toHaveBeenCalledWith("existing-deleted", expect.anything());
+      expect(restoreAggregateSpy).toHaveBeenCalledWith(
+        "existing-deleted",
+        expect.anything(),
+      );
       expect(createAggregateSpy).not.toHaveBeenCalled();
     });
 
@@ -523,10 +634,15 @@ describe("candidatos server actions", () => {
       const updateStatusSpy = vi
         .spyOn(uploadLoteItemRepository, "updateStatus")
         .mockResolvedValue(null);
-      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
-        .mockResolvedValueOnce({ id: "cand-sem-email" } as unknown as CandidatoDetailCompleto);
+        .mockResolvedValueOnce({
+          id: "cand-sem-email",
+        } as unknown as CandidatoDetailCompleto);
       vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce({
         ...extraido,
         email: null,
@@ -539,7 +655,10 @@ describe("candidatos server actions", () => {
       expect(dadosCandidato?.dadosPendentes).toContain("E-mail");
       expect(updateStatusSpy).toHaveBeenLastCalledWith(
         "item-1",
-        expect.objectContaining({ status: "sucesso", candidatoId: "cand-sem-email" }),
+        expect.objectContaining({
+          status: "sucesso",
+          candidatoId: "cand-sem-email",
+        }),
       );
     });
 
@@ -563,15 +682,27 @@ describe("candidatos server actions", () => {
     });
 
     it("normalizes an omitted (undefined) nullish field to null before hitting the repository", async () => {
-      vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(null);
-      vi.spyOn(candidatoRepository, "findByEmailIncludingDeleted").mockResolvedValueOnce(null);
-      vi.spyOn(candidatoRepository, "findByCelularIncludingDeleted").mockResolvedValueOnce(null);
+      vi.spyOn(uploadLoteItemRepository, "updateStatus").mockResolvedValue(
+        null,
+      );
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
       const createAggregateSpy = vi
         .spyOn(candidatoRepository, "createAggregate")
-        .mockResolvedValueOnce({ id: "cand-sem-nascimento" } as unknown as CandidatoDetailCompleto);
+        .mockResolvedValueOnce({
+          id: "cand-sem-nascimento",
+        } as unknown as CandidatoDetailCompleto);
       // Reprodução do caso real: o agente omite a chave em vez de mandar null.
       const { dataNascimento: _dn, ...extraidoSemNascimento } = extraido;
-      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(extraidoSemNascimento as unknown as ExtracaoCurriculoOutput);
+      vi.mocked(executarExtracaoCurriculo).mockResolvedValueOnce(
+        extraidoSemNascimento as unknown as ExtracaoCurriculoOutput,
+      );
 
       await processarItemLote("item-1", fakeFile("cv1.pdf"));
 
@@ -598,7 +729,9 @@ describe("candidatos server actions", () => {
     });
 
     it("rejects a batch that exceeds the 15-file limit", async () => {
-      const files = Array.from({ length: 16 }, (_, i) => fakeFile(`cv${i}.pdf`));
+      const files = Array.from({ length: 16 }, (_, i) =>
+        fakeFile(`cv${i}.pdf`),
+      );
       const result = await iniciarUploadLote(formDataWithFiles(files));
       expect(result.success).toBe(false);
       expect(result.message).toMatch(/excede o limite/i);
@@ -607,26 +740,49 @@ describe("candidatos server actions", () => {
     it("creates one 'pending' row per file and returns immediately without waiting for processing", async () => {
       const createSpy = vi
         .spyOn(uploadLoteItemRepository, "create")
-        .mockImplementation(async (data) => ({ id: `id-${data.fileName}`, ...data }) as unknown as UploadLoteItem);
+        .mockImplementation(
+          async (data) =>
+            ({
+              id: `id-${data.fileName}`,
+              ...data,
+            }) as unknown as UploadLoteItem,
+        );
       // Processing itself would hang forever if awaited — proves the action doesn't await it.
-      vi.mocked(executarExtracaoCurriculo).mockImplementation(() => new Promise(() => {}));
+      vi.mocked(executarExtracaoCurriculo).mockImplementation(
+        () => new Promise(() => {}),
+      );
 
-      const result = await iniciarUploadLote(formDataWithFiles([fakeFile("cv1.pdf"), fakeFile("cv2.pdf")]));
+      const result = await iniciarUploadLote(
+        formDataWithFiles([fakeFile("cv1.pdf"), fakeFile("cv2.pdf")]),
+      );
 
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toHaveLength(2);
-        expect(result.data.map((i) => i.fileName)).toEqual(["cv1.pdf", "cv2.pdf"]);
+        expect(result.data.map((i) => i.fileName)).toEqual([
+          "cv1.pdf",
+          "cv2.pdf",
+        ]);
       }
-      expect(createSpy).toHaveBeenCalledWith({ fileName: "cv1.pdf", status: "pendente" });
-      expect(createSpy).toHaveBeenCalledWith({ fileName: "cv2.pdf", status: "pendente" });
+      expect(createSpy).toHaveBeenCalledWith({
+        fileName: "cv1.pdf",
+        status: "pendente",
+      });
+      expect(createSpy).toHaveBeenCalledWith({
+        fileName: "cv2.pdf",
+        status: "pendente",
+      });
     });
   });
 
   describe("getUploadLoteAtivo", () => {
     it("delegates to uploadLoteItemRepository.findAtivos", async () => {
-      const itens = [{ id: "1", fileName: "cv1.pdf", status: "sucesso" }] as unknown as UploadLoteItem[];
-      vi.spyOn(uploadLoteItemRepository, "findAtivos").mockResolvedValueOnce(itens);
+      const itens = [
+        { id: "1", fileName: "cv1.pdf", status: "sucesso" },
+      ] as unknown as UploadLoteItem[];
+      vi.spyOn(uploadLoteItemRepository, "findAtivos").mockResolvedValueOnce(
+        itens,
+      );
 
       const result = await getUploadLoteAtivo();
 

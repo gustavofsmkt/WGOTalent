@@ -209,7 +209,8 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                   Posições Disponíveis
                 </span>
                 <span className="text-sm font-medium text-foreground mt-0.5 block">
-                  {vaga.posicoesDisponiveis} {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
+                  {vaga.posicoesDisponiveis}{" "}
+                  {vaga.posicoesDisponiveis === 1 ? "posição" : "posições"}
                 </span>
               </div>
 

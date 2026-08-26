@@ -70,7 +70,8 @@ export const posicoesDisponiveisSchema = z
     if (num > 32767) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Posições disponíveis excede o limite máximo permitido (32767)",
+        message:
+          "Posições disponíveis excede o limite máximo permitido (32767)",
       });
       return z.NEVER;
     }

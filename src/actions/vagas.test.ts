@@ -30,11 +30,7 @@ vi.mock("~/server/db", () => ({
   },
 }));
 
-import {
-  createVaga,
-  updateVaga,
-  deleteVaga,
-} from "./vagas";
+import { createVaga, updateVaga, deleteVaga } from "./vagas";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { db } from "~/server/db";
@@ -81,7 +77,9 @@ describe("vagas server actions", () => {
       vi.spyOn(vagaRepository, "existsRecentDuplicate").mockResolvedValueOnce(
         false,
       );
-      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
+      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(
+        mockCreated as unknown as Vaga,
+      );
 
       const result = await createVaga({
         cargoId: validCargoId,
@@ -133,7 +131,9 @@ describe("vagas server actions", () => {
       vi.spyOn(vagaRepository, "existsRecentDuplicate").mockResolvedValueOnce(
         false,
       );
-      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(mockCreated as unknown as Vaga);
+      vi.spyOn(vagaRepository, "create").mockResolvedValueOnce(
+        mockCreated as unknown as Vaga,
+      );
 
       const result = await createVaga({
         cargoId: validCargoId,
@@ -207,7 +207,9 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Cargo selecionado não encontrado ou inativo.");
+      expect(result.message).toBe(
+        "Cargo selecionado não encontrado ou inativo.",
+      );
       expect(vagaRepository.create).not.toHaveBeenCalled();
     });
 
@@ -223,7 +225,9 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Cargo selecionado não encontrado ou inativo.");
+      expect(result.message).toBe(
+        "Cargo selecionado não encontrado ou inativo.",
+      );
       expect(vagaRepository.create).not.toHaveBeenCalled();
     });
 
@@ -262,7 +266,9 @@ describe("vagas server actions", () => {
         deletedAt: null,
       };
 
-      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(mockUpdated as unknown as Vaga);
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(
+        mockUpdated as unknown as Vaga,
+      );
 
       const result = await updateVaga("vaga-1", {
         status: "concluida",
@@ -299,7 +305,9 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toBe("Cargo selecionado não encontrado ou inativo.");
+      expect(result.message).toBe(
+        "Cargo selecionado não encontrado ou inativo.",
+      );
       expect(vagaRepository.update).not.toHaveBeenCalled();
     });
 
@@ -338,7 +346,9 @@ describe("vagas server actions", () => {
         deletedAt: new Date().toISOString(),
       };
 
-      vi.spyOn(vagaRepository, "softDelete").mockResolvedValueOnce(mockDeleted as unknown as Vaga);
+      vi.spyOn(vagaRepository, "softDelete").mockResolvedValueOnce(
+        mockDeleted as unknown as Vaga,
+      );
 
       const result = await deleteVaga("vaga-1");
 

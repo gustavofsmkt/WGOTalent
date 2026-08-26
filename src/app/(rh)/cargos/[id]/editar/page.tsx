@@ -43,7 +43,7 @@ export default async function EditarCargoPage(props: EditarCargoPageProps) {
       />
 
       <div className="flex justify-center">
-        <CargoForm 
+        <CargoForm
           cargo={{
             id: cargo.id,
             departamentoId: cargo.departamentoId,

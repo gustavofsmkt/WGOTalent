@@ -37,13 +37,16 @@ import {
 } from "~/components/ui/select";
 import { FormSubmitButton } from "~/components/form-submit-button";
 import { ErrorCallout } from "~/components/error-callout";
-import { LLM_PROVIDERS, getModelsForProvider } from "~/lib/agents/provider-catalog";
+import {
+  LLM_PROVIDERS,
+  getModelsForProvider,
+} from "~/lib/agents/provider-catalog";
 
 const CATALOGO_VARIAVEIS: Record<AgenteConfig["slot"], string> = {
   extracao_curriculo:
     "Este slot não recebe variáveis de contexto — a entrada é o arquivo do currículo em si (multimodal) ou seu texto convertido (DOCX).",
   classificador_aderencia:
-    "{{tipo_principal}}, {{tipo_comparacao}} (rótulos, ex: \"candidato\"/\"vaga\"), {{item_principal}} (JSON do lado \"1\"), {{itens_comparacao}} (JSON array do lado \"N\").",
+    '{{tipo_principal}}, {{tipo_comparacao}} (rótulos, ex: "candidato"/"vaga"), {{item_principal}} (JSON do lado "1"), {{itens_comparacao}} (JSON array do lado "N").',
   avaliador_triagem:
     "{{candidato}} (JSON de CandidatoCompleto), {{vaga}} (JSON de VagaCompleta).",
 };
@@ -80,7 +83,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
 
       if (!result.success) {
         setServerError({
-          message: result.message ?? "Ocorreu um erro ao salvar a configuração.",
+          message:
+            result.message ?? "Ocorreu um erro ao salvar a configuração.",
           fieldErrors: result.errors,
         });
         return;
@@ -100,7 +104,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
       <CardHeader>
         <CardTitle>Agente: {agenteConfig.slot}</CardTitle>
         <CardDescription>
-          Variáveis disponíveis no template desta task: {CATALOGO_VARIAVEIS[agenteConfig.slot]}
+          Variáveis disponíveis no template desta task:{" "}
+          {CATALOGO_VARIAVEIS[agenteConfig.slot]}
         </CardDescription>
       </CardHeader>
 
@@ -125,7 +130,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             <form.Field name="provider">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
                     <FieldLabel htmlFor="agente-provider">Provedor</FieldLabel>
@@ -136,11 +142,16 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
                         field.handleChange(val);
                         // Provedor mudou: o modelo atual pode não existir no novo
                         // catálogo — reseta para o primeiro modelo disponível.
-                        const primeiroModelo = getModelsForProvider(val)[0]?.value ?? "";
+                        const primeiroModelo =
+                          getModelsForProvider(val)[0]?.value ?? "";
                         form.setFieldValue("model", primeiroModelo);
                       }}
                     >
-                      <SelectTrigger id="agente-provider" className="w-full" aria-invalid={hasErrors}>
+                      <SelectTrigger
+                        id="agente-provider"
+                        className="w-full"
+                        aria-invalid={hasErrors}
+                      >
                         <SelectValue placeholder="Selecione um provedor...">
                           {(val: string | null) =>
                             LLM_PROVIDERS.find((p) => p.value === val)?.label ??
@@ -169,14 +180,23 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
                   <form.Field name="model">
                     {(field) => {
                       const hasErrors =
-                        field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                        field.state.meta.isTouched &&
+                        field.state.meta.errors.length > 0;
                       return (
                         <Field data-invalid={hasErrors}>
                           <FieldLabel htmlFor="agente-model">Modelo</FieldLabel>
-                          <Select value={field.state.value} onValueChange={(val) => {
-                            if (typeof val === "string") field.handleChange(val);
-                          }}>
-                            <SelectTrigger id="agente-model" className="w-full" aria-invalid={hasErrors}>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(val) => {
+                              if (typeof val === "string")
+                                field.handleChange(val);
+                            }}
+                          >
+                            <SelectTrigger
+                              id="agente-model"
+                              className="w-full"
+                              aria-invalid={hasErrors}
+                            >
                               <SelectValue placeholder="Selecione um modelo...">
                                 {(val: string | null) =>
                                   modelos.find((m) => m.value === val)?.label ??
@@ -199,7 +219,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
                             </SelectContent>
                           </Select>
                           <FieldDescription>
-                            Modelos disponíveis para o provedor selecionado acima.
+                            Modelos disponíveis para o provedor selecionado
+                            acima.
                           </FieldDescription>
                           <FieldError errors={field.state.meta.errors} />
                         </Field>
@@ -213,10 +234,13 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             <form.Field name="systemPrompt">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-system-prompt">System Prompt</FieldLabel>
+                    <FieldLabel htmlFor="agente-system-prompt">
+                      System Prompt
+                    </FieldLabel>
                     <Textarea
                       id="agente-system-prompt"
                       name={field.name}
@@ -235,10 +259,13 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             <form.Field name="userPrompt">
               {(field) => {
                 const hasErrors =
-                  field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-user-prompt">User Prompt</FieldLabel>
+                    <FieldLabel htmlFor="agente-user-prompt">
+                      User Prompt
+                    </FieldLabel>
                     <Textarea
                       id="agente-user-prompt"
                       name={field.name}
@@ -249,7 +276,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
                       aria-invalid={hasErrors}
                     />
                     <FieldDescription>
-                      Use as variáveis listadas acima entre chaves duplas, ex: {"{{tipo_principal}}"}.
+                      Use as variáveis listadas acima entre chaves duplas, ex:{" "}
+                      {"{{tipo_principal}}"}.
                     </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -261,10 +289,13 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               <form.Field name="thresholdScore">
                 {(field) => {
                   const hasErrors =
-                    field.state.meta.isTouched && field.state.meta.errors.length > 0;
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
                   return (
                     <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor="agente-threshold">Threshold de aprovação (0–100)</FieldLabel>
+                      <FieldLabel htmlFor="agente-threshold">
+                        Threshold de aprovação (0–100)
+                      </FieldLabel>
                       <Input
                         id="agente-threshold"
                         name={field.name}
@@ -274,7 +305,11 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
                         value={field.state.value ?? ""}
                         onBlur={field.handleBlur}
                         onChange={(e) =>
-                          field.handleChange(e.target.value === "" ? null : Number(e.target.value))
+                          field.handleChange(
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                          )
                         }
                         aria-invalid={hasErrors}
                       />
@@ -290,18 +325,24 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
 
             <form.Field name="ativo">
               {(field) => (
-                <Field orientation="horizontal" className="items-start gap-3 pt-2">
+                <Field
+                  orientation="horizontal"
+                  className="items-start gap-3 pt-2"
+                >
                   <Checkbox
                     id="agente-ativo"
                     name={field.name}
                     checked={field.state.value}
-                    onCheckedChange={(checked) => field.handleChange(Boolean(checked))}
+                    onCheckedChange={(checked) =>
+                      field.handleChange(Boolean(checked))
+                    }
                     onBlur={field.handleBlur}
                   />
                   <div>
                     <FieldLabel htmlFor="agente-ativo">Agente ativo</FieldLabel>
                     <FieldDescription>
-                      Quando desativado, o disparo deste agente falha explicitamente.
+                      Quando desativado, o disparo deste agente falha
+                      explicitamente.
                     </FieldDescription>
                   </div>
                 </Field>
@@ -315,7 +356,9 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             Cancelar
           </Button>
 
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+          >
             {([canSubmit, isSubmitting]) => (
               <FormSubmitButton
                 pending={Boolean(isSubmitting)}

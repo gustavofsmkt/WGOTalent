@@ -16,7 +16,9 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("cargoRepository", () => {
@@ -26,7 +28,9 @@ describe("cargoRepository", () => {
     expect(typeof cargoRepository.findAllWithDepartamento).toBe("function");
     expect(typeof cargoRepository.findById).toBe("function");
     expect(typeof cargoRepository.findByIdWithDepartamento).toBe("function");
-    expect(typeof cargoRepository.findActiveDepartamentoOptions).toBe("function");
+    expect(typeof cargoRepository.findActiveDepartamentoOptions).toBe(
+      "function",
+    );
     expect(typeof cargoRepository.create).toBe("function");
     expect(typeof cargoRepository.update).toBe("function");
     expect(typeof cargoRepository.softDelete).toBe("function");
@@ -58,10 +62,7 @@ describe("cargoRepository", () => {
   });
 
   it("builds vaga check query with notDeleted for hasActiveVagas", () => {
-    const qb = notDeleted(
-      mockDb.select({ id: vagas.id }).from(vagas),
-      vagas,
-    );
+    const qb = notDeleted(mockDb.select({ id: vagas.id }).from(vagas), vagas);
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
   });

@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { gerarRespostaEstruturadaMock, findBySlotMock, findActiveByProviderMock } = vi.hoisted(
-  () => ({
-    gerarRespostaEstruturadaMock: vi.fn(),
-    findBySlotMock: vi.fn(),
-    findActiveByProviderMock: vi.fn(),
-  }),
-);
+const {
+  gerarRespostaEstruturadaMock,
+  findBySlotMock,
+  findActiveByProviderMock,
+} = vi.hoisted(() => ({
+  gerarRespostaEstruturadaMock: vi.fn(),
+  findBySlotMock: vi.fn(),
+  findActiveByProviderMock: vi.fn(),
+}));
 
 vi.mock("~/lib/agents/agent-client", () => ({
   gerarRespostaEstruturada: gerarRespostaEstruturadaMock,
@@ -21,7 +23,10 @@ vi.mock("~/lib/agents/crypto", () => ({
   decryptCredential: (v: string) => `decrypted:${v}`,
 }));
 
-import { executarClassificadorAderencia, type ItemAderencia } from "./classificador-aderencia";
+import {
+  executarClassificadorAderencia,
+  type ItemAderencia,
+} from "./classificador-aderencia";
 
 const config = {
   ativo: true,
@@ -33,7 +38,10 @@ const config = {
 const credencial = { apiKeyCifrada: "cifrada" };
 
 function itens(n: number): ItemAderencia[] {
-  return Array.from({ length: n }, (_, i) => ({ id: `v${i}`, resumo: `resumo ${i}` }));
+  return Array.from({ length: n }, (_, i) => ({
+    id: `v${i}`,
+    resumo: `resumo ${i}`,
+  }));
 }
 
 describe("executarClassificadorAderencia", () => {
@@ -44,7 +52,9 @@ describe("executarClassificadorAderencia", () => {
   it("returns scores for a batch within the chunk size", async () => {
     findBySlotMock.mockResolvedValueOnce(config);
     findActiveByProviderMock.mockResolvedValueOnce(credencial);
-    gerarRespostaEstruturadaMock.mockResolvedValueOnce([{ id: "v0", score: 80 }]);
+    gerarRespostaEstruturadaMock.mockResolvedValueOnce([
+      { id: "v0", score: 80 },
+    ]);
 
     const result = await executarClassificadorAderencia(
       { id: "c1", resumo: "resumo candidato" },

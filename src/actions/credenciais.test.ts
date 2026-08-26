@@ -27,9 +27,10 @@ describe("credenciais server actions", () => {
 
   describe("createCredencial", () => {
     it("encrypts the API key before persisting and never returns it", async () => {
-      vi.spyOn(llmCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        false,
-      );
+      vi.spyOn(
+        llmCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(false);
       vi.spyOn(llmCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
         provider: "google_ai_studio",
@@ -46,7 +47,8 @@ describe("credenciais server actions", () => {
       });
 
       expect(result.success).toBe(true);
-      const createCall = vi.mocked(llmCredencialRepository.create).mock.calls[0]![0];
+      const createCall = vi.mocked(llmCredencialRepository.create).mock
+        .calls[0]![0];
       expect(createCall.apiKeyCifrada).not.toContain("sk-real-secret");
       if (result.success) {
         expect(result.data).not.toHaveProperty("apiKey");
@@ -54,15 +56,19 @@ describe("credenciais server actions", () => {
     });
 
     it("rejects an empty API key", async () => {
-      const result = await createCredencial({ provider: "google_ai_studio", apiKey: "" });
+      const result = await createCredencial({
+        provider: "google_ai_studio",
+        apiKey: "",
+      });
       expect(result.success).toBe(false);
       expect(llmCredencialRepository.create).not.toHaveBeenCalled();
     });
 
     it("blocks creation when a recent duplicate submission is detected", async () => {
-      vi.spyOn(llmCredencialRepository, "existsRecentDuplicate").mockResolvedValueOnce(
-        true,
-      );
+      vi.spyOn(
+        llmCredencialRepository,
+        "existsRecentDuplicate",
+      ).mockResolvedValueOnce(true);
       vi.spyOn(llmCredencialRepository, "create");
 
       const result = await createCredencial({
@@ -80,7 +86,9 @@ describe("credenciais server actions", () => {
 
   describe("deactivateCredencial", () => {
     it("deactivates the credential", async () => {
-      vi.spyOn(llmCredencialRepository, "deactivate").mockResolvedValueOnce(null);
+      vi.spyOn(llmCredencialRepository, "deactivate").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deactivateCredencial("cred-1");
 
@@ -100,7 +108,9 @@ describe("credenciais server actions", () => {
         updatedAt: new Date().toISOString(),
         deletedAt: null,
       });
-      vi.spyOn(llmCredencialRepository, "softDelete").mockResolvedValueOnce(null);
+      vi.spyOn(llmCredencialRepository, "softDelete").mockResolvedValueOnce(
+        null,
+      );
 
       const result = await deleteCredencial("cred-1");
 

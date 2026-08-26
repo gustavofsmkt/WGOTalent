@@ -81,7 +81,8 @@ export const triagemRepository = {
   ): Promise<TriagemListItem[]> => {
     const conditions: (SQL | undefined)[] = [];
     if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa));
-    if (filtros?.resultado) conditions.push(eq(triagens.resultado, filtros.resultado));
+    if (filtros?.resultado)
+      conditions.push(eq(triagens.resultado, filtros.resultado));
     if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo));
     if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
     if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
@@ -207,7 +208,9 @@ export const triagemRepository = {
     }));
   },
 
-  findActiveCandidatoOptions: async (dbOrTx: DbOrTx = db): Promise<CandidatoOption[]> => {
+  findActiveCandidatoOptions: async (
+    dbOrTx: DbOrTx = db,
+  ): Promise<CandidatoOption[]> => {
     // Para opções de formulário, mostramos Candidatos ativos (não deletados).
     const rows = await notDeleted(
       dbOrTx
@@ -230,9 +233,7 @@ export const triagemRepository = {
   ): Promise<boolean> => {
     // Retorna true se houver uma triagem 'em_andamento' para este candidato nesta vaga
     const rows = await notDeleted(
-      dbOrTx
-        .select({ id: triagens.id })
-        .from(triagens),
+      dbOrTx.select({ id: triagens.id }).from(triagens),
       triagens,
       eq(triagens.candidatoId, candidatoId),
       eq(triagens.vagaId, vagaId),

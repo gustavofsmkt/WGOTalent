@@ -103,10 +103,7 @@ export const vagaRepository = {
     }));
   },
 
-  findById: async (
-    id: string,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Vaga | null> => {
+  findById: async (id: string, dbOrTx: DbOrTx = db): Promise<Vaga | null> => {
     const rows = await notDeleted(
       dbOrTx.select().from(vagas),
       vagas,
@@ -357,14 +354,8 @@ export const vagaRepository = {
     return rows.length > 0;
   },
 
-  create: async (
-    data: NovaVaga,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Vaga> => {
-    const rows = await dbOrTx
-      .insert(vagas)
-      .values(data)
-      .returning();
+  create: async (data: NovaVaga, dbOrTx: DbOrTx = db): Promise<Vaga> => {
+    const rows = await dbOrTx.insert(vagas).values(data).returning();
     const created = rows[0];
     if (!created) {
       throw new Error("Falha ao criar vaga.");
@@ -385,10 +376,7 @@ export const vagaRepository = {
     return rows[0] ?? null;
   },
 
-  softDelete: async (
-    id: string,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Vaga | null> => {
+  softDelete: async (id: string, dbOrTx: DbOrTx = db): Promise<Vaga | null> => {
     const rows = await dbOrTx
       .update(vagas)
       .set({ deletedAt: sql`now()` })

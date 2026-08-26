@@ -28,7 +28,10 @@ describe("temItemEmAndamento", () => {
 
   it("returns false when every item already finished (sucesso/erro)", () => {
     expect(
-      temItemEmAndamento([item({ status: "sucesso" }), item({ status: "erro" })]),
+      temItemEmAndamento([
+        item({ status: "sucesso" }),
+        item({ status: "erro" }),
+      ]),
     ).toBe(false);
   });
 
@@ -46,7 +49,10 @@ describe("temErroPendente", () => {
 
   it("returns false when there is no 'erro' item", () => {
     expect(
-      temErroPendente([item({ status: "sucesso" }), item({ status: "processando" })]),
+      temErroPendente([
+        item({ status: "sucesso" }),
+        item({ status: "processando" }),
+      ]),
     ).toBe(false);
   });
 

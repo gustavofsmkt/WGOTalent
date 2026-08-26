@@ -36,7 +36,8 @@ export async function createCredencial(
     if (isDuplicate) {
       return {
         success: false,
-        message: "Esta credencial já foi cadastrada (envio duplicado detectado).",
+        message:
+          "Esta credencial já foi cadastrada (envio duplicado detectado).",
       };
     }
 
@@ -66,11 +67,17 @@ export async function createCredencial(
   }
 }
 
-export async function deactivateCredencial(id: string): Promise<ActionState<void>> {
+export async function deactivateCredencial(
+  id: string,
+): Promise<ActionState<void>> {
   try {
     await llmCredencialRepository.deactivate(id);
     revalidatePath("/admin");
-    return { success: true, data: undefined, message: "Credencial desativada." };
+    return {
+      success: true,
+      data: undefined,
+      message: "Credencial desativada.",
+    };
   } catch (error) {
     console.error("[deactivateCredencial] Erro:", error);
     return {

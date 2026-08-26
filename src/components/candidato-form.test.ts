@@ -24,7 +24,8 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
     cidade: "São Paulo",
     bairro: "Bela Vista",
     logradouro: "Avenida Paulista, 1000",
-    resumoProfissional: "Profissional de tecnologia com sólida formação acadêmica e foco em engenharia de dados.",
+    resumoProfissional:
+      "Profissional de tecnologia com sólida formação acadêmica e foco em engenharia de dados.",
   };
 
   describe("formacoes array field validation", () => {
@@ -55,7 +56,9 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.formacoes).toHaveLength(2);
-        expect(result.data.formacoes[0]?.titulo).toBe("Bacharelado em Ciência da Computação");
+        expect(result.data.formacoes[0]?.titulo).toBe(
+          "Bacharelado em Ciência da Computação",
+        );
         expect(result.data.formacoes[0]?.dataTermino).toBe("2014-12-15");
         expect(result.data.formacoes[1]?.dataTermino).toBeNull();
       }
@@ -88,7 +91,7 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       if (!result.success) {
         expect(result.error.issues[0]?.path).toContain("dataTermino");
         expect(result.error.issues[0]?.message).toBe(
-          "A data de término deve ser posterior ou igual à data de início"
+          "A data de término deve ser posterior ou igual à data de início",
         );
       }
     });
@@ -173,7 +176,8 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
           empresa: "Tech Corp",
           dataEntrada: "2020-03-01",
           dataSaida: "2023-08-31",
-          descricao: "Desenvolvimento de interfaces React e Next.js com foco em acessibilidade.",
+          descricao:
+            "Desenvolvimento de interfaces React e Next.js com foco em acessibilidade.",
         },
         {
           cargoTitulo: "Líder Técnico Frontend",
@@ -193,9 +197,13 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.experiencias).toHaveLength(2);
-        expect(result.data.experiencias[0]?.cargoTitulo).toBe("Desenvolvedor Frontend Sênior");
+        expect(result.data.experiencias[0]?.cargoTitulo).toBe(
+          "Desenvolvedor Frontend Sênior",
+        );
         expect(result.data.experiencias[0]?.dataSaida).toBe("2023-08-31");
-        expect(result.data.experiencias[1]?.cargoTitulo).toBe("Líder Técnico Frontend");
+        expect(result.data.experiencias[1]?.cargoTitulo).toBe(
+          "Líder Técnico Frontend",
+        );
         expect(result.data.experiencias[1]?.dataSaida).toBeNull();
       }
     });
@@ -226,7 +234,7 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       if (!result.success) {
         expect(result.error.issues[0]?.path).toContain("dataSaida");
         expect(result.error.issues[0]?.message).toBe(
-          "A data de saída deve ser posterior ou igual à data de entrada"
+          "A data de saída deve ser posterior ou igual à data de entrada",
         );
       }
     });
@@ -292,7 +300,9 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
     it("validates onBlur field schema for experiencia 'descricao'", () => {
       const descricaoSchema = experienciaBaseSchema.shape.descricao;
 
-      const validDesc = descricaoSchema.safeParse("Responsável pela sustentação e novas features.");
+      const validDesc = descricaoSchema.safeParse(
+        "Responsável pela sustentação e novas features.",
+      );
       expect(validDesc.success).toBe(true);
 
       const nullDesc = descricaoSchema.safeParse(null);
@@ -312,7 +322,8 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
           validade: "2025-04-10",
         },
         {
-          titulo: "Certificação NR10 - Segurança em Instalações e Serviços em Eletricidade",
+          titulo:
+            "Certificação NR10 - Segurança em Instalações e Serviços em Eletricidade",
           obtidaEm: "2023-01-15",
           validade: "2025-01-15",
         },
@@ -333,7 +344,7 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       if (result.success) {
         expect(result.data.certificacoes).toHaveLength(3);
         expect(result.data.certificacoes[0]?.titulo).toBe(
-          "AWS Certified Solutions Architect - Associate"
+          "AWS Certified Solutions Architect - Associate",
         );
         expect(result.data.certificacoes[0]?.validade).toBe("2025-04-10");
         expect(result.data.certificacoes[2]?.validade).toBeNull();
@@ -365,7 +376,7 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       if (!result.success) {
         expect(result.error.issues[0]?.path).toContain("validade");
         expect(result.error.issues[0]?.message).toBe(
-          "A validade deve ser posterior ou igual à data de obtenção"
+          "A validade deve ser posterior ou igual à data de obtenção",
         );
       }
     });
@@ -438,7 +449,8 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
             empresa: "WGO Telecom",
             dataEntrada: "2020-01-15",
             dataSaida: null,
-            descricao: "Suporte e configuração de infraestrutura de fibra óptica.",
+            descricao:
+              "Suporte e configuração de infraestrutura de fibra óptica.",
           },
         ],
         certificacoes: [

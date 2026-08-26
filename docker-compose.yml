@@ -22,3 +22,6 @@ services:
 
 volumes:
   postgres_data:
+
+# npm run db:migrate
+# .env: DATABASE_URL=postgresql://postgres:password@localhost:5432/wgotalent

@@ -60,7 +60,9 @@ describe("departamento validation schemas", () => {
       });
       expect(resultWhitespace.success).toBe(false);
       if (!resultWhitespace.success) {
-        expect(resultWhitespace.error.errors[0]?.message).toBe("Nome é obrigatório");
+        expect(resultWhitespace.error.errors[0]?.message).toBe(
+          "Nome é obrigatório",
+        );
       }
     });
 
@@ -121,34 +123,36 @@ describe("departamento validation schemas", () => {
         nome: "Financeiro",
         descricao: "Gestão financeira",
       };
-      expect(createDepartamentoSchema.safeParse(payloadWithId).success).toBe(false);
+      expect(createDepartamentoSchema.safeParse(payloadWithId).success).toBe(
+        false,
+      );
 
       const payloadWithCreatedAt = {
         nome: "Financeiro",
         descricao: "Gestão financeira",
         createdAt: new Date().toISOString(),
       };
-      expect(createDepartamentoSchema.safeParse(payloadWithCreatedAt).success).toBe(
-        false,
-      );
+      expect(
+        createDepartamentoSchema.safeParse(payloadWithCreatedAt).success,
+      ).toBe(false);
 
       const payloadWithUpdatedAt = {
         nome: "Financeiro",
         descricao: "Gestão financeira",
         updated_at: new Date().toISOString(),
       };
-      expect(createDepartamentoSchema.safeParse(payloadWithUpdatedAt).success).toBe(
-        false,
-      );
+      expect(
+        createDepartamentoSchema.safeParse(payloadWithUpdatedAt).success,
+      ).toBe(false);
 
       const payloadWithDeletedAt = {
         nome: "Financeiro",
         descricao: "Gestão financeira",
         deletedAt: null,
       };
-      expect(createDepartamentoSchema.safeParse(payloadWithDeletedAt).success).toBe(
-        false,
-      );
+      expect(
+        createDepartamentoSchema.safeParse(payloadWithDeletedAt).success,
+      ).toBe(false);
     });
   });
 
@@ -208,16 +212,18 @@ describe("departamento validation schemas", () => {
     });
 
     it("rejects invalid values in partial update", () => {
-      expect(updateDepartamentoSchema.safeParse({ nome: "" }).success).toBe(false);
+      expect(updateDepartamentoSchema.safeParse({ nome: "" }).success).toBe(
+        false,
+      );
       expect(updateDepartamentoSchema.safeParse({ nome: "   " }).success).toBe(
         false,
       );
       expect(
         updateDepartamentoSchema.safeParse({ nome: "A".repeat(121) }).success,
       ).toBe(false);
-      expect(updateDepartamentoSchema.safeParse({ descricao: "" }).success).toBe(
-        false,
-      );
+      expect(
+        updateDepartamentoSchema.safeParse({ descricao: "" }).success,
+      ).toBe(false);
       expect(
         updateDepartamentoSchema.safeParse({ descricao: "   " }).success,
       ).toBe(false);
@@ -228,7 +234,9 @@ describe("departamento validation schemas", () => {
         id: "123e4567-e89b-12d3-a456-426614174000",
         nome: "Operações",
       };
-      expect(updateDepartamentoSchema.safeParse(payloadWithId).success).toBe(false);
+      expect(updateDepartamentoSchema.safeParse(payloadWithId).success).toBe(
+        false,
+      );
 
       const payloadWithTimestamps = {
         nome: "Operações",

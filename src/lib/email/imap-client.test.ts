@@ -49,7 +49,10 @@ describe("buscarMensagensNovas", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     connectMock.mockResolvedValue(undefined);
-    getMailboxLockMock.mockResolvedValue({ path: "INBOX", release: releaseMock });
+    getMailboxLockMock.mockResolvedValue({
+      path: "INBOX",
+      release: releaseMock,
+    });
     logoutMock.mockResolvedValue(undefined);
     mailboxRef.current = { uidNext: 100 };
   });
@@ -118,8 +121,16 @@ describe("buscarMensagensNovas", () => {
     );
     simpleParserMock.mockResolvedValueOnce({
       attachments: [
-        { filename: "cv.pdf", contentType: "application/pdf", content: Buffer.alloc(1024) },
-        { filename: "cv.exe", contentType: "application/x-msdownload", content: Buffer.alloc(1024) },
+        {
+          filename: "cv.pdf",
+          contentType: "application/pdf",
+          content: Buffer.alloc(1024),
+        },
+        {
+          filename: "cv.exe",
+          contentType: "application/x-msdownload",
+          content: Buffer.alloc(1024),
+        },
         {
           filename: "cv-grande.pdf",
           contentType: "application/pdf",
@@ -133,14 +144,22 @@ describe("buscarMensagensNovas", () => {
     expect(result.mensagens).toEqual([
       {
         uid: 11,
-        anexos: [{ filename: "cv.pdf", mimeType: "application/pdf", buffer: Buffer.alloc(1024) }],
+        anexos: [
+          {
+            filename: "cv.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.alloc(1024),
+          },
+        ],
       },
     ]);
   });
 
   it("skips messages without a fetched source", async () => {
     searchMock.mockResolvedValueOnce([11]);
-    fetchMock.mockReturnValueOnce(asyncIterable([{ uid: 11, source: undefined }]));
+    fetchMock.mockReturnValueOnce(
+      asyncIterable([{ uid: 11, source: undefined }]),
+    );
 
     const result = await buscarMensagensNovas(params);
 
@@ -160,7 +179,11 @@ describe("buscarMensagensNovas", () => {
 
     const result = await buscarMensagensNovas({ ...params, limiteLote: 2 });
 
-    expect(fetchMock).toHaveBeenCalledWith([11, 13], expect.anything(), expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith(
+      [11, 13],
+      expect.anything(),
+      expect.anything(),
+    );
     expect(result.mensagens.map((m) => m.uid)).toEqual([11, 13]);
     expect(result.uidReferencia).toBeNull();
   });
@@ -178,7 +201,11 @@ describe("buscarMensagensNovas", () => {
 
     const result = await buscarMensagensNovas({ ...params, limiteLote: 5 });
 
-    expect(fetchMock).toHaveBeenCalledWith([11, 12], expect.anything(), expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith(
+      [11, 12],
+      expect.anything(),
+      expect.anything(),
+    );
     expect(result.uidReferencia).toBe(19);
   });
 

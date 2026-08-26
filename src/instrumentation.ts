@@ -3,6 +3,7 @@ export async function register() {
     return;
   }
 
-  const { iniciarLoopDeCaptura } = await import("~/server/email/captura-curriculos-loop");
+  const { iniciarLoopDeCaptura } =
+    await import("~/server/email/captura-curriculos-loop");
   iniciarLoopDeCaptura();
 }

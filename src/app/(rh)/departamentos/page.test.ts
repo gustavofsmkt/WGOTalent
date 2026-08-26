@@ -34,9 +34,10 @@ describe("DepartamentosPage - Server Component Logic", () => {
       },
     ];
 
-    vi.spyOn(departamentoRepository, "findAllWithActiveCargosCount").mockResolvedValueOnce(
-      mockDepartamentos,
-    );
+    vi.spyOn(
+      departamentoRepository,
+      "findAllWithActiveCargosCount",
+    ).mockResolvedValueOnce(mockDepartamentos);
 
     const result = await departamentoRepository.findAllWithActiveCargosCount();
     expect(result).toHaveLength(2);
@@ -100,8 +101,12 @@ describe("DepartamentosPage - Server Component Logic", () => {
       },
     ];
 
-    vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce(mockDept);
-    vi.spyOn(departamentoRepository, "findActiveCargos").mockResolvedValueOnce(mockCargos);
+    vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce(
+      mockDept,
+    );
+    vi.spyOn(departamentoRepository, "findActiveCargos").mockResolvedValueOnce(
+      mockCargos,
+    );
 
     const dept = await departamentoRepository.findById("dept-1");
     const cargos = await departamentoRepository.findActiveCargos("dept-1");

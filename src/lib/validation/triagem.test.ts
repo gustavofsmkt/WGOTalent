@@ -26,7 +26,9 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Motivo deve ser nulo para este resultado");
+      expect(result.error.issues[0]?.message).toBe(
+        "Motivo deve ser nulo para este resultado",
+      );
     }
   });
 
@@ -47,7 +49,9 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Motivo é obrigatório quando o candidato é reprovado");
+      expect(result.error.issues[0]?.message).toBe(
+        "Motivo é obrigatório quando o candidato é reprovado",
+      );
     }
   });
 
@@ -59,7 +63,9 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Motivo de reprovação inválido");
+      expect(result.error.issues[0]?.message).toBe(
+        "Motivo de reprovação inválido",
+      );
     }
   });
 
@@ -80,7 +86,9 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Motivo de desistência inválido");
+      expect(result.error.issues[0]?.message).toBe(
+        "Motivo de desistência inválido",
+      );
     }
   });
 
@@ -92,7 +100,9 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe("Motivo é obrigatório quando o candidato é desistente");
+      expect(result.error.issues[0]?.message).toBe(
+        "Motivo é obrigatório quando o candidato é desistente",
+      );
     }
   });
 
@@ -104,7 +114,7 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(true);
   });
-  
+
   it("should validate when resultado is banco_talentos and motivo is null", () => {
     const result = triagemSchema.safeParse({
       ...validBase,

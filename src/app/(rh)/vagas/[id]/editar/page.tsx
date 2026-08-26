@@ -28,7 +28,9 @@ export default async function EditarVagaPage(props: EditarVagaPageProps) {
 
   // If the currently assigned cargo is not in active options (e.g. deactivated), include it so select retains its value
   if (!activeCargoOptions.some((c) => c.id === vaga.cargoId)) {
-    const currentCargo = await cargoRepository.findByIdWithDepartamento(vaga.cargoId);
+    const currentCargo = await cargoRepository.findByIdWithDepartamento(
+      vaga.cargoId,
+    );
     if (currentCargo) {
       cargoOptions = [
         {

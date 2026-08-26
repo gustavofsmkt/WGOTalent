@@ -9,7 +9,8 @@ vi.mock("~/env", () => ({
   },
 }));
 vi.mock("~/server/db/query-helpers", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("~/server/db/query-helpers")>();
+  const actual =
+    await importOriginal<typeof import("~/server/db/query-helpers")>();
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
@@ -19,12 +20,17 @@ import { notDeleted } from "~/server/db/query-helpers";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-const client = postgres("postgres://postgres:postgres@localhost:5432/wgotalent");
+const client = postgres(
+  "postgres://postgres:postgres@localhost:5432/wgotalent",
+);
 const mockDb = drizzle(client);
 
 describe("emailCredencialRepository", () => {
   it("builds query with notDeleted filter for findAll", () => {
-    const qb = notDeleted(mockDb.select().from(emailCredenciais), emailCredenciais);
+    const qb = notDeleted(
+      mockDb.select().from(emailCredenciais),
+      emailCredenciais,
+    );
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_email_credenciais"."deleted_at" is null');
   });
@@ -43,7 +49,10 @@ describe("emailCredencialRepository", () => {
 
     await emailCredencialRepository.findAll(fakeDb);
 
-    expect(notDeleted).toHaveBeenCalledWith(expect.anything(), emailCredenciais);
+    expect(notDeleted).toHaveBeenCalledWith(
+      expect.anything(),
+      emailCredenciais,
+    );
   });
 
   it("findActiva filters by ativo=true and returns only the first row", async () => {
@@ -146,7 +155,9 @@ describe("emailCredencialRepository", () => {
           capturedData = data;
           return {
             where: () => ({
-              returning: async () => [{ id: "cred-1", deletedAt: "2026-01-01T00:00:00.000Z" }],
+              returning: async () => [
+                { id: "cred-1", deletedAt: "2026-01-01T00:00:00.000Z" },
+              ],
             }),
           };
         },
@@ -156,7 +167,10 @@ describe("emailCredencialRepository", () => {
     const result = await emailCredencialRepository.softDelete("cred-1", fakeDb);
 
     expect(capturedData).toHaveProperty("deletedAt");
-    expect(result).toEqual({ id: "cred-1", deletedAt: "2026-01-01T00:00:00.000Z" });
+    expect(result).toEqual({
+      id: "cred-1",
+      deletedAt: "2026-01-01T00:00:00.000Z",
+    });
   });
 
   it("atualizarWatermark updates ultimoUidProcessado for the given id", async () => {

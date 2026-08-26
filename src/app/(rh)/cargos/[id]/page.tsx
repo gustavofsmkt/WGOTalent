@@ -1,14 +1,29 @@
 import * as React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Building2, Briefcase, ArrowLeft, MapPin, Users, Plus } from "lucide-react";
+import {
+  Pencil,
+  Building2,
+  Briefcase,
+  ArrowLeft,
+  MapPin,
+  Users,
+  Plus,
+} from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { buttonVariants } from "~/components/ui/button";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "../_components/delete-cargo-button";
 
@@ -186,7 +201,10 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   ID do Cargo
                 </span>
-                <p className="text-xs font-mono text-muted-foreground truncate" title={cargo.id}>
+                <p
+                  className="text-xs font-mono text-muted-foreground truncate"
+                  title={cargo.id}
+                >
                   {cargo.id}
                 </p>
               </div>
@@ -215,7 +233,10 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                 action={
                   <Link
                     href="/vagas/novo"
-                    className={buttonVariants({ variant: "default", size: "sm" })}
+                    className={buttonVariants({
+                      variant: "default",
+                      size: "sm",
+                    })}
                   >
                     <Plus className="size-4 mr-1.5" />
                     Criar Vaga
@@ -262,7 +283,10 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                     <TableCell className="pr-6 text-right">
                       <Link
                         href={`/vagas/${vaga.id}`}
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                        })}
                       >
                         Ver
                       </Link>
