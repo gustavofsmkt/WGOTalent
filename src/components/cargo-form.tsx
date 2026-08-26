@@ -1,9 +1,6 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
-import type { z } from "zod";
 import { cargoSchema, type CreateCargoInput } from "~/lib/validation/cargo";
 import { createCargo, updateCargo } from "~/actions/cargos";
 import type { Cargo } from "~/server/db/schema";
@@ -15,26 +12,9 @@ import {
   CardContent,
   CardFooter,
 } from "~/components/ui/card";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
-import { Checkbox } from "~/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { FormSubmitButton } from "~/components/form-submit-button";
-import { ErrorCallout } from "~/components/error-callout";
+import { toast } from "~/components/ui/toast";
+import { useAppForm } from "~/hooks/form";
 import { cn } from "~/lib/utils";
 
 export interface DepartamentoOption {
@@ -72,12 +52,7 @@ export function CargoForm({
   const router = useRouter();
   const isEdit = Boolean(cargo?.id);
 
-  const [serverError, setServerError] = React.useState<{
-    message?: string;
-    fieldErrors?: Record<string, string[]>;
-  } | null>(null);
-
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       departamentoId: cargo?.departamentoId ?? "",
       titulo: cargo?.titulo ?? "",
@@ -89,41 +64,35 @@ export function CargoForm({
       requisitos: cargo?.requisitos ?? "",
       requisitosDesejaveis: cargo?.requisitosDesejaveis ?? "",
       criteriosEliminatorios: cargo?.criteriosEliminatorios ?? "",
-    } as z.input<typeof cargoSchema>,
+    } as CreateCargoInput,
     validators: {
       onBlur: cargoSchema,
     },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
-
-      const result =
+    onSubmit: ({ value }) => {
+      const req =
         isEdit && cargo?.id
-          ? await updateCargo(cargo.id, value)
-          : await createCargo(value);
+          ? updateCargo(cargo.id, value)
+          : createCargo(value);
 
-      if (!result.success) {
-        setServerError({
-          message: result.message ?? "Ocorreu um erro ao salvar o cargo.",
-          fieldErrors: result.errors,
-        });
-        return;
-      }
-
-      if (result.data) {
-        if (onSuccess) {
-          onSuccess(result.data);
-        } else if (redirectTo) {
-          router.push(redirectTo);
-        } else {
-          router.push("/cargos");
-        }
-      }
+      toast.promise(req, {
+        loading: isEdit ? "Atualizando cargo..." : "Cadastrando cargo...",
+        success: (result) => {
+          if (!result.success)
+            throw new Error(result.message ?? "Erro ao salvar o cargo.");
+          if (result.data) {
+            if (onSuccess) onSuccess(result.data);
+            else if (redirectTo) router.push(redirectTo);
+            else router.push("/cargos");
+          }
+          return isEdit
+            ? "Cargo atualizado com sucesso!"
+            : "Cargo cadastrado com sucesso!";
+        },
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
+      });
     },
   });
-
-  const serverErrorList = serverError?.fieldErrors
-    ? Object.values(serverError.fieldErrors).flat()
-    : [];
 
   return (
     <Card className={cn("w-full", className)}>
@@ -140,395 +109,143 @@ export function CargoForm({
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (form.state.isSubmitting) return;
           void form.handleSubmit();
         }}
         noValidate
         className="flex flex-col gap-4"
       >
         <CardContent>
-          {serverError && (
-            <ErrorCallout
-              title="Não foi possível salvar o cargo"
-              message={serverError.message}
-              errors={serverErrorList.length > 0 ? serverErrorList : undefined}
-            />
-          )}
-
-          <FieldGroup>
+          <div className="flex flex-col gap-5">
             {/* Linha 1: Título e Departamento */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <form.Field
+              <form.AppField
                 name="titulo"
-                validators={{
-                  onBlur: cargoSchema.shape.titulo,
-                }}
+                validators={{ onBlur: cargoSchema.shape.titulo }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "cargo-titulo";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
+                {(field) => (
+                  <field.InputField
+                    label="Título do Cargo"
+                    required
+                    placeholder="Ex: Desenvolvedor Full Stack"
+                    description="Título do cargo (máx. 150 caracteres)."
+                    autoComplete="off"
+                  />
+                )}
+              </form.AppField>
 
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>
-                        Título do Cargo *
-                      </FieldLabel>
-                      <Input
-                        id={fieldId}
-                        name={field.name}
-                        placeholder="Ex: Desenvolvedor Full Stack"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={hasErrors}
-                        aria-describedby={
-                          hasErrors ? `${descId} ${errorId}` : descId
-                        }
-                        autoComplete="off"
-                      />
-                      <FieldDescription id={descId}>
-                        Título do cargo (máx. 150 caracteres).
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field
+              <form.AppField
                 name="departamentoId"
-                validators={{
-                  onBlur: cargoSchema.shape.departamentoId,
-                }}
+                validators={{ onBlur: cargoSchema.shape.departamentoId }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "cargo-departamento-id";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
-
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>Departamento *</FieldLabel>
-                      <Select
-                        value={field.state.value || ""}
-                        onValueChange={(val) => {
-                          if (typeof val === "string") {
-                            field.handleChange(val);
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          id={fieldId}
-                          className="w-full"
-                          aria-invalid={hasErrors}
-                          aria-describedby={
-                            hasErrors ? `${descId} ${errorId}` : descId
-                          }
-                        >
-                          <SelectValue placeholder="Selecione um departamento...">
-                            {(val: string | null) => {
-                              if (!val || val === "none")
-                                return "Selecione um departamento...";
-                              const dept = departamentoOptions.find(
-                                (d) => d.id === val,
-                              );
-                              return dept
-                                ? dept.nome
-                                : "Selecione um departamento...";
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departamentoOptions.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              Nenhum departamento disponível
-                            </SelectItem>
-                          ) : (
-                            departamentoOptions.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id}>
-                                {dept.nome}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FieldDescription id={descId}>
-                        Departamento ao qual o cargo está subordinado.
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
+                {(field) => (
+                  <field.SelectField
+                    label="Departamento"
+                    required
+                    placeholder="Selecione um departamento..."
+                    description="Departamento ao qual o cargo está subordinado."
+                    options={departamentoOptions.map((d) => ({
+                      value: d.id,
+                      label: d.nome,
+                    }))}
+                  />
+                )}
+              </form.AppField>
             </div>
 
             {/* Linha 2: Faixa Salarial e Status Ativo */}
             <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2">
-              <form.Field
+              <form.AppField
                 name="faixaSalarial"
-                validators={{
-                  onBlur: cargoSchema.shape.faixaSalarial,
-                }}
+                validators={{ onBlur: cargoSchema.shape.faixaSalarial }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "cargo-faixa-salarial";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
+                {(field) => (
+                  <field.InputField
+                    label="Faixa Salarial (R$)"
+                    type="number"
+                    placeholder="Ex: 8500.00 ou 8.500,00"
+                    description="Remuneração referencial numérica (opcional)."
+                    autoComplete="off"
+                  />
+                )}
+              </form.AppField>
 
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>
-                        Faixa Salarial (R$)
-                      </FieldLabel>
-                      <Input
-                        id={fieldId}
-                        name={field.name}
-                        type="number"
-                        placeholder="Ex: 8500.00 ou 8.500,00"
-                        value={field.state.value ?? ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={hasErrors}
-                        aria-describedby={
-                          hasErrors ? `${descId} ${errorId}` : descId
-                        }
-                        autoComplete="off"
-                      />
-                      <FieldDescription id={descId}>
-                        Remuneração referencial numérica (opcional).
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field
+              <form.AppField
                 name="ativo"
-                validators={{
-                  onBlur: cargoSchema.shape.ativo,
-                }}
+                validators={{ onBlur: cargoSchema.shape.ativo }}
               >
-                {(field) => {
-                  const fieldId = "cargo-ativo";
-                  const descId = `${fieldId}-description`;
-
-                  return (
-                    <Field className="items-start  pt-2">
-                      <div className="flex gap-2">
-                        <Checkbox
-                          id={fieldId}
-                          name={field.name}
-                          checked={field.state.value}
-                          onCheckedChange={(checked) =>
-                            field.handleChange(Boolean(checked))
-                          }
-                          onBlur={field.handleBlur}
-                          aria-describedby={descId}
-                        />
-                        <FieldLabel
-                          htmlFor={fieldId}
-                          className="cursor-pointer font-medium"
-                        >
-                          Cargo Ativo
-                        </FieldLabel>
-                      </div>
-                      <FieldDescription id={descId}>
-                        Cargos ativos ficam disponíveis para novas vagas.
-                      </FieldDescription>
-                    </Field>
-                  );
-                }}
-              </form.Field>
+                {(field) => (
+                  <field.CheckboxField
+                    label="Cargo Ativo"
+                    description="Cargos ativos ficam disponíveis para novas vagas."
+                  />
+                )}
+              </form.AppField>
             </div>
 
             {/* Linha 3: Descrição Geral */}
-            <form.Field
+            <form.AppField
               name="descricao"
-              validators={{
-                onBlur: cargoSchema.shape.descricao,
-              }}
+              validators={{ onBlur: cargoSchema.shape.descricao }}
             >
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                const fieldId = "cargo-descricao";
-                const errorId = `${fieldId}-error`;
-                const descId = `${fieldId}-description`;
-
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor={fieldId}>
-                      Descrição do Cargo *
-                    </FieldLabel>
-                    <Textarea
-                      id={fieldId}
-                      name={field.name}
-                      placeholder="Descreva as principais atribuições e responsabilidades do cargo..."
-                      rows={4}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                      aria-describedby={
-                        hasErrors ? `${descId} ${errorId}` : descId
-                      }
-                    />
-                    <FieldDescription id={descId}>
-                      Síntese das atividades e escopo de atuação.
-                    </FieldDescription>
-                    <FieldError id={errorId} errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+              {(field) => (
+                <field.TextAreaField
+                  label="Descrição do Cargo"
+                  required
+                  rows={4}
+                  placeholder="Descreva as principais atribuições e responsabilidades do cargo..."
+                  description="Síntese das atividades e escopo de atuação."
+                />
+              )}
+            </form.AppField>
 
             {/* Linha 4: Requisitos Obrigatórios */}
-            <form.Field
+            <form.AppField
               name="requisitos"
-              validators={{
-                onBlur: cargoSchema.shape.requisitos,
-              }}
+              validators={{ onBlur: cargoSchema.shape.requisitos }}
             >
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                const fieldId = "cargo-requisitos";
-                const errorId = `${fieldId}-error`;
-                const descId = `${fieldId}-description`;
-
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor={fieldId}>
-                      Requisitos Obrigatórios *
-                    </FieldLabel>
-                    <Textarea
-                      id={fieldId}
-                      name={field.name}
-                      placeholder="Liste as competências, formação técnica ou tempo de experiência indispensáveis..."
-                      rows={3}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                      aria-describedby={
-                        hasErrors ? `${descId} ${errorId}` : descId
-                      }
-                    />
-                    <FieldDescription id={descId}>
-                      Requisitos mínimos e mandatórios para o cargo.
-                    </FieldDescription>
-                    <FieldError id={errorId} errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+              {(field) => (
+                <field.TextAreaField
+                  label="Requisitos Obrigatórios"
+                  required
+                  rows={3}
+                  placeholder="Liste as competências, formação técnica ou tempo de experiência indispensáveis..."
+                  description="Requisitos mínimos e mandatórios para o cargo."
+                />
+              )}
+            </form.AppField>
 
             {/* Linha 5: Requisitos Desejáveis */}
-            <form.Field
+            <form.AppField
               name="requisitosDesejaveis"
-              validators={{
-                onBlur: cargoSchema.shape.requisitosDesejaveis,
-              }}
+              validators={{ onBlur: cargoSchema.shape.requisitosDesejaveis }}
             >
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                const fieldId = "cargo-requisitos-desejaveis";
-                const errorId = `${fieldId}-error`;
-                const descId = `${fieldId}-description`;
-
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor={fieldId}>
-                      Requisitos Desejáveis *
-                    </FieldLabel>
-                    <Textarea
-                      id={fieldId}
-                      name={field.name}
-                      placeholder="Liste conhecimentos ou experiências que contam como diferenciais competitivos..."
-                      rows={3}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                      aria-describedby={
-                        hasErrors ? `${descId} ${errorId}` : descId
-                      }
-                    />
-                    <FieldDescription id={descId}>
-                      Diferenciais que agregam valor na triagem.
-                    </FieldDescription>
-                    <FieldError id={errorId} errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+              {(field) => (
+                <field.TextAreaField
+                  label="Requisitos Desejáveis"
+                  required
+                  rows={3}
+                  placeholder="Liste conhecimentos ou experiências que contam como diferenciais competitivos..."
+                  description="Diferenciais que agregam valor na triagem."
+                />
+              )}
+            </form.AppField>
 
             {/* Linha 6: Critérios Eliminatórios */}
-            <form.Field
+            <form.AppField
               name="criteriosEliminatorios"
-              validators={{
-                onBlur: cargoSchema.shape.criteriosEliminatorios,
-              }}
+              validators={{ onBlur: cargoSchema.shape.criteriosEliminatorios }}
             >
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                const fieldId = "cargo-criterios-eliminatorios";
-                const errorId = `${fieldId}-error`;
-                const descId = `${fieldId}-description`;
-
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor={fieldId}>
-                      Critérios Eliminatórios *
-                    </FieldLabel>
-                    <Textarea
-                      id={fieldId}
-                      name={field.name}
-                      placeholder="Liste fatores determinantes que desqualificam a candidatura automaticamente..."
-                      rows={3}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                      aria-describedby={
-                        hasErrors ? `${descId} ${errorId}` : descId
-                      }
-                    />
-                    <FieldDescription id={descId}>
-                      Condições que impedem a aprovação do candidato.
-                    </FieldDescription>
-                    <FieldError id={errorId} errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
-          </FieldGroup>
+              {(field) => (
+                <field.TextAreaField
+                  label="Critérios Eliminatórios"
+                  required
+                  rows={3}
+                  placeholder="Liste fatores determinantes que desqualificam a candidatura automaticamente..."
+                  description="Condições que impedem a aprovação do candidato."
+                />
+              )}
+            </form.AppField>
+          </div>
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-4">
@@ -546,19 +263,11 @@ export function CargoForm({
             </Button>
           )}
 
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <FormSubmitButton
-                pending={Boolean(isSubmitting)}
-                disabled={!canSubmit || Boolean(isSubmitting)}
-                loadingText={isEdit ? "Atualizando..." : "Cadastrando..."}
-              >
-                {isEdit ? "Salvar Alterações" : "Criar Cargo"}
-              </FormSubmitButton>
-            )}
-          </form.Subscribe>
+          <form.AppForm>
+            <form.SaveButton
+              label={isEdit ? "Salvar Alterações" : "Criar Cargo"}
+            />
+          </form.AppForm>
         </CardFooter>
       </form>
     </Card>

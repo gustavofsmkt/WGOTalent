@@ -1,8 +1,8 @@
-import { useFieldContext } from "@/hooks/form";
+import { useFieldContext } from "~/hooks/form";
 import FieldErrors from "./fieldErrors";
 import { useSelector } from "@tanstack/react-form";
 import { Switch } from "../ui/switch";
-import { cn } from "@/lib/utils";
+import { cn } from "~/lib/utils";
 import { Field, FieldDescription, FieldLabel } from "../ui/field";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 

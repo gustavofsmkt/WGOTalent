@@ -9,7 +9,7 @@ import {
 import { type Metadata } from "next";
 import dynamic from "next/dynamic";
 import { Inter } from "next/font/google";
-import { Toaster } from "~/components/ui/sonner";
+import { Toaster } from "~/components/ui/toast";
 import { NavLinks } from "~/components/nav-links";
 import { UploadProgressProvider } from "~/components/upload-progress/upload-progress-store";
 import { Button } from "~/components/ui/button";
@@ -81,7 +81,7 @@ export default function RootLayout({
           </div>
           <UploadProgressPopup />
         </UploadProgressProvider>
-        <Toaster richColors position="top-right" />
+        <Toaster />
       </body>
     </html>
   );

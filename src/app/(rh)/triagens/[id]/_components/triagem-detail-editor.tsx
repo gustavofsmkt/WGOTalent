@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import {
   Briefcase,
   MapPin,
@@ -148,12 +148,18 @@ export function TriagemDetailEditor({
     startTransition(async () => {
       const result = await updateTriagem(triagem.id, buildPayload(pending));
       if (!result.success) {
-        toast.error(result.message ?? "Erro ao finalizar a triagem.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao finalizar a triagem.",
+        });
         const motivoIssue = result.errors?.motivo?.[0];
         if (motivoIssue) setMotivoError(motivoIssue);
         return;
       }
-      toast.success("Triagem finalizada com sucesso.");
+      toast.add({
+        type: "success",
+        description: "Triagem finalizada com sucesso.",
+      });
       router.refresh();
     });
   };
@@ -167,11 +173,17 @@ export function TriagemDetailEditor({
       const newState = { ...pending, etapa: nextEtapa };
       const result = await updateTriagem(triagem.id, buildPayload(newState));
       if (!result.success) {
-        toast.error(result.message ?? "Erro ao avançar a etapa.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao avançar a etapa.",
+        });
         return;
       }
       const nextLabel = ETAPAS.find((e) => e.value === nextEtapa)?.label;
-      toast.success(`Avançado para: ${nextLabel}`);
+      toast.add({
+        type: "success",
+        description: `Avançado para: ${nextLabel}`,
+      });
       setPending(newState);
       setActiveTab(nextEtapa);
       router.refresh();

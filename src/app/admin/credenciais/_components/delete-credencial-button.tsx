@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import { Button } from "~/components/ui/button";
 import { deleteCredencial } from "~/actions/credenciais";
 
@@ -22,11 +22,17 @@ export function DeleteCredencialButton({
     startTransition(async () => {
       const result = await deleteCredencial(credencialId);
       if (result.success) {
-        toast.success(result.message ?? "Credencial excluída.");
+        toast.add({
+          type: "success",
+          description: result.message ?? "Credencial excluída.",
+        });
         setIsConfirming(false);
         router.refresh();
       } else {
-        toast.error(result.message ?? "Erro ao excluir credencial.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao excluir credencial.",
+        });
         setIsConfirming(false);
       }
     });

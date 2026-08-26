@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
 import {
   emailCredencialCreateSchema,
   type EmailCredencialCreateInput,
@@ -24,8 +22,8 @@ import {
   FieldError,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { FormSubmitButton } from "~/components/form-submit-button";
-import { ErrorCallout } from "~/components/error-callout";
+import { toast } from "~/components/ui/toast";
+import { useAppForm } from "~/hooks/form";
 
 function tresMesesAtras(): string {
   const data = new Date();
@@ -35,12 +33,8 @@ function tresMesesAtras(): string {
 
 export function CreateEmailCredencialForm() {
   const router = useRouter();
-  const [serverError, setServerError] = React.useState<{
-    message?: string;
-    fieldErrors?: Record<string, string[]>;
-  } | null>(null);
 
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       host: "",
       porta: 993,
@@ -50,26 +44,23 @@ export function CreateEmailCredencialForm() {
       capturarDesde: "",
     } as EmailCredencialCreateInput,
     validators: { onBlur: emailCredencialCreateSchema },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
-      const result = await createEmailCredencial(value);
+    onSubmit: ({ value }) => {
+      const req = createEmailCredencial(value);
 
-      if (!result.success) {
-        setServerError({
-          message: result.message ?? "Ocorreu um erro ao salvar a credencial.",
-          fieldErrors: result.errors,
-        });
-        return;
-      }
-
-      form.reset();
-      router.refresh();
+      toast.promise(req, {
+        loading: "Salvando credencial de e-mail...",
+        success: (result) => {
+          if (!result.success)
+            throw new Error(result.message ?? "Erro ao salvar a credencial.");
+          form.reset();
+          router.refresh();
+          return "Credencial de e-mail salva com sucesso!";
+        },
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
+      });
     },
   });
-
-  const serverErrorList = serverError?.fieldErrors
-    ? Object.values(serverError.fieldErrors).flat()
-    : [];
 
   return (
     <Card className="w-full ">
@@ -86,158 +77,83 @@ export function CreateEmailCredencialForm() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (form.state.isSubmitting) return;
           void form.handleSubmit();
         }}
         noValidate
         className="gap-4 flex flex-col"
       >
         <CardContent>
-          {serverError && (
-            <ErrorCallout
-              title="Não foi possível salvar a credencial"
-              message={serverError.message}
-              errors={serverErrorList.length > 0 ? serverErrorList : undefined}
-            />
-          )}
-
           <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <form.Field name="host">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors} className="sm:col-span-2">
-                    <FieldLabel htmlFor="email-credencial-host">
-                      Host IMAP
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-host"
-                      name={field.name}
-                      placeholder="imap.gmail.com"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+            <div className="sm:col-span-2">
+              <form.AppField name="host">
+                {(field) => (
+                  <field.InputField
+                    label="Host IMAP"
+                    placeholder="imap.gmail.com"
+                  />
+                )}
+              </form.AppField>
+            </div>
 
-            <form.Field name="porta">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors} className="sm:col-span-1">
-                    <FieldLabel htmlFor="email-credencial-porta">
-                      Porta
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-porta"
-                      name={field.name}
-                      type="number"
-                      min={1}
-                      max={65535}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(Number(e.target.value))
-                      }
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+            {/* porta kept as raw field — needs Number() coercion on change */}
+            <div className="sm:col-span-1">
+              <form.Field name="porta">
+                {(field) => {
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
+                  return (
+                    <Field data-invalid={hasErrors}>
+                      <FieldLabel htmlFor="email-credencial-porta">
+                        Porta
+                      </FieldLabel>
+                      <Input
+                        id="email-credencial-porta"
+                        name={field.name}
+                        type="number"
+                        min={1}
+                        max={65535}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) =>
+                          field.handleChange(Number(e.target.value))
+                        }
+                        aria-invalid={hasErrors}
+                      />
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  );
+                }}
+              </form.Field>
+            </div>
           </FieldGroup>
 
           <FieldGroup>
-            <form.Field name="usuario">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-usuario">
-                      Usuário
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-usuario"
-                      name={field.name}
-                      autoComplete="off"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+            <form.AppField name="usuario">
+              {(field) => (
+                <field.InputField label="Usuário" autoComplete="off" />
+              )}
+            </form.AppField>
 
-            <form.Field name="senha">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="email-credencial-senha">
-                      Senha (ou senha de app, se o provedor exigir)
-                    </FieldLabel>
-                    <Input
-                      id="email-credencial-senha"
-                      name={field.name}
-                      type="password"
-                      autoComplete="off"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldDescription>
-                      Gmail exige uma Senha de App (não a senha normal da conta)
-                      desde 2022.
-                    </FieldDescription>
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+            <form.AppField name="senha">
+              {(field) => (
+                <field.InputField
+                  label="Senha (ou senha de app, se o provedor exigir)"
+                  type="password"
+                  autoComplete="off"
+                  description="Gmail exige uma Senha de App (não a senha normal da conta) desde 2022."
+                />
+              )}
+            </form.AppField>
           </FieldGroup>
 
-          <form.Field name="pasta">
-            {(field) => {
-              const hasErrors =
-                field.state.meta.isTouched &&
-                field.state.meta.errors.length > 0;
-              return (
-                <Field data-invalid={hasErrors}>
-                  <FieldLabel htmlFor="email-credencial-pasta">
-                    Pasta monitorada
-                  </FieldLabel>
-                  <Input
-                    id="email-credencial-pasta"
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={hasErrors}
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              );
-            }}
-          </form.Field>
+          <form.AppField name="pasta">
+            {(field) => (
+              <field.InputField label="Pasta monitorada" />
+            )}
+          </form.AppField>
 
+          {/* capturarDesde kept as raw field — description contains JSX */}
           <form.Field name="capturarDesde">
             {(field) => {
               const hasErrors =
@@ -274,19 +190,9 @@ export function CreateEmailCredencialForm() {
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-4">
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <FormSubmitButton
-                pending={Boolean(isSubmitting)}
-                disabled={!canSubmit || Boolean(isSubmitting)}
-                loadingText="Salvando..."
-              >
-                Salvar Credencial
-              </FormSubmitButton>
-            )}
-          </form.Subscribe>
+          <form.AppForm>
+            <form.SaveButton label="Salvar Credencial" />
+          </form.AppForm>
         </CardFooter>
       </form>
     </Card>

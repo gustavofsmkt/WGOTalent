@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
 import {
   agenteConfigUpdateSchema,
   type AgenteConfigUpdateInput,
@@ -19,24 +17,14 @@ import {
 } from "~/components/ui/card";
 import {
   Field,
-  FieldGroup,
   FieldLabel,
   FieldDescription,
   FieldError,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
-import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { FormSubmitButton } from "~/components/form-submit-button";
-import { ErrorCallout } from "~/components/error-callout";
+import { toast } from "~/components/ui/toast";
+import { useAppForm } from "~/hooks/form";
 import {
   LLM_PROVIDERS,
   getModelsForProvider,
@@ -57,12 +45,7 @@ export interface AgenteConfigFormProps {
 
 export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
   const router = useRouter();
-  const [serverError, setServerError] = React.useState<{
-    message?: string;
-    fieldErrors?: Record<string, string[]>;
-  } | null>(null);
-
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       provider: agenteConfig.provider,
       model: agenteConfig.model,
@@ -76,28 +59,23 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
     validators: {
       onBlur: agenteConfigUpdateSchema,
     },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
+    onSubmit: ({ value }) => {
+      const req = updateAgenteConfig(agenteConfig.slot, value);
 
-      const result = await updateAgenteConfig(agenteConfig.slot, value);
-
-      if (!result.success) {
-        setServerError({
-          message:
-            result.message ?? "Ocorreu um erro ao salvar a configuração.",
-          fieldErrors: result.errors,
-        });
-        return;
-      }
-
-      router.push("/admin");
-      router.refresh();
+      toast.promise(req, {
+        loading: "Salvando configuração do agente...",
+        success: (result) => {
+          if (!result.success)
+            throw new Error(result.message ?? "Erro ao salvar a configuração.");
+          router.push("/admin");
+          router.refresh();
+          return "Configuração salva com sucesso!";
+        },
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
+      });
     },
   });
-
-  const serverErrorList = serverError?.fieldErrors
-    ? Object.values(serverError.fieldErrors).flat()
-    : [];
 
   return (
     <Card className="w-full">
@@ -118,238 +96,109 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
         noValidate
         className="flex flex-col gap-4"
       >
-        <CardContent>
-          {serverError && (
-            <ErrorCallout
-              title="Não foi possível salvar a configuração"
-              message={serverError.message}
-              errors={serverErrorList.length > 0 ? serverErrorList : undefined}
-            />
-          )}
+        <CardContent className="space-y-4">
+          <form.AppField
+            name="provider"
+            listeners={{
+              onChange: ({ value }) => {
+                const firstModel = getModelsForProvider(value)[0]?.value ?? "";
+                form.setFieldValue("model", firstModel);
+              },
+            }}
+          >
+            {(field) => (
+              <field.SelectField
+                label="Provedor"
+                options={LLM_PROVIDERS.map((p) => ({
+                  value: p.value,
+                  label: p.label,
+                }))}
+              />
+            )}
+          </form.AppField>
 
-          <FieldGroup>
-            <form.Field name="provider">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-provider">Provedor</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(val) => {
-                        if (typeof val !== "string") return;
-                        field.handleChange(val);
-                        // Provedor mudou: o modelo atual pode não existir no novo
-                        // catálogo — reseta para o primeiro modelo disponível.
-                        const primeiroModelo =
-                          getModelsForProvider(val)[0]?.value ?? "";
-                        form.setFieldValue("model", primeiroModelo);
-                      }}
-                    >
-                      <SelectTrigger
-                        id="agente-provider"
-                        className="w-full"
-                        aria-invalid={hasErrors}
-                      >
-                        <SelectValue placeholder="Selecione um provedor...">
-                          {(val: string | null) =>
-                            LLM_PROVIDERS.find((p) => p.value === val)?.label ??
-                            "Selecione um provedor..."
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LLM_PROVIDERS.map((p) => (
-                          <SelectItem key={p.value} value={p.value}>
-                            {p.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
-
-            <form.Subscribe selector={(state) => state.values.provider}>
-              {(provider) => {
-                const modelos = getModelsForProvider(provider);
-                return (
-                  <form.Field name="model">
-                    {(field) => {
-                      const hasErrors =
-                        field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0;
-                      return (
-                        <Field data-invalid={hasErrors}>
-                          <FieldLabel htmlFor="agente-model">Modelo</FieldLabel>
-                          <Select
-                            value={field.state.value}
-                            onValueChange={(val) => {
-                              if (typeof val === "string")
-                                field.handleChange(val);
-                            }}
-                          >
-                            <SelectTrigger
-                              id="agente-model"
-                              className="w-full"
-                              aria-invalid={hasErrors}
-                            >
-                              <SelectValue placeholder="Selecione um modelo...">
-                                {(val: string | null) =>
-                                  modelos.find((m) => m.value === val)?.label ??
-                                  "Selecione um modelo..."
-                                }
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {modelos.length === 0 ? (
-                                <SelectItem value="none" disabled>
-                                  Nenhum modelo disponível para este provedor
-                                </SelectItem>
-                              ) : (
-                                modelos.map((m) => (
-                                  <SelectItem key={m.value} value={m.value}>
-                                    {m.label}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FieldDescription>
-                            Modelos disponíveis para o provedor selecionado
-                            acima.
-                          </FieldDescription>
-                          <FieldError errors={field.state.meta.errors} />
-                        </Field>
-                      );
-                    }}
-                  </form.Field>
-                );
-              }}
-            </form.Subscribe>
-
-            <form.Field name="systemPrompt">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-system-prompt">
-                      System Prompt
-                    </FieldLabel>
-                    <Textarea
-                      id="agente-system-prompt"
-                      name={field.name}
-                      rows={6}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={hasErrors}
+          <form.Subscribe selector={(state) => state.values.provider}>
+            {(provider) => {
+              const modelos = getModelsForProvider(provider);
+              return (
+                <form.AppField name="model">
+                  {(field) => (
+                    <field.SelectField
+                      label="Modelo"
+                      description="Modelos disponíveis para o provedor selecionado acima."
+                      options={modelos.map((m) => ({
+                        value: m.value,
+                        label: m.label,
+                      }))}
                     />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+                  )}
+                </form.AppField>
+              );
+            }}
+          </form.Subscribe>
 
-            <form.Field name="userPrompt">
+          <form.AppField name="systemPrompt">
+            {(field) => (
+              <field.TextAreaField label="System Prompt" rows={6} />
+            )}
+          </form.AppField>
+
+          <form.AppField name="userPrompt">
+            {(field) => (
+              <field.TextAreaField
+                label="User Prompt"
+                description={`Use as variáveis listadas acima entre chaves duplas, ex: {{tipo_principal}}.`}
+                rows={6}
+              />
+            )}
+          </form.AppField>
+
+          {agenteConfig.slot === "classificador_aderencia" && (
+            <form.Field name="thresholdScore">
               {(field) => {
                 const hasErrors =
                   field.state.meta.isTouched &&
                   field.state.meta.errors.length > 0;
                 return (
                   <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-user-prompt">
-                      User Prompt
+                    <FieldLabel htmlFor="agente-threshold">
+                      Threshold de aprovação (0–100)
                     </FieldLabel>
-                    <Textarea
-                      id="agente-user-prompt"
+                    <Input
+                      id="agente-threshold"
                       name={field.name}
-                      rows={6}
-                      value={field.state.value}
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={field.state.value ?? ""}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      onChange={(e) =>
+                        field.handleChange(
+                          e.target.value === ""
+                            ? null
+                            : Number(e.target.value),
+                        )
+                      }
                       aria-invalid={hasErrors}
                     />
                     <FieldDescription>
-                      Use as variáveis listadas acima entre chaves duplas, ex:{" "}
-                      {"{{tipo_principal}}"}.
+                      Pares com score abaixo deste valor não viram Triagem.
                     </FieldDescription>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
                 );
               }}
             </form.Field>
+          )}
 
-            {agenteConfig.slot === "classificador_aderencia" && (
-              <form.Field name="thresholdScore">
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor="agente-threshold">
-                        Threshold de aprovação (0–100)
-                      </FieldLabel>
-                      <Input
-                        id="agente-threshold"
-                        name={field.name}
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={field.state.value ?? ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                          )
-                        }
-                        aria-invalid={hasErrors}
-                      />
-                      <FieldDescription>
-                        Pares com score abaixo deste valor não viram Triagem.
-                      </FieldDescription>
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  );
-                }}
-              </form.Field>
+          <form.AppField name="ativo">
+            {(field) => (
+              <field.CheckboxField
+                label="Agente ativo"
+                description="Quando desativado, o disparo deste agente falha explicitamente."
+              />
             )}
-
-            <form.Field name="ativo">
-              {(field) => (
-                <Field
-                  orientation="horizontal"
-                  className="items-start flex-col"
-                >
-                  <div className="flex gap-2 items-center">
-                    <Checkbox
-                      id="agente-ativo"
-                      name={field.name}
-                      checked={field.state.value}
-                      onCheckedChange={(checked) =>
-                        field.handleChange(Boolean(checked))
-                      }
-                      onBlur={field.handleBlur}
-                    />
-                    <FieldLabel htmlFor="agente-ativo">Agente ativo</FieldLabel>
-                  </div>
-                  <FieldDescription>
-                    Quando desativado, o disparo deste agente falha
-                    explicitamente.
-                  </FieldDescription>
-                </Field>
-              )}
-            </form.Field>
-          </FieldGroup>
+          </form.AppField>
         </CardContent>
 
         <CardFooter className="flex items-center justify-end gap-4">
@@ -357,19 +206,9 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             Cancelar
           </Button>
 
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <FormSubmitButton
-                pending={Boolean(isSubmitting)}
-                disabled={!canSubmit || Boolean(isSubmitting)}
-                loadingText="Salvando..."
-              >
-                Salvar Alterações
-              </FormSubmitButton>
-            )}
-          </form.Subscribe>
+          <form.AppForm>
+            <form.SaveButton label="Salvar Alterações" />
+          </form.AppForm>
         </CardFooter>
       </form>
     </Card>

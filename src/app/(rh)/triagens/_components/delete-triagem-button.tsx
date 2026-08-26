@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import { Button } from "~/components/ui/button";
 import { deleteTriagem } from "~/actions/triagens";
 
@@ -31,13 +31,19 @@ export function DeleteTriagemButton({
       const result = await deleteTriagem(triagemId);
 
       if (result.success) {
-        toast.success(result.message ?? "Triagem excluída com sucesso.");
+        toast.add({
+          type: "success",
+          description: result.message ?? "Triagem excluída com sucesso.",
+        });
         setIsConfirming(false);
         if (redirectTo) {
           router.push(redirectTo);
         }
       } else {
-        toast.error(result.message ?? "Erro ao excluir triagem.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao excluir triagem.",
+        });
         setIsConfirming(false);
       }
     });

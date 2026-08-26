@@ -1,11 +1,11 @@
-import { useFieldContext } from "@/hooks/form";
+import { useFieldContext } from "~/hooks/form";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import FieldErrors from "./fieldErrors";
 import { useSelector } from "@tanstack/react-form";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Field, FieldDescription, FieldLabel } from "../ui/field";
-import { cn } from "@/lib/utils";
+import { cn } from "~/lib/utils";
 
 type CheckboxFieldProps = {
   label: string;

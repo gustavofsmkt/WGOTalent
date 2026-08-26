@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm, type ReactFormExtendedApi } from "@tanstack/react-form";
+import { type ReactFormExtendedApi } from "@tanstack/react-form";
+import { useAppForm } from "~/hooks/form";
 import type { z } from "zod";
 import {
   candidatoSchema,
@@ -43,8 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { FormSubmitButton } from "~/components/form-submit-button";
-import { ErrorCallout } from "~/components/error-callout";
+import { toast } from "~/components/ui/toast";
 import { cn } from "~/lib/utils";
 import { createCandidato, updateCandidato } from "~/actions/candidatos";
 
@@ -1682,12 +1682,7 @@ export function CandidatoBaseForm({
   const isEdit = Boolean(candidato?.id);
 
   const [resumeFile, setResumeFile] = React.useState<File | null>(null);
-  const [serverError, setServerError] = React.useState<{
-    message?: string;
-    fieldErrors?: Record<string, string[]>;
-  } | null>(null);
-
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       nome: candidato?.nome ?? "",
       nomeSocial: candidato?.nomeSocial ?? null,
@@ -1722,43 +1717,37 @@ export function CandidatoBaseForm({
     validators: {
       onBlur: candidatoAgregadoSchema,
     },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
-
+    onSubmit: ({ value }) => {
       const formData = new FormData();
       formData.append("data", JSON.stringify(value));
       if (resumeFile) {
         formData.append("file", resumeFile);
       }
 
-      const result =
+      const req =
         isEdit && candidato?.id
-          ? await updateCandidato(candidato.id, formData)
-          : await createCandidato(formData);
+          ? updateCandidato(candidato.id, formData)
+          : createCandidato(formData);
 
-      if (!result.success) {
-        setServerError({
-          message: result.message ?? "Ocorreu um erro ao salvar o candidato.",
-          fieldErrors: result.errors,
-        });
-        return;
-      }
-
-      if (result.data) {
-        if (onSuccess) {
-          onSuccess(result.data);
-        } else if (redirectTo) {
-          router.push(redirectTo);
-        } else {
-          router.push("/candidatos");
-        }
-      }
+      toast.promise(req, {
+        loading: isEdit ? "Atualizando candidato..." : "Cadastrando candidato...",
+        success: (result) => {
+          if (!result.success)
+            throw new Error(result.message ?? "Erro ao salvar o candidato.");
+          if (result.data) {
+            if (onSuccess) onSuccess(result.data);
+            else if (redirectTo) router.push(redirectTo);
+            else router.push("/candidatos");
+          }
+          return isEdit
+            ? "Candidato atualizado com sucesso!"
+            : "Candidato cadastrado com sucesso!";
+        },
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
+      });
     },
   });
-
-  const serverErrorList = serverError?.fieldErrors
-    ? Object.values(serverError.fieldErrors).flat()
-    : [];
 
   return (
     <Card className={cn("w-full", className)}>
@@ -1781,14 +1770,6 @@ export function CandidatoBaseForm({
         className="flex flex-col gap-4"
       >
         <CardContent className="space-y-4">
-          {serverError && (
-            <ErrorCallout
-              title="Não foi possível salvar o candidato"
-              message={serverError.message}
-              errors={serverErrorList.length > 0 ? serverErrorList : undefined}
-            />
-          )}
-
           <FieldGroup className="space-y-4">
             <DadosPessoaisSection form={form} />
             <ContatoURLsSection form={form} />
@@ -1812,28 +1793,15 @@ export function CandidatoBaseForm({
 
         <CardFooter className="flex items-center justify-end gap-4">
           {onCancel && (
-            <FormSubmitButton
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              pending={false}
-            >
+            <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
-            </FormSubmitButton>
+            </Button>
           )}
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting] as const}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <FormSubmitButton
-                type="submit"
-                disabled={!canSubmit}
-                pending={isSubmitting}
-              >
-                {isEdit ? "Salvar Alterações" : "Cadastrar Candidato"}
-              </FormSubmitButton>
-            )}
-          </form.Subscribe>
+          <form.AppForm>
+            <form.SaveButton
+              label={isEdit ? "Salvar Alterações" : "Cadastrar Candidato"}
+            />
+          </form.AppForm>
         </CardFooter>
       </form>
     </Card>

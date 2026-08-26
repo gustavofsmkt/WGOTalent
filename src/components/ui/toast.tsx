@@ -7,7 +7,7 @@ import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
 import { XIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-const _toastManager = ToastPrimitive.createToastManager()
+const toast = ToastPrimitive.createToastManager()
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />
@@ -199,7 +199,7 @@ function ToastList() {
 
 function Toaster({
   children,
-  toastManager = _toastManager,
+  toastManager = toast,
   ...props
 }: ToastPrimitive.Provider.Props) {
   return (
@@ -229,6 +229,6 @@ export {
   ToastTitle,
   ToastViewport,
   createToastManager,
+  toast,
   useToastManager,
 }
-export { toast } from "sonner"

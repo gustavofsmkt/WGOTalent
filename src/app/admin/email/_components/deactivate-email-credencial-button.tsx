@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Loader2, Power } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import { Button } from "~/components/ui/button";
 import { deactivateEmailCredencial } from "~/actions/email-credenciais";
 
@@ -19,9 +19,15 @@ export function DeactivateEmailCredencialButton({
     startTransition(async () => {
       const result = await deactivateEmailCredencial(credencialId);
       if (result.success) {
-        toast.success(result.message ?? "Credencial desativada.");
+        toast.add({
+          type: "success",
+          description: result.message ?? "Credencial desativada.",
+        });
       } else {
-        toast.error(result.message ?? "Erro ao desativar credencial.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao desativar credencial.",
+        });
       }
     });
   };

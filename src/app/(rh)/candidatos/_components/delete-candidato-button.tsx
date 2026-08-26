@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import { Button } from "~/components/ui/button";
 import { deleteCandidato } from "~/actions/candidatos";
 import { cn } from "~/lib/utils";
@@ -32,13 +32,19 @@ export function DeleteCandidatoButton({
       const result = await deleteCandidato(candidatoId);
 
       if (result.success) {
-        toast.success(result.message ?? "Candidato excluído com sucesso.");
+        toast.add({
+          type: "success",
+          description: result.message ?? "Candidato excluído com sucesso.",
+        });
         setIsConfirming(false);
         if (redirectTo) {
           router.push(redirectTo);
         }
       } else {
-        toast.error(result.message ?? "Erro ao excluir candidato.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao excluir candidato.",
+        });
         setIsConfirming(false);
       }
     });

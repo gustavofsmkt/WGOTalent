@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "~/components/ui/toast";
 import { Button } from "~/components/ui/button";
 import { deleteVaga } from "~/actions/vagas";
 import { cn } from "~/lib/utils";
@@ -32,13 +32,19 @@ export function DeleteVagaButton({
       const result = await deleteVaga(vagaId);
 
       if (result.success) {
-        toast.success(result.message ?? "Vaga excluída com sucesso.");
+        toast.add({
+          type: "success",
+          description: result.message ?? "Vaga excluída com sucesso.",
+        });
         setIsConfirming(false);
         if (redirectTo) {
           router.push(redirectTo);
         }
       } else {
-        toast.error(result.message ?? "Erro ao excluir vaga.");
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao excluir vaga.",
+        });
         setIsConfirming(false);
       }
     });

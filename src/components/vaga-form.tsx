@@ -1,15 +1,12 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
-import type { z } from "zod";
 import {
   vagaSchema,
   STATUS_VAGA_VALUES,
   type StatusVaga,
-  type CreateVagaInput,
 } from "~/lib/validation/vaga";
+import { useAppForm } from "~/hooks/form";
 import { createVaga, updateVaga } from "~/actions/vagas";
 import type { Vaga } from "~/server/db/schema";
 import {
@@ -36,8 +33,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { FormSubmitButton } from "~/components/form-submit-button";
-import { ErrorCallout } from "~/components/error-callout";
+import { toast } from "~/components/ui/toast";
 import { cn } from "~/lib/utils";
 
 export interface CargoOption {
@@ -93,12 +89,7 @@ export function VagaForm({
   const router = useRouter();
   const isEdit = Boolean(vaga?.id);
 
-  const [serverError, setServerError] = React.useState<{
-    message?: string;
-    fieldErrors?: Record<string, string[]>;
-  } | null>(null);
-
-  const form = useForm({
+  const form = useAppForm({
     defaultValues: {
       cargoId: vaga?.cargoId ?? "",
       status: (vaga?.status ?? "aberta") as StatusVaga,
@@ -108,41 +99,35 @@ export function VagaForm({
         : "") as string,
       cidade: vaga?.cidade ?? "",
       uf: vaga?.uf ?? "",
-    } as z.input<typeof vagaSchema>,
+    },
     validators: {
       onBlur: vagaSchema,
     },
-    onSubmit: async ({ value }) => {
-      setServerError(null);
-
-      const result =
+    onSubmit: ({ value }) => {
+      const req =
         isEdit && vaga?.id
-          ? await updateVaga(vaga.id, value)
-          : await createVaga(value);
+          ? updateVaga(vaga.id, value)
+          : createVaga(value);
 
-      if (!result.success) {
-        setServerError({
-          message: result.message ?? "Ocorreu um erro ao salvar a vaga.",
-          fieldErrors: result.errors,
-        });
-        return;
-      }
-
-      if (result.data) {
-        if (onSuccess) {
-          onSuccess(result.data);
-        } else if (redirectTo) {
-          router.push(redirectTo);
-        } else {
-          router.push("/vagas");
-        }
-      }
+      toast.promise(req, {
+        loading: isEdit ? "Atualizando vaga..." : "Cadastrando vaga...",
+        success: (result) => {
+          if (!result.success)
+            throw new Error(result.message ?? "Erro ao salvar a vaga.");
+          if (result.data) {
+            if (onSuccess) onSuccess(result.data);
+            else if (redirectTo) router.push(redirectTo);
+            else router.push("/vagas");
+          }
+          return isEdit
+            ? "Vaga atualizada com sucesso!"
+            : "Vaga cadastrada com sucesso!";
+        },
+        error: (err: unknown) =>
+          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
+      });
     },
   });
-
-  const serverErrorList = serverError?.fieldErrors
-    ? Object.values(serverError.fieldErrors).flat()
-    : [];
 
   return (
     <Card className={cn("w-full", className)}>
@@ -166,155 +151,46 @@ export function VagaForm({
         className="flex flex-col gap-4"
       >
         <CardContent>
-          {serverError && (
-            <ErrorCallout
-              title="Não foi possível salvar a vaga"
-              message={serverError.message}
-              errors={serverErrorList.length > 0 ? serverErrorList : undefined}
-            />
-          )}
-
           <FieldGroup>
             {/* Linha 1: Cargo e Status */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <form.Field
+              <form.AppField
                 name="cargoId"
-                validators={{
-                  onBlur: vagaSchema.shape.cargoId,
-                }}
+                validators={{ onBlur: vagaSchema.shape.cargoId }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "vaga-cargo-id";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
+                {(field) => (
+                  <field.SelectField
+                    label="Cargo"
+                    required
+                    placeholder="Selecione um cargo..."
+                    description="Cargo ao qual esta vaga pertence."
+                    options={cargoOptions.map((cargo) => ({
+                      value: cargo.id,
+                      label: cargo.departamento?.nome
+                        ? `${cargo.titulo} (${cargo.departamento.nome})`
+                        : cargo.titulo,
+                    }))}
+                  />
+                )}
+              </form.AppField>
 
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>Cargo *</FieldLabel>
-                      <Select
-                        value={field.state.value || ""}
-                        onValueChange={(val) => {
-                          if (typeof val === "string") {
-                            field.handleChange(val);
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          id={fieldId}
-                          className="w-full"
-                          aria-invalid={hasErrors}
-                          aria-describedby={
-                            hasErrors ? `${descId} ${errorId}` : descId
-                          }
-                        >
-                          <SelectValue placeholder="Selecione um cargo...">
-                            {(val: string | null) => {
-                              if (!val || val === "none") {
-                                return "Selecione um cargo...";
-                              }
-                              const cargo = cargoOptions.find(
-                                (c) => c.id === val,
-                              );
-                              if (!cargo) return "Selecione um cargo...";
-                              return cargo.departamento?.nome
-                                ? `${cargo.titulo} (${cargo.departamento.nome})`
-                                : cargo.titulo;
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cargoOptions.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              Nenhum cargo ativo disponível
-                            </SelectItem>
-                          ) : (
-                            cargoOptions.map((cargo) => (
-                              <SelectItem key={cargo.id} value={cargo.id}>
-                                {cargo.titulo}
-                                {cargo.departamento?.nome
-                                  ? ` — ${cargo.departamento.nome}`
-                                  : ""}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FieldDescription id={descId}>
-                        Cargo ao qual esta vaga pertence.
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
-
-              <form.Field
+              <form.AppField
                 name="status"
-                validators={{
-                  onBlur: vagaSchema.shape.status,
-                }}
+                validators={{ onBlur: vagaSchema.shape.status }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "vaga-status";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
-
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>
-                        Status da Vaga *
-                      </FieldLabel>
-                      <Select
-                        value={field.state.value || "aberta"}
-                        onValueChange={(val) => {
-                          if (typeof val === "string") {
-                            field.handleChange(val as StatusVaga);
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          id={fieldId}
-                          className="w-full"
-                          aria-invalid={hasErrors}
-                          aria-describedby={
-                            hasErrors ? `${descId} ${errorId}` : descId
-                          }
-                        >
-                          <SelectValue placeholder="Selecione o status...">
-                            {(val: string | null) => {
-                              if (!val) return "Selecione o status...";
-                              return statusLabels[val as StatusVaga] ?? val;
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_VAGA_VALUES.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {statusLabels[s]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FieldDescription id={descId}>
-                        Situação atual do processo de recrutamento da vaga.
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
+                {(field) => (
+                  <field.SelectField
+                    label="Status da Vaga"
+                    required
+                    placeholder="Selecione o status..."
+                    description="Situação atual do processo de recrutamento da vaga."
+                    options={STATUS_VAGA_VALUES.map((s) => ({
+                      value: s,
+                      label: statusLabels[s],
+                    }))}
+                  />
+                )}
+              </form.AppField>
             </div>
 
             {/* Linha 2: Posições e Remuneração */}
@@ -367,50 +243,20 @@ export function VagaForm({
                 }}
               </form.Field>
 
-              <form.Field
+              <form.AppField
                 name="remuneracaoOferecida"
-                validators={{
-                  onBlur: vagaSchema.shape.remuneracaoOferecida,
-                }}
+                validators={{ onBlur: vagaSchema.shape.remuneracaoOferecida }}
               >
-                {(field) => {
-                  const hasErrors =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0;
-                  const fieldId = "vaga-remuneracao-oferecida";
-                  const errorId = `${fieldId}-error`;
-                  const descId = `${fieldId}-description`;
-
-                  return (
-                    <Field data-invalid={hasErrors}>
-                      <FieldLabel htmlFor={fieldId}>
-                        Remuneração Oferecida (R$)
-                      </FieldLabel>
-                      <Input
-                        id={fieldId}
-                        name={field.name}
-                        type="number"
-                        placeholder="Ex: 6500.00 ou 6.500,00"
-                        value={field.state.value ?? ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={hasErrors}
-                        aria-describedby={
-                          hasErrors ? `${descId} ${errorId}` : descId
-                        }
-                        autoComplete="off"
-                      />
-                      <FieldDescription id={descId}>
-                        Valor salarial oferecido para a posição (opcional).
-                      </FieldDescription>
-                      <FieldError
-                        id={errorId}
-                        errors={field.state.meta.errors}
-                      />
-                    </Field>
-                  );
-                }}
-              </form.Field>
+                {(field) => (
+                  <field.InputField
+                    label="Remuneração Oferecida (R$)"
+                    type="number"
+                    placeholder="Ex: 6500.00 ou 6.500,00"
+                    description="Valor salarial oferecido para a posição (opcional)."
+                    autoComplete="off"
+                  />
+                )}
+              </form.AppField>
             </div>
 
             {/* Linha 3: Cidade */}
@@ -527,19 +373,11 @@ export function VagaForm({
             </Button>
           )}
 
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <FormSubmitButton
-                pending={Boolean(isSubmitting)}
-                disabled={!canSubmit || Boolean(isSubmitting)}
-                loadingText={isEdit ? "Atualizando..." : "Cadastrando..."}
-              >
-                {isEdit ? "Salvar Alterações" : "Criar Vaga"}
-              </FormSubmitButton>
-            )}
-          </form.Subscribe>
+          <form.AppForm>
+            <form.SaveButton
+              label={isEdit ? "Salvar Alterações" : "Criar Vaga"}
+            />
+          </form.AppForm>
         </CardFooter>
       </form>
     </Card>

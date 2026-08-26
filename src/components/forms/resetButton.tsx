@@ -1,6 +1,6 @@
-import { useFormContext } from "@/hooks/form";
+import { useFormContext } from "~/hooks/form";
 import { Button } from "../ui/button";
-import { ButtonDestructiveHold } from "../botaoDestrutivoHold";
+// import { ButtonDestructiveHold } from "../botaoDestrutivoHold";
 
 export default function ResetButton({ label = "Limpar" }: { label?: string }) {
   const form = useFormContext();
@@ -8,15 +8,15 @@ export default function ResetButton({ label = "Limpar" }: { label?: string }) {
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
-        <ButtonDestructiveHold
+        <Button
           disabled={isSubmitting}
           variant="secondary"
-          callback={() => {
+          onClick={() => {
             form.reset();
           }}
         >
           {label}
-        </ButtonDestructiveHold>
+        </Button>
       )}
     </form.Subscribe>
   );
