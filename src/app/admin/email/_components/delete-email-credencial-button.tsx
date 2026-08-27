@@ -1,88 +1,18 @@
 "use client";
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { toast } from "~/components/ui/toast";
-import { Button } from "~/components/ui/button";
 import { deleteEmailCredencial } from "~/actions/email-credenciais";
+import { DeleteWithConfirmButton } from "~/components/delete-with-confirm-button";
 
 interface DeleteEmailCredencialButtonProps {
   credencialId: string;
 }
 
-export function DeleteEmailCredencialButton({
-  credencialId,
-}: DeleteEmailCredencialButtonProps) {
-  const router = useRouter();
-  const [isConfirming, setIsConfirming] = React.useState(false);
-  const [isPending, startTransition] = React.useTransition();
-
-  const handleDelete = () => {
-    startTransition(async () => {
-      const result = await deleteEmailCredencial(credencialId);
-      if (result.success) {
-        toast.add({
-          type: "success",
-          description: result.message ?? "Credencial excluída.",
-        });
-        setIsConfirming(false);
-        router.refresh();
-      } else {
-        toast.add({
-          type: "error",
-          description: result.message ?? "Erro ao excluir credencial.",
-        });
-        setIsConfirming(false);
-      }
-    });
-  };
-
-  if (isConfirming) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-2">
-          <AlertTriangle className="size-3 text-destructive" />
-          Confirmar?
-        </span>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          disabled={isPending}
-          onClick={handleDelete}
-          className="h-8 px-2 text-xs"
-        >
-          {isPending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            "Sim, excluir"
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={isPending}
-          onClick={() => setIsConfirming(false)}
-          className="h-8 px-2 text-xs"
-        >
-          Cancelar
-        </Button>
-      </div>
-    );
-  }
-
+export function DeleteEmailCredencialButton({ credencialId }: DeleteEmailCredencialButtonProps) {
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={() => setIsConfirming(true)}
-      className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-    >
-      <Trash2 className="size-3.5 mr-2" />
-      Excluir
-    </Button>
+    <DeleteWithConfirmButton
+      onDelete={() => deleteEmailCredencial(credencialId)}
+      label="credencial de e-mail"
+      variant="button"
+    />
   );
 }
