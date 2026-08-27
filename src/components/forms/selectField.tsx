@@ -48,7 +48,6 @@ export default function SelectField({
       >
         {label}
       </FieldLabel>
-
       <Select
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value as string)}
@@ -66,10 +65,10 @@ export default function SelectField({
           disabled={disabled}
         >
           <SelectValue placeholder={disabled ? "-" : placeholder}>
-            {(value: string | null) => {
-              const selected = options.find((o) => o.value === value);
-              if (selected) return selected.label;
-              return disabled ? "-" : placeholder;
+            {(val: string | null) => {
+              if (!val) return disabled ? "-" : (placeholder ?? "");
+              const option = options.find((o) => o.value === val);
+              return option ? option.label : val;
             }}
           </SelectValue>
         </SelectTrigger>
