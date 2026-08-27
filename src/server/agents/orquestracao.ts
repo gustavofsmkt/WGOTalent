@@ -62,14 +62,24 @@ export async function orquestrarParaCandidatoNovo(
   }));
 
   const threshold = await getThreshold();
-  const scores = await executarClassificadorAderencia(
+  const resultado = await executarClassificadorAderencia(
     { id: candidato.id, resumo: candidato.resumoProfissional },
     itensComparacao,
     "candidato",
     "vaga",
   );
 
-  const aprovados = scores.filter((s) => s.score >= threshold);
+  if (!resultado.ok) {
+    // Falha de provedor na fase 1: candidato permanece ativo para ser
+    // reprocessado. NÃO vai para o banco de talentos por erro de infra
+    // (ADR-0011) — isso é distinto de "vagas existem mas nenhuma adere".
+    console.error(
+      `[orquestracao] Classificador falhou para o candidato ${candidato.id}; mantido ativo para reprocessamento.`,
+    );
+    return;
+  }
+
+  const aprovados = resultado.scores.filter((s) => s.score >= threshold);
 
   if (aprovados.length === 0) {
     // Vagas abertas existem, mas nenhuma passou no threshold de aderência:
@@ -100,14 +110,21 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
   const resumoVaga = `${vaga.cargo.titulo} (${vaga.cargo.departamento.nome}). Requisitos: ${vaga.cargo.requisitos}. Desejáveis: ${vaga.cargo.requisitosDesejaveis}. Eliminatórios: ${vaga.cargo.criteriosEliminatorios}`;
 
   const threshold = await getThreshold();
-  const scores = await executarClassificadorAderencia(
+  const resultado = await executarClassificadorAderencia(
     { id: vaga.id, resumo: resumoVaga },
     itensComparacao,
     "vaga",
     "candidato",
   );
 
-  const aprovados = scores.filter((s) => s.score >= threshold);
+  if (!resultado.ok) {
+    console.error(
+      `[orquestracao] Classificador falhou para a vaga ${vaga.id}; nenhuma triagem criada nesta rodada.`,
+    );
+    return;
+  }
+
+  const aprovados = resultado.scores.filter((s) => s.score >= threshold);
 
   await runWithLimit(aprovados, CONCORRENCIA_FASE2, (item) =>
     processarParAprovado(item.id, vaga.id),

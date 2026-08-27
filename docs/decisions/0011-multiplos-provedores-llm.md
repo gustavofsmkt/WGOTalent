@@ -13,6 +13,40 @@
 > restante deste documento (Contexto, Alternativas) permanece como registro
 > histórico da decisão original.
 
+> **Nota de implementação (2026-08-27) — endurecimento multi-provedor e Claude:**
+> a troca de provedor pela tela de admin não era de fato operável. Ajustes:
+>
+> 1. **Contrato formalizado.** `LlmAdapter` (em
+>    [shared.ts](../../src/lib/agents/shared.ts)) é o contrato único; o
+>    dispatcher virou um registry `provider -> LlmAdapter` em
+>    [agent-client.ts](../../src/lib/agents/agent-client.ts).
+> 2. **Invariante de schema de raiz objeto.** Saída estruturada não é portável:
+>    OpenAI (strict) e Anthropic (tool use) recusam schema com raiz
+>    `type: "array"` — só o Gemini aceitava, e por isso o `classificador_aderencia`
+>    quebrava 100% ao ser apontado para OpenAI (HTTP 400 em toda chamada,
+>    engolido silenciosamente, jogando todo candidato no banco de talentos).
+>    [schema-dialect.ts](../../src/lib/agents/schema-dialect.ts) traz
+>    `objetoComLista()` (o classificador agora devolve `{ itens: [...] }`) e
+>    `assertRaizObjeto()`, chamado pelos adapters OpenAI/Anthropic para falhar
+>    rápido com mensagem acionável.
+> 3. **Semântica de erro.** `executarClassificadorAderencia` devolve um
+>    resultado discriminado (`{ ok: false, motivo: "falha_provedor" }` quando
+>    todas as chamadas falham). A orquestração (ADR-0013) só manda ao banco de
+>    talentos quando o classificador respondeu e nenhum score passou do
+>    threshold — falha de infra mantém o candidato ativo para reprocessamento.
+> 4. **Terceiro adapter: Claude.**
+>    [anthropic-client.ts](../../src/lib/agents/anthropic-client.ts) — Messages
+>    API via `fetch` nativo (sem dependência nova), saída estruturada por tool
+>    forçada (`tool_choice`), PDF/imagem como blocos `document`/`image`,
+>    detecção de quota (429/529, `rate_limit_error`/`overloaded_error`).
+> 5. **Parâmetros por slot.** `agente_config.params` (jsonb, já existia e
+>    estava sem uso) passa a carregar `temperature` / `maxOutputTokens` /
+>    `topP`, editáveis na tela do agente e repassados a todos os adapters.
+> 6. **Validação de config.** `agenteConfigUpdateSchema` valida
+>    `provider ∈ catálogo` e `model ∈ provider`; `updateAgenteConfig` recusa
+>    ativar um slot sem credencial ativa para o provedor. A extração só
+>    oferece provedores com capacidade multimodal (`ProviderCapabilities`).
+
 ## Status
 
 Aceita

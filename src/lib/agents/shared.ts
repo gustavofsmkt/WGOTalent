@@ -5,16 +5,39 @@ export interface AgentArquivo {
   data: Buffer;
 }
 
+/**
+ * Parâmetros de geração comuns a todos os provedores. Cada adapter mapeia
+ * estes nomes canônicos para os da sua API (ex: `maxOutputTokens` vira
+ * `max_output_tokens` na OpenAI e `max_tokens` na Anthropic).
+ */
+export interface LlmParams {
+  temperature?: number;
+  maxOutputTokens?: number;
+  topP?: number;
+}
+
 export interface GerarRespostaEstruturadaInput<T> {
   apiKey: string;
   model: string;
   systemPrompt: string;
   userPrompt: string;
-  /** JSON Schema em modo strict (todo campo em `required`, `additionalProperties: false`) — compatível com Gemini e com Structured Outputs de outros provedores. */
+  /** JSON Schema em modo strict (todo campo em `required`, `additionalProperties: false`). Raiz DEVE ser `type: "object"` — ver schema-dialect.ts. */
   responseJsonSchema: Record<string, unknown>;
   /** Schema Zod usado para validar em runtime o JSON já parseado, antes de devolver ao chamador. */
   responseZodSchema: z.ZodType<T, z.ZodTypeDef, unknown>;
   arquivo?: AgentArquivo;
+  params?: LlmParams;
+}
+
+/**
+ * Contrato único que todo adapter de provedor implementa (ADR-0011). O
+ * dispatcher em agent-client.ts escolhe o adapter pelo `provider` da config
+ * do slot; os agentes permanecem agnósticos de qual LLM está por trás.
+ */
+export interface LlmAdapter {
+  gerarRespostaEstruturada<T>(
+    input: GerarRespostaEstruturadaInput<T>,
+  ): Promise<T>;
 }
 
 export class AgenteRespostaInvalidaError extends Error {
@@ -74,6 +97,25 @@ export async function comRetry<T>(tentar: () => Promise<T>): Promise<T> {
   throw ultimoErro;
 }
 
+/** Validação Zod de um valor já desserializado (ex: `tool_use.input` da Anthropic), com o log padrão dos clients. */
+export function validarRespostaEstruturada<T>(
+  parsed: unknown,
+  responseZodSchema: z.ZodType<T, z.ZodTypeDef, unknown>,
+): T {
+  const result = responseZodSchema.safeParse(parsed);
+  if (!result.success) {
+    console.error(
+      "[validarRespostaEstruturada] Resposta do agente não corresponde ao schema esperado:",
+      JSON.stringify(result.error.issues, null, 2),
+      "\nResposta recebida:",
+      JSON.stringify(parsed, null, 2),
+    );
+    throw new AgenteRespostaInvalidaError(result.error);
+  }
+
+  return result.data;
+}
+
 /** `JSON.parse` + validação Zod do texto de resposta, com o log padrão usado pelos clients de provedor. */
 export function parseRespostaEstruturada<T>(
   responseText: string,
@@ -90,16 +132,5 @@ export function parseRespostaEstruturada<T>(
     throw new AgenteRespostaInvalidaError(error);
   }
 
-  const result = responseZodSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error(
-      "[parseRespostaEstruturada] Resposta do agente não corresponde ao schema esperado:",
-      JSON.stringify(result.error.issues, null, 2),
-      "\nResposta recebida:",
-      JSON.stringify(parsed, null, 2),
-    );
-    throw new AgenteRespostaInvalidaError(result.error);
-  }
-
-  return result.data;
+  return validarRespostaEstruturada(parsed, responseZodSchema);
 }

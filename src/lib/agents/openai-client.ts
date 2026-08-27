@@ -4,7 +4,9 @@ import {
   comRetry,
   parseRespostaEstruturada,
   type GerarRespostaEstruturadaInput,
+  type LlmAdapter,
 } from "./shared";
+import { assertRaizObjeto } from "./schema-dialect";
 
 /**
  * Responses API (`/v1/responses`), não Chat Completions — é o endpoint atual
@@ -19,6 +21,8 @@ export async function gerarRespostaEstruturada<T>(
 ): Promise<T> {
   return comRetry(() => tentarGerarResposta(input));
 }
+
+export const openaiAdapter: LlmAdapter = { gerarRespostaEstruturada };
 
 function montarConteudoUsuario(
   input: GerarRespostaEstruturadaInput<unknown>,
@@ -66,6 +70,8 @@ function extrairTextoDaResposta(body: unknown): string | undefined {
 async function tentarGerarResposta<T>(
   input: GerarRespostaEstruturadaInput<T>,
 ): Promise<T> {
+  assertRaizObjeto(input.responseJsonSchema, "openai-client");
+
   let response: Response;
   try {
     response = await fetch(OPENAI_RESPONSES_URL, {
@@ -92,6 +98,15 @@ async function tentarGerarResposta<T>(
             strict: true,
           },
         },
+        ...(input.params?.temperature !== undefined
+          ? { temperature: input.params.temperature }
+          : {}),
+        ...(input.params?.topP !== undefined
+          ? { top_p: input.params.topP }
+          : {}),
+        ...(input.params?.maxOutputTokens !== undefined
+          ? { max_output_tokens: input.params.maxOutputTokens }
+          : {}),
       }),
     });
   } catch (error) {

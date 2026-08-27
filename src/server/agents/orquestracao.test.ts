@@ -101,14 +101,36 @@ describe("orquestrarParaCandidatoNovo", () => {
       { id: "v1", cargo: cargoBase },
     ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([
-      { id: "v1", score: 40 },
-    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [{ id: "v1", score: 40 }],
+    });
 
     await orquestrarParaCandidatoNovo("c1");
 
     expect(createTriagemMock).not.toHaveBeenCalled();
     expect(marcarBancoTalentosMock).toHaveBeenCalledWith("c1");
+  });
+
+  it("does NOT mark banco de talentos when the classificador fails at the provider", async () => {
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+    });
+    findOpenByCidadeMock.mockResolvedValueOnce([
+      { id: "v1", cargo: cargoBase },
+    ]);
+    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: false,
+      motivo: "falha_provedor",
+    });
+
+    await orquestrarParaCandidatoNovo("c1");
+
+    expect(createTriagemMock).not.toHaveBeenCalled();
+    expect(marcarBancoTalentosMock).not.toHaveBeenCalled();
   });
 
   it("creates a triagem and runs phase 2 only for scores at or above the threshold", async () => {
@@ -122,10 +144,13 @@ describe("orquestrarParaCandidatoNovo", () => {
       { id: "v2", cargo: cargoBase },
     ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([
-      { id: "v1", score: 80 },
-      { id: "v2", score: 40 },
-    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [
+        { id: "v1", score: 80 },
+        { id: "v2", score: 40 },
+      ],
+    });
     existsForParMock.mockResolvedValueOnce(false);
     createTriagemMock.mockResolvedValueOnce({ id: "t1" });
     executarAvaliadorTriagemMock.mockResolvedValueOnce({
@@ -163,9 +188,10 @@ describe("orquestrarParaCandidatoNovo", () => {
       { id: "v1", cargo: cargoBase },
     ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([
-      { id: "v1", score: 90 },
-    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [{ id: "v1", score: 90 }],
+    });
     existsForParMock.mockResolvedValueOnce(true);
 
     await orquestrarParaCandidatoNovo("c1");
@@ -189,9 +215,10 @@ describe("orquestrarParaVagaNova", () => {
       { id: "c1", resumoProfissional: "r" },
     ]);
     findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
-    executarClassificadorAderenciaMock.mockResolvedValueOnce([
-      { id: "c1", score: 70 },
-    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [{ id: "c1", score: 70 }],
+    });
     existsForParMock.mockResolvedValueOnce(false);
     createTriagemMock.mockResolvedValueOnce({ id: "t1" });
     executarAvaliadorTriagemMock.mockResolvedValueOnce({

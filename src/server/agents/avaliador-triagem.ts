@@ -4,6 +4,7 @@ import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
 import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
+import { parseLlmParams } from "~/lib/validation/agente-config";
 import { resolveTemplate } from "~/lib/agents/template";
 import { type NovaAvaliacaoIA } from "~/server/db/schema";
 
@@ -80,6 +81,7 @@ export async function executarAvaliadorTriagem(
     userPrompt,
     responseJsonSchema: RESPONSE_JSON_SCHEMA,
     responseZodSchema: avaliacaoOutputSchema,
+    params: parseLlmParams(config.params),
   });
 
   return { ...resultado, triagemId, scoreIa: resultado.scoreIa.toString() };

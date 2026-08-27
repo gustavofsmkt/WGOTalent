@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
+import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { type AgenteConfig } from "~/server/db/schema";
 import { agenteConfigUpdateSchema } from "~/lib/validation/agente-config";
 
@@ -24,9 +25,25 @@ export async function updateAgenteConfig(
   }
 
   try {
-    const { thresholdScore, ...rest } = parsed.data;
+    const { thresholdScore, params, ...rest } = parsed.data;
+
+    // Só bloqueia se o agente for ficar ativo — permite salvar um rascunho
+    // inativo apontando para um provedor ainda sem credencial.
+    if (rest.ativo) {
+      const credencial = await llmCredencialRepository.findActiveByProvider(
+        rest.provider,
+      );
+      if (!credencial) {
+        return {
+          success: false,
+          message: `Nenhuma credencial ativa para o provedor "${rest.provider}". Cadastre a chave em Administração › Credenciais antes de ativar este agente.`,
+        };
+      }
+    }
+
     const updated = await agenteConfigRepository.update(slot, {
       ...rest,
+      params: params ?? null,
       thresholdScore:
         thresholdScore === null || thresholdScore === undefined
           ? null

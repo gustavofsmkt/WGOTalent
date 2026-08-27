@@ -4,6 +4,7 @@ import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
 import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
+import { parseLlmParams } from "~/lib/validation/agente-config";
 import { BRAZILIAN_UFS } from "~/lib/validation/common";
 import {
   extracaoCurriculoOutputSchema,
@@ -204,6 +205,7 @@ export async function executarExtracaoCurriculo(
     );
   }
 
+  const params = parseLlmParams(config.params);
   const ext = fileKey.split(".").pop()?.toLowerCase();
 
   // DOCX não é lido nativamente pelo Gemini como PDF/imagem — convertido para
@@ -220,6 +222,7 @@ export async function executarExtracaoCurriculo(
       userPrompt: `${config.userPrompt}\n\nTexto do currículo (convertido de DOCX):\n${textoDocx}`,
       responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
       responseZodSchema: extracaoCurriculoOutputSchema,
+      params,
     });
   }
 
@@ -233,6 +236,7 @@ export async function executarExtracaoCurriculo(
     responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
     responseZodSchema: extracaoCurriculoOutputSchema,
     arquivo: { mimeType, data: arquivoBuffer },
+    params,
   });
 }
 

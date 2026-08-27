@@ -5,6 +5,7 @@ import {
   comRetry,
   parseRespostaEstruturada,
   type GerarRespostaEstruturadaInput,
+  type LlmAdapter,
 } from "./shared";
 
 /** Detecta erro de limite de requisições (HTTP 429 / RESOURCE_EXHAUSTED) retornado pelo provedor. */
@@ -29,6 +30,8 @@ export async function gerarRespostaEstruturada<T>(
 ): Promise<T> {
   return comRetry(() => tentarGerarResposta(input));
 }
+
+export const geminiAdapter: LlmAdapter = { gerarRespostaEstruturada };
 
 async function tentarGerarResposta<T>(
   input: GerarRespostaEstruturadaInput<T>,
@@ -55,6 +58,15 @@ async function tentarGerarResposta<T>(
         systemInstruction: input.systemPrompt,
         responseMimeType: "application/json",
         responseJsonSchema: input.responseJsonSchema,
+        ...(input.params?.temperature !== undefined
+          ? { temperature: input.params.temperature }
+          : {}),
+        ...(input.params?.topP !== undefined
+          ? { topP: input.params.topP }
+          : {}),
+        ...(input.params?.maxOutputTokens !== undefined
+          ? { maxOutputTokens: input.params.maxOutputTokens }
+          : {}),
       },
     });
     responseText = response.text;

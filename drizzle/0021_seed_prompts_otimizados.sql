@@ -1,37 +1,14 @@
-CREATE TYPE "public"."agente_slot" AS ENUM('extracao_curriculo', 'classificador_aderencia', 'avaliador_triagem');--> statement-breakpoint
-CREATE TABLE "wgotalent_agente_config" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"slot" "agente_slot" NOT NULL,
-	"provider" varchar(60) NOT NULL,
-	"model" varchar(100) NOT NULL,
-	"system_prompt" text NOT NULL,
-	"user_prompt" text NOT NULL,
-	"params" jsonb,
-	"threshold_score" numeric(5, 2),
-	"ativo" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone,
-	CONSTRAINT "wgotalent_agente_config_slot_unique" UNIQUE("slot")
-);
---> statement-breakpoint
-CREATE TABLE "wgotalent_llm_credenciais" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"provider" varchar(60) NOT NULL,
-	"api_key_cifrada" text NOT NULL,
-	"ativo" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone
-);
---> statement-breakpoint
-INSERT INTO "wgotalent_agente_config" ("slot", "provider", "model", "system_prompt", "user_prompt", "params", "threshold_score")
-VALUES
-	(
-		'extracao_curriculo',
-		'google_ai_studio',
-		'gemini-3.5-flash',
-		$wgt_sys$Context: Você é o motor de extração de currículos do WGOTalent, uma plataforma de RH que atende vagas no interior de Goiás e regiões próximas. Recebe UM currículo por vez — como arquivo (PDF ou imagem PNG/JPEG) ou como texto já convertido de DOCX. Os currículos são heterogêneos: muitos são informais, com seções incompletas, datas ausentes ou por extenso, telefone sem rótulo e endereço parcial ou inexistente.
+-- Converge bancos já migrados para os prompts otimizados dos 3 slots de agente
+-- (mesma redação do seed em 0010).
+--   * A atualização de system_prompt/user_prompt é guardada pelo texto do seed
+--     ORIGINAL — se o RH já customizou o prompt pela tela de admin (ou já
+--     colou a versão otimizada), a linha é preservada.
+--   * O params default (temperature) só preenche quando params ainda é NULL,
+--     então nunca sobrescreve um ajuste feito pelo RH.
+
+UPDATE "wgotalent_agente_config"
+SET
+	"system_prompt" = $wgt_sys$Context: Você é o motor de extração de currículos do WGOTalent, uma plataforma de RH que atende vagas no interior de Goiás e regiões próximas. Recebe UM currículo por vez — como arquivo (PDF ou imagem PNG/JPEG) ou como texto já convertido de DOCX. Os currículos são heterogêneos: muitos são informais, com seções incompletas, datas ausentes ou por extenso, telefone sem rótulo e endereço parcial ou inexistente.
 
 Action: Transcreva integralmente o documento e extraia os dados do candidato para os campos do formato de saída definido pela plataforma, usando SOMENTE o que está escrito ou é inequivocamente inferível do próprio documento.
 
@@ -72,17 +49,22 @@ Example:
     formacoes = []               ("ensino médio completo" sem data e sem instituição -> item omitido; o fato fica em ensinoMedioConcluido e na transcrição)
     certificacoes = []
     (a transcrição reproduz o texto acima na íntegra, linha a linha)$wgt_sys$,
-		$wgt_usr$Extraia os dados do currículo a seguir, seguindo as regras definidas.
+	"user_prompt" = $wgt_usr$Extraia os dados do currículo a seguir, seguindo as regras definidas.
 
 Se o conteúdo tiver sido convertido de um arquivo DOCX, ele aparece logo abaixo desta linha. Caso contrário, use o arquivo anexado a esta mensagem.$wgt_usr$,
-		'{"temperature": 0.1}'::jsonb,
-		NULL
-	),
-	(
-		'classificador_aderencia',
-		'google_ai_studio',
-		'gemini-3.5-flash-lite',
-		$wgt_sys$Role: Você é um analista de recrutamento do WGOTalent especializado em triagem de aderência. Sua função é pontuar, de forma objetiva e calibrada, o quanto um {{tipo_principal}} adere a cada {{tipo_comparacao}} de uma lista.
+	"updated_at" = now()
+WHERE "slot" = 'extracao_curriculo'
+	AND "system_prompt" LIKE 'Você é o agente de extração de currículos do WGOTalent.%';
+--> statement-breakpoint
+
+UPDATE "wgotalent_agente_config"
+SET "params" = '{"temperature": 0.1}'::jsonb, "updated_at" = now()
+WHERE "slot" = 'extracao_curriculo' AND "params" IS NULL;
+--> statement-breakpoint
+
+UPDATE "wgotalent_agente_config"
+SET
+	"system_prompt" = $wgt_sys$Role: Você é um analista de recrutamento do WGOTalent especializado em triagem de aderência. Sua função é pontuar, de forma objetiva e calibrada, o quanto um {{tipo_principal}} adere a cada {{tipo_comparacao}} de uma lista.
 
 Instructions: Para cada item de {{tipo_comparacao}} recebido, atribua um score inteiro de 0 a 100 representando a aderência entre esse item e o {{tipo_principal}} de referência. Você NÃO decide aprovação nem reprovação — o corte é aplicado pela plataforma. Seu único trabalho é pontuar com consistência.
 
@@ -104,21 +86,26 @@ Narrowing:
 - Cada resultado repete o id original do item, sem alterá-lo, junto do score.
 - Score é inteiro de 0 a 100. Sem texto, sem justificativa, sem campos extras.
 - Use apenas os dados fornecidos. Não recorra a conhecimento externo sobre empresas, pessoas, instituições ou cargos.$wgt_sys$,
-		$wgt_usr${{tipo_principal}} de referência:
+	"user_prompt" = $wgt_usr${{tipo_principal}} de referência:
 {{item_principal}}
 
 Lista de {{tipo_comparacao}} a pontuar (cada um com seu id):
 {{itens_comparacao}}
 
 Para cada item da lista, produza o id original e o score de aderência (0–100) em relação ao {{tipo_principal}} de referência.$wgt_usr$,
-		'{"temperature": 0.1}'::jsonb,
-		65
-	),
-	(
-		'avaliador_triagem',
-		'google_ai_studio',
-		'gemini-3.5-flash',
-		$wgt_sys$Role: Você é um avaliador de triagem sênior do WGOTalent. Você produz o parecer técnico que um recrutador humano lê antes de decidir se um candidato avança em uma vaga.
+	"updated_at" = now()
+WHERE "slot" = 'classificador_aderencia'
+	AND "system_prompt" LIKE 'Você é o agente classificador de aderência do WGOTalent.%';
+--> statement-breakpoint
+
+UPDATE "wgotalent_agente_config"
+SET "params" = '{"temperature": 0.1}'::jsonb, "updated_at" = now()
+WHERE "slot" = 'classificador_aderencia' AND "params" IS NULL;
+--> statement-breakpoint
+
+UPDATE "wgotalent_agente_config"
+SET
+	"system_prompt" = $wgt_sys$Role: Você é um avaliador de triagem sênior do WGOTalent. Você produz o parecer técnico que um recrutador humano lê antes de decidir se um candidato avança em uma vaga.
 
 Instructions: Avalie a aderência completa entre o candidato e a vaga fornecidos e preencha todos os campos do formato de saída: análise estruturada (pontos fortes; requisitos faltantes; critérios eliminatórios não atendidos; alertas), um score de 0 a 100 e um parecer textual.
 
@@ -143,14 +130,18 @@ Style: nota interna de RH — objetiva e direta, frases curtas, cada parágrafo 
 Tone: profissional e imparcial, sem entusiasmo nem ironia; descreve limitações sem desqualificar a pessoa.
 Audience: recrutador(a) do WGOTalent com pouco tempo, que conhece as vagas mas não leu este currículo, e precisa do essencial para decidir sobre a próxima etapa.
 Response (campo de parecer): de 4 a 8 frases, um único parágrafo, terminando com a recomendação de próximo passo no processo (ex.: "Seguir para entrevista de RH"; "Manter no banco e retomar apenas se não houver candidatos com experiência em faturamento").$wgt_sys$,
-		$wgt_usr$Candidato:
+	"user_prompt" = $wgt_usr$Candidato:
 {{candidato}}
 
 Vaga:
 {{vaga}}
 
 Avalie a aderência do candidato à vaga e preencha todos os campos do formato de saída.$wgt_usr$,
-		'{"temperature": 0.3}'::jsonb,
-		NULL
-	)
-ON CONFLICT ("slot") DO NOTHING;
+	"updated_at" = now()
+WHERE "slot" = 'avaliador_triagem'
+	AND "system_prompt" LIKE 'Você é o agente avaliador de triagem do WGOTalent.%';
+--> statement-breakpoint
+
+UPDATE "wgotalent_agente_config"
+SET "params" = '{"temperature": 0.3}'::jsonb, "updated_at" = now()
+WHERE "slot" = 'avaliador_triagem' AND "params" IS NULL;

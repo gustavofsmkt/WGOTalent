@@ -148,6 +148,13 @@
       "when": 1787773548910,
       "tag": "0020_create_cidade",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1787773548911,
+      "tag": "0021_seed_prompts_otimizados",
+      "breakpoints": true
     }
   ]
 }
