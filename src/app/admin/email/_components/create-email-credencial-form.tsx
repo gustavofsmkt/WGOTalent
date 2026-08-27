@@ -22,7 +22,7 @@ import {
   FieldError,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 
 function tresMesesAtras(): string {
@@ -47,17 +47,13 @@ export function CreateEmailCredencialForm() {
     onSubmit: ({ value }) => {
       const req = createEmailCredencial(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: "Salvando credencial de e-mail...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a credencial.");
+        success: "Credencial de e-mail salva com sucesso!",
+        onSuccess: () => {
           form.reset();
           router.refresh();
-          return "Credencial de e-mail salva com sucesso!";
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

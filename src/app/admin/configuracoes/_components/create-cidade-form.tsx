@@ -11,7 +11,7 @@ import {
   CardContent,
   CardFooter,
 } from "~/components/ui/card";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 
 export function CreateCidadeForm() {
@@ -23,17 +23,13 @@ export function CreateCidadeForm() {
     onSubmit: ({ value }) => {
       const req = createCidade(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: "Salvando cidade...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a cidade.");
+        success: "Cidade adicionada com sucesso!",
+        onSuccess: () => {
           form.reset();
           router.refresh();
-          return "Cidade adicionada com sucesso!";
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

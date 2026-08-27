@@ -23,7 +23,7 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import {
   LLM_PROVIDERS,
@@ -62,17 +62,13 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
     onSubmit: ({ value }) => {
       const req = updateAgenteConfig(agenteConfig.slot, value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: "Salvando configuração do agente...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a configuração.");
+        success: "Configuração salva com sucesso!",
+        onSuccess: () => {
           router.push("/admin");
           router.refresh();
-          return "Configuração salva com sucesso!";
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

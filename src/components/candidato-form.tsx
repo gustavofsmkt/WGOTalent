@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { cn } from "~/lib/utils";
 import { createCandidato, updateCandidato } from "~/actions/candidatos";
 
@@ -1729,22 +1729,16 @@ export function CandidatoBaseForm({
           ? updateCandidato(candidato.id, formData)
           : createCandidato(formData);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: isEdit ? "Atualizando candidato..." : "Cadastrando candidato...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar o candidato.");
-          if (result.data) {
-            if (onSuccess) onSuccess(result.data);
-            else if (redirectTo) router.push(redirectTo);
-            else router.push("/candidatos");
-          }
-          return isEdit
-            ? "Candidato atualizado com sucesso!"
-            : "Candidato cadastrado com sucesso!";
+        success: isEdit
+          ? "Candidato atualizado com sucesso!"
+          : "Candidato cadastrado com sucesso!",
+        onSuccess: ({ data }) => {
+          if (onSuccess) onSuccess(data!);
+          else if (redirectTo) router.push(redirectTo);
+          else router.push("/candidatos");
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

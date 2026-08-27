@@ -23,7 +23,7 @@ import {
   CardContent,
   CardFooter,
 } from "~/components/ui/card";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import { cn } from "~/lib/utils";
 
@@ -85,20 +85,14 @@ export function TriagemForm({
 
       const req = createTriagem(payload);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: "Criando triagem...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a triagem.");
-          if (result.data) {
-            if (onSuccess) onSuccess(result.data);
-            else if (redirectTo) router.push(redirectTo);
-            else router.push("/triagens");
-          }
-          return "Triagem criada com sucesso!";
+        success: "Triagem criada com sucesso!",
+        onSuccess: ({ data }) => {
+          if (onSuccess) onSuccess(data!);
+          else if (redirectTo) router.push(redirectTo);
+          else router.push("/triagens");
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

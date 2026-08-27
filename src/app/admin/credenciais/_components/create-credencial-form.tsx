@@ -14,7 +14,7 @@ import {
   CardContent,
   CardFooter,
 } from "~/components/ui/card";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import { LLM_PROVIDERS } from "~/lib/agents/provider-catalog";
 
@@ -29,17 +29,13 @@ export function CreateCredencialForm() {
     onSubmit: ({ value }) => {
       const req = createCredencial(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: "Salvando credencial...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a credencial.");
+        success: "Credencial salva com sucesso!",
+        onSuccess: () => {
           form.reset();
           router.refresh();
-          return "Credencial salva com sucesso!";
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

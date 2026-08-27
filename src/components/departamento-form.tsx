@@ -19,7 +19,7 @@ import {
   CardFooter,
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import { cn } from "~/lib/utils";
 
@@ -59,24 +59,18 @@ export function DepartamentoForm({
           ? updateDepartamento(departamento.id, value)
           : createDepartamento(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: isEdit
           ? "Atualizando departamento..."
           : "Cadastrando departamento...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar o departamento.");
-          if (result.data) {
-            if (onSuccess) onSuccess(result.data);
-            else if (redirectTo) router.push(redirectTo);
-            else router.push("/departamentos");
-          }
-          return isEdit
-            ? "Departamento atualizado com sucesso!"
-            : "Departamento cadastrado com sucesso!";
+        success: isEdit
+          ? "Departamento atualizado com sucesso!"
+          : "Departamento cadastrado com sucesso!",
+        onSuccess: ({ data }) => {
+          if (onSuccess) onSuccess(data!);
+          else if (redirectTo) router.push(redirectTo);
+          else router.push("/departamentos");
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

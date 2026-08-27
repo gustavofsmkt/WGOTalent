@@ -13,7 +13,7 @@ import {
   CardFooter,
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import { cn } from "~/lib/utils";
 
@@ -74,22 +74,14 @@ export function CargoForm({
           ? updateCargo(cargo.id, value)
           : createCargo(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: isEdit ? "Atualizando cargo..." : "Cadastrando cargo...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar o cargo.");
-          if (result.data) {
-            if (onSuccess) onSuccess(result.data);
-            else if (redirectTo) router.push(redirectTo);
-            else router.push("/cargos");
-          }
-          return isEdit
-            ? "Cargo atualizado com sucesso!"
-            : "Cargo cadastrado com sucesso!";
+        success: isEdit ? "Cargo atualizado com sucesso!" : "Cargo cadastrado com sucesso!",
+        onSuccess: ({ data }) => {
+          if (onSuccess) onSuccess(data!);
+          else if (redirectTo) router.push(redirectTo);
+          else router.push("/cargos");
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });

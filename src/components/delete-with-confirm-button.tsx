@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, AlertTriangle } from "lucide-react";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
@@ -31,21 +31,16 @@ export function DeleteWithConfirmButton({
 
   const handleDelete = () => {
     setIsConfirming(false);
-    toast.promise(onDelete(), {
+    toastActionPromise(onDelete(), {
       loading: "Excluindo...",
-      success: (result) => {
-        if (!result.success) {
-          throw new Error(result.message ?? "Erro ao excluir.");
-        }
+      success: ({ message }) => message ?? "Excluído com sucesso.",
+      onSuccess: () => {
         if (redirectTo) {
           router.push(redirectTo);
         } else {
           router.refresh();
         }
-        return result.message ?? "Excluído com sucesso.";
       },
-      error: (err: unknown) =>
-        err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
     });
   };
 

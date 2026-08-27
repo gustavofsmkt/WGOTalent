@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { toast } from "~/components/ui/toast";
+import { toastActionPromise } from "~/lib/toast-promise";
 import { cn } from "~/lib/utils";
 
 export interface CargoOption {
@@ -109,22 +109,14 @@ export function VagaForm({
           ? updateVaga(vaga.id, value)
           : createVaga(value);
 
-      toast.promise(req, {
+      toastActionPromise(req, {
         loading: isEdit ? "Atualizando vaga..." : "Cadastrando vaga...",
-        success: (result) => {
-          if (!result.success)
-            throw new Error(result.message ?? "Erro ao salvar a vaga.");
-          if (result.data) {
-            if (onSuccess) onSuccess(result.data);
-            else if (redirectTo) router.push(redirectTo);
-            else router.push("/vagas");
-          }
-          return isEdit
-            ? "Vaga atualizada com sucesso!"
-            : "Vaga cadastrada com sucesso!";
+        success: isEdit ? "Vaga atualizada com sucesso!" : "Vaga cadastrada com sucesso!",
+        onSuccess: ({ data }) => {
+          if (onSuccess) onSuccess(data!);
+          else if (redirectTo) router.push(redirectTo);
+          else router.push("/vagas");
         },
-        error: (err: unknown) =>
-          err instanceof Error ? err.message : "Ocorreu um erro inesperado.",
       });
     },
   });
