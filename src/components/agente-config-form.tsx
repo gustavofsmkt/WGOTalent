@@ -15,13 +15,6 @@ import {
   CardContent,
   CardFooter,
 } from "~/components/ui/card";
-import {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-} from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
@@ -49,7 +42,8 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
   // A extração envia PDF/imagem multimodal — só oferece provedores capazes disso.
   const providerOptions = LLM_PROVIDERS.filter(
     (p) =>
-      agenteConfig.slot !== "extracao_curriculo" || p.capabilities.multimodalPdf,
+      agenteConfig.slot !== "extracao_curriculo" ||
+      p.capabilities.multimodalPdf,
   ).map((p) => ({ value: p.value, label: p.label }));
 
   const form = useAppForm({
@@ -135,9 +129,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
           </form.Subscribe>
 
           <form.AppField name="systemPrompt">
-            {(field) => (
-              <field.TextAreaField label="System Prompt" rows={6} />
-            )}
+            {(field) => <field.TextAreaField label="System Prompt" rows={6} />}
           </form.AppField>
 
           <form.AppField name="userPrompt">
@@ -151,41 +143,23 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
           </form.AppField>
 
           {agenteConfig.slot === "classificador_aderencia" && (
-            <form.Field name="thresholdScore">
-              {(field) => {
-                const hasErrors =
-                  field.state.meta.isTouched &&
-                  field.state.meta.errors.length > 0;
-                return (
-                  <Field data-invalid={hasErrors}>
-                    <FieldLabel htmlFor="agente-threshold">
-                      Threshold de aprovação (0–100)
-                    </FieldLabel>
-                    <Input
-                      id="agente-threshold"
-                      name={field.name}
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={field.state.value ?? ""}
-                      onBlur={field.handleBlur}
-                      onChange={(e) =>
-                        field.handleChange(
-                          e.target.value === ""
-                            ? null
-                            : Number(e.target.value),
-                        )
-                      }
-                      aria-invalid={hasErrors}
-                    />
-                    <FieldDescription>
-                      Pares com score abaixo deste valor não viram Triagem.
-                    </FieldDescription>
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                );
-              }}
-            </form.Field>
+            <form.AppField name="thresholdScore">
+              {(field) => (
+                <field.InputField
+                  type="number"
+                  label="Threshold de aprovação (0–100)"
+                  description="Pares com score abaixo deste valor não viram Triagem."
+                  min={0}
+                  max={100}
+                  step={5}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value === "" ? null : Number(e.target.value),
+                    )
+                  }
+                />
+              )}
+            </form.AppField>
           )}
 
           <form.AppField name="ativo">

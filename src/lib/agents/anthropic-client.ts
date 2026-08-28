@@ -104,9 +104,7 @@ async function tentarGerarResposta<T>(
         model: input.model,
         max_tokens: DEFAULT_MAX_TOKENS,
         system: input.systemPrompt,
-        messages: [
-          { role: "user", content: montarBlocosUsuario(input) },
-        ],
+        messages: [{ role: "user", content: montarBlocosUsuario(input) }],
         tools: [
           {
             name: TOOL_NAME,

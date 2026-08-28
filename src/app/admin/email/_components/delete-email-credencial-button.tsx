@@ -7,7 +7,9 @@ interface DeleteEmailCredencialButtonProps {
   credencialId: string;
 }
 
-export function DeleteEmailCredencialButton({ credencialId }: DeleteEmailCredencialButtonProps) {
+export function DeleteEmailCredencialButton({
+  credencialId,
+}: DeleteEmailCredencialButtonProps) {
   return (
     <DeleteWithConfirmButton
       onDelete={() => deleteEmailCredencial(credencialId)}

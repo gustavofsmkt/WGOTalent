@@ -77,7 +77,10 @@ export function CreateCidadeForm() {
                     label="UF"
                     required
                     placeholder="UF..."
-                    options={BRAZILIAN_UFS.map((uf) => ({ value: uf, label: uf }))}
+                    options={BRAZILIAN_UFS.map((uf) => ({
+                      value: uf,
+                      label: uf,
+                    }))}
                   />
                 )}
               </form.AppField>

@@ -70,13 +70,13 @@ export function CargoForm({
     },
     onSubmit: ({ value }) => {
       const req =
-        isEdit && cargo?.id
-          ? updateCargo(cargo.id, value)
-          : createCargo(value);
+        isEdit && cargo?.id ? updateCargo(cargo.id, value) : createCargo(value);
 
       toastActionPromise(req, {
         loading: isEdit ? "Atualizando cargo..." : "Cadastrando cargo...",
-        success: isEdit ? "Cargo atualizado com sucesso!" : "Cargo cadastrado com sucesso!",
+        success: isEdit
+          ? "Cargo atualizado com sucesso!"
+          : "Cargo cadastrado com sucesso!",
         onSuccess: ({ data }) => {
           if (onSuccess) onSuccess(data!);
           else if (redirectTo) router.push(redirectTo);

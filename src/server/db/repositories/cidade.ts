@@ -8,16 +8,13 @@ export type DbOrTx = typeof db | Tx;
 
 export const cidadeRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Cidade[]> => {
-    return notDeleted(
-      dbOrTx.select().from(cidades),
-      cidades,
-    ).orderBy(asc(cidades.uf), asc(cidades.nome));
+    return notDeleted(dbOrTx.select().from(cidades), cidades).orderBy(
+      asc(cidades.uf),
+      asc(cidades.nome),
+    );
   },
 
-  findById: async (
-    id: string,
-    dbOrTx: DbOrTx = db,
-  ): Promise<Cidade | null> => {
+  findById: async (id: string, dbOrTx: DbOrTx = db): Promise<Cidade | null> => {
     const rows = await notDeleted(
       dbOrTx.select().from(cidades),
       cidades,

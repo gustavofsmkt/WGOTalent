@@ -144,9 +144,7 @@ export function CreateEmailCredencialForm() {
           </FieldGroup>
 
           <form.AppField name="pasta">
-            {(field) => (
-              <field.InputField label="Pasta monitorada" />
-            )}
+            {(field) => <field.InputField label="Pasta monitorada" />}
           </form.AppField>
 
           {/* capturarDesde kept as raw field — description contains JSX */}

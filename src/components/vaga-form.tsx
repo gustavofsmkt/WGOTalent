@@ -105,13 +105,13 @@ export function VagaForm({
     },
     onSubmit: ({ value }) => {
       const req =
-        isEdit && vaga?.id
-          ? updateVaga(vaga.id, value)
-          : createVaga(value);
+        isEdit && vaga?.id ? updateVaga(vaga.id, value) : createVaga(value);
 
       toastActionPromise(req, {
         loading: isEdit ? "Atualizando vaga..." : "Cadastrando vaga...",
-        success: isEdit ? "Vaga atualizada com sucesso!" : "Vaga cadastrada com sucesso!",
+        success: isEdit
+          ? "Vaga atualizada com sucesso!"
+          : "Vaga cadastrada com sucesso!",
         onSuccess: ({ data }) => {
           if (onSuccess) onSuccess(data!);
           else if (redirectTo) router.push(redirectTo);

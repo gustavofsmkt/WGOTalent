@@ -71,7 +71,9 @@ export function getModelsForProvider(provider: string): ModelOption[] {
   return LLM_PROVIDERS.find((p) => p.value === provider)?.models ?? [];
 }
 
-export function getProviderCapabilities(provider: string): ProviderCapabilities {
+export function getProviderCapabilities(
+  provider: string,
+): ProviderCapabilities {
   return (
     LLM_PROVIDERS.find((p) => p.value === provider)?.capabilities ?? {
       multimodalPdf: false,
