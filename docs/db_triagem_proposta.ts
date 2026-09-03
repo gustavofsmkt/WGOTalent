@@ -53,6 +53,7 @@ export interface Vaga {
  
   status: "aberta" | "concluida" | "cancelada" | "pausada" | "incompleta"; // renomeado de status_id (não é FK)
   posicoes_disponiveis: number;    		// SMALLINT NOT NULL DEFAULT 1, CHECK (> 0)
+  nota_corte: number;                    // NUMERIC(5,2) NOT NULL DEFAULT 65, CHECK (0 <= nota_corte <= 100)
  
   cargo_id: string;             		// uuid, FK -> Cargo.id, NOT NULL, INDEXED
   remuneracao_oferecida: number | null; // NUMERIC(10,2)

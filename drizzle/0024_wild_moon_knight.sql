@@ -1,0 +1,1 @@
+ALTER TABLE "wgotalent_candidatos" ADD COLUMN "observacoes_rh" text;

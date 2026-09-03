@@ -467,6 +467,24 @@ export async function limparUploadLoteFinalizados(): Promise<void> {
   await uploadLoteItemRepository.softDeleteFinalizados();
 }
 
+export async function updateObservacoesRhCandidato(
+  candidatoId: string,
+  observacoesRh: string | null,
+): Promise<ActionState<void>> {
+  try {
+    const existing = await candidatoRepository.findById(candidatoId);
+    if (!existing) {
+      return { success: false, message: "Candidato não encontrado." };
+    }
+    await candidatoRepository.updateObservacoesRh(candidatoId, observacoesRh);
+    revalidatePath(`/candidatos/${candidatoId}`);
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("[updateObservacoesRhCandidato] Erro:", error);
+    return { success: false, message: "Erro ao salvar observações." };
+  }
+}
+
 export async function deleteCandidato(id: string): Promise<ActionState<void>> {
   try {
     const existingCandidato = await candidatoRepository.findById(id);

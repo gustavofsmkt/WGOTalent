@@ -17,6 +17,7 @@ import { buttonVariants } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
 import { TriagemDetailEditor } from "./_components/triagem-detail-editor";
+import { CandidatoObservacoesCard } from "./_components/candidato-observacoes-card";
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +133,12 @@ export default async function TriagemDetailPage({
               </Link>
             </CardContent>
           </Card>
+
+          {/* Observações do RH */}
+          <CandidatoObservacoesCard
+            candidatoId={triagem.candidato.id}
+            initialValue={triagem.candidato.observacoesRh}
+          />
         </div>
 
         <div className="lg:col-span-7">

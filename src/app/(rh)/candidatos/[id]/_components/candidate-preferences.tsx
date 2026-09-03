@@ -8,6 +8,7 @@ import {
   Truck,
   Zap,
   FileText,
+  NotebookPen,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
@@ -114,6 +115,18 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line bg-muted/30 p-2 rounded-lg border border-border/40">
               {candidato.resumoProfissional}
+            </p>
+          </div>
+        )}
+
+        {candidato.observacoesRh && (
+          <div className="pt-2 border-t border-border/40 space-y-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <NotebookPen className="size-3.5 text-muted-foreground/70" />
+              Observações do RH
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line bg-muted/30 p-2 rounded-lg border border-border/40">
+              {candidato.observacoesRh}
             </p>
           </div>
         )}

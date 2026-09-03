@@ -162,6 +162,20 @@
       "when": 1788400075076,
       "tag": "0022_drop_agente_config_params",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788454888483,
+      "tag": "0023_move_nota_corte_to_vagas",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788455198926,
+      "tag": "0024_wild_moon_knight",
+      "breakpoints": true
     }
   ]
 }

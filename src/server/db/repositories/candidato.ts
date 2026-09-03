@@ -78,6 +78,7 @@ const CAMPOS_TEXTO_ADITIVOS: CandidatoScalarKey[] = [
   "curriculoArquivoKey",
   "textoCurriculoExtraido",
   "dadosPendentes",
+  "observacoesRh",
 ];
 
 /**
@@ -875,6 +876,17 @@ export const candidatoRepository = {
     await dbOrTx
       .update(candidatos)
       .set({ emBancoTalentos: false })
+      .where(eq(candidatos.id, id));
+  },
+
+  updateObservacoesRh: async (
+    id: string,
+    observacoesRh: string | null,
+    dbOrTx: DbOrTx = db,
+  ): Promise<void> => {
+    await dbOrTx
+      .update(candidatos)
+      .set({ observacoesRh, updatedAt: new Date().toISOString() })
       .where(eq(candidatos.id, id));
   },
 };

@@ -137,6 +137,9 @@ export const vagas = createTable(
     id: uuid("id").primaryKey().defaultRandom(),
     status: statusVagaEnum("status").default("aberta").notNull(),
     posicoesDisponiveis: smallint("posicoes_disponiveis").default(1).notNull(),
+    notaCorte: numeric("nota_corte", { precision: 5, scale: 2 })
+      .default("65.00")
+      .notNull(),
     cargoId: uuid("cargo_id")
       .notNull()
       .references(() => cargos.id),
@@ -153,6 +156,10 @@ export const vagas = createTable(
     check(
       "vagas_posicoes_disponiveis_check",
       sql`${table.posicoesDisponiveis} > 0`,
+    ),
+    check(
+      "vagas_nota_corte_check",
+      sql`${table.notaCorte} >= 0 AND ${table.notaCorte} <= 100`,
     ),
   ],
 );
@@ -206,6 +213,7 @@ export const candidatos = createTable(
     emBancoTalentos: boolean("em_banco_talentos").default(false).notNull(),
     curriculoArquivoKey: text("curriculo_arquivo_key"),
     textoCurriculoExtraido: text("texto_curriculo_extraido"),
+    observacoesRh: text("observacoes_rh"),
     ...timestamps,
   },
   (table) => [
@@ -405,7 +413,6 @@ export const agenteConfig = createTable("agente_config", {
   model: varchar("model", { length: 100 }).notNull(),
   systemPrompt: text("system_prompt").notNull(),
   userPrompt: text("user_prompt").notNull(),
-  thresholdScore: numeric("threshold_score", { precision: 5, scale: 2 }),
   ativo: boolean("ativo").default(true).notNull(),
   ...timestamps,
 });

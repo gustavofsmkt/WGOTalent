@@ -405,6 +405,19 @@ function InteressesSection({
         )}
       </form.AppField>
 
+      <form.AppField
+        name="observacoesRh"
+        validators={{ onBlur: candidatoSchema.shape.observacoesRh }}
+      >
+        {(field) => (
+          <field.TextAreaField
+            label="Observações do RH"
+            rows={3}
+            placeholder="Anotações internas do RH sobre este candidato..."
+          />
+        )}
+      </form.AppField>
+
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <form.AppField
           name="cargoInteresseId"
@@ -1028,6 +1041,7 @@ export function CandidatoBaseForm({
       linkedin: candidato?.linkedin ?? "",
       portfolio: candidato?.portfolio ?? "",
       origem: candidato?.origem ?? "manual",
+      observacoesRh: candidato?.observacoesRh ?? "",
       formacoes: candidato?.formacoes ?? [],
       experiencias: candidato?.experiencias ?? [],
       certificacoes: candidato?.certificacoes ?? [],
