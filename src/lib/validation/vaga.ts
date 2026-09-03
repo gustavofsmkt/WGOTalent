@@ -146,6 +146,49 @@ export const remuneracaoOferecidaSchema = z
   });
 
 /**
+ * Nota mínima de aderência para que um candidato seja encaminhado à triagem.
+ * Aceita número ou string numérica no formulário e persiste como numeric(5,2).
+ */
+export const notaCorteSchema = z
+  .union([
+    z.number({ invalid_type_error: "Nota de corte deve ser um número" }),
+    z.string({
+      invalid_type_error: "Nota de corte deve ser um texto ou número",
+    }),
+  ])
+  .transform((val, ctx) => {
+    const normalized =
+      typeof val === "string" ? val.trim().replace(",", ".") : val;
+
+    if (normalized === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nota de corte é obrigatória",
+      });
+      return z.NEVER;
+    }
+
+    const num =
+      typeof normalized === "number" ? normalized : Number(normalized);
+    if (Number.isNaN(num) || !Number.isFinite(num)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nota de corte deve ser um número válido",
+      });
+      return z.NEVER;
+    }
+    if (num < 0 || num > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Nota de corte deve estar entre 0 e 100",
+      });
+      return z.NEVER;
+    }
+
+    return num.toFixed(2);
+  });
+
+/**
  * Schema base para validação dos campos de Vaga.
  */
 export const vagaSchema = z
@@ -160,6 +203,7 @@ export const vagaSchema = z
       .uuid({ message: "ID do cargo inválido" }),
     status: statusVagaSchema.default("aberta"),
     posicoesDisponiveis: posicoesDisponiveisSchema.default(1),
+    notaCorte: notaCorteSchema.default("65.00"),
     remuneracaoOferecida: remuneracaoOferecidaSchema.optional(),
     cidade: z
       .string({

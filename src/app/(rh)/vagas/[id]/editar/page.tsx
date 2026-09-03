@@ -76,6 +76,7 @@ export default async function EditarVagaPage(props: EditarVagaPageProps) {
             cargoId: vaga.cargoId,
             status: vaga.status,
             posicoesDisponiveis: vaga.posicoesDisponiveis,
+            notaCorte: vaga.notaCorte,
             remuneracaoOferecida: vaga.remuneracaoOferecida,
             cidade: vaga.cidade,
             uf: vaga.uf,

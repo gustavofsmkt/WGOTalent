@@ -35,7 +35,7 @@ do próprio `Candidato`, não da `Triagem`: novo campo booleano
 
 1. **Gatilhos automáticos**, ambos dentro de `orquestrarParaCandidatoNovo`:
    - Nenhuma vaga aberta na cidade do candidato (`vagasAbertas.length === 0`).
-   - Vagas existem, mas nenhuma atinge o threshold do classificador
+   - Vagas existem, mas nenhuma atinge a nota de corte configurada na própria vaga
      (`aprovados.length === 0`).
    Em ambos os casos, `candidatoRepository.marcarBancoTalentos(candidatoId)`
    é chamado em vez do retorno silencioso anterior.

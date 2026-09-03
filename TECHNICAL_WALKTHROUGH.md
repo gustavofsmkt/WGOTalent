@@ -299,7 +299,7 @@ sequenceDiagram
     O->>DB: buscar vagas abertas na mesma cidade
     O->>C: 1 candidato x N vagas (resumos)
     C-->>O: [{id da vaga, score}] (efêmero)
-    O->>O: filtrar por threshold (config admin)
+    O->>O: filtrar pela nota de corte de cada vaga
 
     loop para cada vaga aprovada
         O->>DB: existe triagem para o par? (índice único)
@@ -327,7 +327,7 @@ implementação):
   Isso é o que faz a comparação 1×N ser barata o suficiente para rodar em
   todo cadastro novo.
 - **O LLM nunca decide aprovação.** Ele só retorna o score; a aplicação
-  compara contra o threshold configurável em `agenteConfig` e só then decide
+  compara contra a `notaCorte` configurável em cada `Vaga` e só então decide
   quais pares avançam para a fase 2 (avaliação completa) e viram uma linha em
   `triagens`.
 - **Reavaliação em edição**: editar um candidato que ainda está na etapa
@@ -337,7 +337,7 @@ implementação):
   tocadas por uma edição de cadastro.
 - **Candidato sem par aprovado vira banco de talentos automaticamente**
   (`candidatos.em_banco_talentos`, [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md)):
-  se não há vaga aberta na cidade, ou nenhuma passa no threshold da fase 1,
+  se não há vaga aberta na cidade, ou nenhuma passa na própria nota de corte da fase 1,
   `orquestrarParaCandidatoNovo` marca o candidato em vez de retornar em
   silêncio como fazia antes dessa decisão. O candidato sai do banco
   automaticamente no mesmo ponto único onde uma `Triagem` nova é de fato

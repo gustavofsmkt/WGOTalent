@@ -2201,9 +2201,9 @@ Faça commit `feat(db): add llm credentials table`.
 Leia a skill layer-db antes de editar.
 Adicione em src/server/db/schema.ts:
 - pgEnum `agente_slot` com exatamente 3 valores: "extracao_curriculo", "classificador_aderencia", "avaliador_triagem".
-- Tabela `agente_config`: id uuid PK, slot agente_slot NOT NULL UNIQUE (um registro fixo por slot, não é uma lista livre), provider varchar NOT NULL, model varchar NOT NULL, systemPrompt text NOT NULL, userPrompt text NOT NULL, params jsonb (temperature etc., pode ser null), thresholdScore numeric (só relevante para o slot classificador_aderencia; null nos outros dois, não crie tabela separada só por isso), ativo boolean default true, ...timestamps.
+- Tabela `agente_config`: id uuid PK, slot agente_slot NOT NULL UNIQUE (um registro fixo por slot, não é uma lista livre), provider varchar NOT NULL, model varchar NOT NULL, systemPrompt text NOT NULL, userPrompt text NOT NULL, params jsonb (temperature etc., pode ser null), ativo boolean default true, ...timestamps. A nota de corte pertence a `Vaga`, não à configuração do agente.
 Gere a migration com drizzle-kit generate, rode drizzle-migration-check.
-Adicione um seed (src/server/db/seed.ts) que garanta a existência dos 3 registros fixos caso não existam (idempotente — não duplique se já existir), com valores iniciais: extracao_curriculo e avaliador_triagem usando provider "google_ai_studio" / model "gemini-3.5-flash"; classificador_aderencia usando provider "google_ai_studio" / model "gemini-3.5-flash-lite" e thresholdScore 65. Prompts iniciais podem ser um texto simples placeholder documentando o papel do slot — refinamento fino de prompt é responsabilidade do admin depois, não desta task.
+Adicione um seed (src/server/db/seed.ts) que garanta a existência dos 3 registros fixos caso não existam (idempotente — não duplique se já existir), com valores iniciais: extracao_curriculo e avaliador_triagem usando provider "google_ai_studio" / model "gemini-3.5-flash"; classificador_aderencia usando provider "google_ai_studio" / model "gemini-3.5-flash-lite". Prompts iniciais podem ser um texto simples placeholder documentando o papel do slot — refinamento fino de prompt é responsabilidade do admin depois, não desta task.
 Faça commit `feat(db): add agent slot configuration table`.
 ```
 
@@ -2296,7 +2296,7 @@ Crie src/server/agents/orquestracao.ts implementando o fluxo fechado:
 1. Recebe um candidatoId novo (direção candidato→vagas) ou vagaId novo (direção vaga→candidatos).
 2. Busca o estoque oposto já existente (vagas abertas para um candidato novo; candidatos ativos para uma vaga nova).
 3. Chama classificador-aderencia.ts (TASK-142) com esse estoque como itensComparacao.
-4. Filtra os resultados pelo thresholdScore configurado em agente_config para o slot classificador_aderencia (busque o valor da config, não hardcode).
+4. Filtra cada resultado pela nota de corte configurada na vaga correspondente (campo `Vaga.notaCorte`, não hardcode).
 5. Para cada id aprovado, verifique se já existe uma triagem com esse par candidatoId+vagaId (índice único triagens_candidato_vaga_idx) antes de inserir — não duplique, não deixe o insert falhar por violação de unique sem tratar.
 6. Para cada triagem nova (não as que já existiam), chama avaliador-triagem.ts (TASK-143) e grava o resultado em avaliacao_ia via triagemRepository/repository correspondente (nunca insert Drizzle direto fora do repository).
 7. Use runWithLimit (src/lib/concurrency/run-with-limit.ts, já existe) com concorrência 3 tanto na fase 1 em chunks quanto na fase 2 por triagem — não dispare tudo de uma vez.
@@ -2333,7 +2333,7 @@ Faça commit `feat(candidates,jobs): wire real agent dispatch, remove placeholde
 
 ```text
 PRODUCT.md já decidiu o sistema operar aberto no MVP (sem autenticação) — não adicione login nem middleware de acesso aqui, isso é decisão tomada, não pendência desta task.
-Crie um novo grupo de rotas src/app/(admin)/agentes/page.tsx (Server Component, lista os 3 registros fixos de agente_config) e src/app/(admin)/agentes/[slot]/page.tsx (form de edição: model, systemPrompt, userPrompt, params, thresholdScore quando aplicável, ativo) usando TanStack Form + Server Action de update, seguindo o mesmo padrão de formulário já usado nas demais entidades (não crie um padrão de form novo).
+Crie um novo grupo de rotas src/app/(admin)/agentes/page.tsx (Server Component, lista os 3 registros fixos de agente_config) e src/app/(admin)/agentes/[slot]/page.tsx (form de edição: model, systemPrompt, userPrompt, params e ativo) usando TanStack Form + Server Action de update, seguindo o mesmo padrão de formulário já usado nas demais entidades (não crie um padrão de form novo). A nota de corte é editada no formulário da vaga.
 Não permita editar o campo slot nem criar/excluir registros — são 3 linhas fixas, só edição.
 Documente no próprio form, de forma visível, o catálogo de variáveis disponíveis para o template de cada slot (ex.: extracao_curriculo não tem variáveis de contexto; classificador_aderencia tem tipo_principal/tipo_comparacao/item_principal/itens_comparacao; avaliador_triagem tem os dados de CandidatoCompleto/VagaCompleta) para o admin não escrever `{{variavel}}` que não existe.
 Faça commit `feat(admin): add agent configuration screens`.

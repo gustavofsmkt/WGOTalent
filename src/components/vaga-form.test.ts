@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   vagaSchema,
-  createVagaSchema,
-  updateVagaSchema,
   posicoesDisponiveisSchema,
+  notaCorteSchema,
   remuneracaoOferecidaSchema,
   statusVagaSchema,
   STATUS_VAGA_VALUES,
@@ -18,6 +17,7 @@ describe("VagaForm - Validation Integration", () => {
       cargoId: validCargoId,
       status: "aberta" as const,
       posicoesDisponiveis: 2,
+      notaCorte: "75",
       remuneracaoOferecida: "6500.00",
       cidade: "São Paulo",
       uf: "SP",
@@ -29,6 +29,7 @@ describe("VagaForm - Validation Integration", () => {
       expect(result.data.cargoId).toBe(validCargoId);
       expect(result.data.status).toBe("aberta");
       expect(result.data.posicoesDisponiveis).toBe(2);
+      expect(result.data.notaCorte).toBe("75.00");
       expect(result.data.remuneracaoOferecida).toBe("6500.00");
       expect(result.data.cidade).toBe("São Paulo");
       expect(result.data.uf).toBe("SP");
@@ -106,6 +107,12 @@ describe("VagaForm - Validation Integration", () => {
 
     const negative = remuneracaoOferecidaSchema.safeParse("-500");
     expect(negative.success).toBe(false);
+  });
+
+  it("validates onBlur field schema for 'notaCorte'", () => {
+    expect(notaCorteSchema.parse("65")).toBe("65.00");
+    expect(notaCorteSchema.safeParse(-1).success).toBe(false);
+    expect(notaCorteSchema.safeParse(101).success).toBe(false);
   });
 
   it("validates onBlur field schema for 'cidade'", () => {

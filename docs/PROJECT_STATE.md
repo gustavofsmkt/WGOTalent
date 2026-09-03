@@ -32,6 +32,7 @@ A arquitetura é focada em convenções estritas do **Next.js App Router**:
 
 ## Triagem de IA
 Triagem de IA executada nativamente pela plataforma via motor de agentes configurável (ver ADR-0007); detalhamento completo vem com o roteiro da nova Fase 14.
+A nota de corte do Classificador de Aderência é configurada individualmente em cada vaga (ver ADR-0014).
 
 ## Links de Referência
 - [Spec: Modelo de Dados & SQL Types](db_triagem_proposta.ts)

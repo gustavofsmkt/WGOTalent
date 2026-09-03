@@ -1,7 +1,6 @@
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { triagemRepository } from "~/server/db/repositories/triagem";
-import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import {
   executarClassificadorAderencia,
@@ -10,13 +9,6 @@ import {
 import { executarAvaliadorTriagem } from "./avaliador-triagem";
 
 const CONCORRENCIA_FASE2 = 3;
-
-async function getThreshold(): Promise<number> {
-  const config = await agenteConfigRepository.findBySlot(
-    "classificador_aderencia",
-  );
-  return config?.thresholdScore ? Number(config.thresholdScore) : 65;
-}
 
 /** Cria a triagem (se ainda não existir para o par) e roda a fase 2, gravando avaliacao_ia. */
 async function processarParAprovado(
@@ -61,7 +53,6 @@ export async function orquestrarParaCandidatoNovo(
     resumo: `${v.cargo.titulo} (${v.cargo.departamento.nome}). Requisitos: ${v.cargo.requisitos}. Desejáveis: ${v.cargo.requisitosDesejaveis}. Eliminatórios: ${v.cargo.criteriosEliminatorios}`,
   }));
 
-  const threshold = await getThreshold();
   const resultado = await executarClassificadorAderencia(
     { id: candidato.id, resumo: candidato.resumoProfissional },
     itensComparacao,
@@ -79,7 +70,11 @@ export async function orquestrarParaCandidatoNovo(
     return;
   }
 
-  const aprovados = resultado.scores.filter((s) => s.score >= threshold);
+  const vagasPorId = new Map(vagasAbertas.map((vaga) => [vaga.id, vaga]));
+  const aprovados = resultado.scores.filter((score) => {
+    const vaga = vagasPorId.get(score.id);
+    return vaga ? score.score >= Number(vaga.notaCorte) : false;
+  });
 
   if (aprovados.length === 0) {
     // Vagas abertas existem, mas nenhuma passou no threshold de aderência:
@@ -109,7 +104,6 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
 
   const resumoVaga = `${vaga.cargo.titulo} (${vaga.cargo.departamento.nome}). Requisitos: ${vaga.cargo.requisitos}. Desejáveis: ${vaga.cargo.requisitosDesejaveis}. Eliminatórios: ${vaga.cargo.criteriosEliminatorios}`;
 
-  const threshold = await getThreshold();
   const resultado = await executarClassificadorAderencia(
     { id: vaga.id, resumo: resumoVaga },
     itensComparacao,
@@ -124,7 +118,9 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
     return;
   }
 
-  const aprovados = resultado.scores.filter((s) => s.score >= threshold);
+  const aprovados = resultado.scores.filter(
+    (score) => score.score >= Number(vaga.notaCorte),
+  );
 
   await runWithLimit(aprovados, CONCORRENCIA_FASE2, (item) =>
     processarParAprovado(item.id, vaga.id),

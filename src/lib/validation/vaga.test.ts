@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   createVagaSchema,
+  notaCorteSchema,
   posicoesDisponiveisSchema,
   remuneracaoOferecidaSchema,
   statusVagaSchema,
   updateVagaSchema,
-  vagaSchema,
 } from "~/lib/validation/vaga";
 
 const VALID_CARGO_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -14,6 +14,7 @@ const validVagaPayload = {
   cargoId: VALID_CARGO_ID,
   status: "aberta" as const,
   posicoesDisponiveis: 3,
+  notaCorte: "72.50",
   remuneracaoOferecida: "4500.00",
   cidade: "São Paulo",
   uf: "SP",
@@ -191,6 +192,22 @@ describe("vaga validation schemas", () => {
     });
   });
 
+  describe("notaCorteSchema", () => {
+    it("accepts scores between 0 and 100 and normalizes two decimals", () => {
+      expect(notaCorteSchema.parse(0)).toBe("0.00");
+      expect(notaCorteSchema.parse("65")).toBe("65.00");
+      expect(notaCorteSchema.parse("72,5")).toBe("72.50");
+      expect(notaCorteSchema.parse(100)).toBe("100.00");
+    });
+
+    it("rejects empty, non-numeric and out-of-range scores", () => {
+      expect(notaCorteSchema.safeParse("").success).toBe(false);
+      expect(notaCorteSchema.safeParse("abc").success).toBe(false);
+      expect(notaCorteSchema.safeParse(-0.01).success).toBe(false);
+      expect(notaCorteSchema.safeParse(100.01).success).toBe(false);
+    });
+  });
+
   describe("vagaSchema and createVagaSchema", () => {
     it("validates and parses a full valid vaga payload", () => {
       const parsed = createVagaSchema.parse(validVagaPayload);
@@ -198,13 +215,14 @@ describe("vaga validation schemas", () => {
         cargoId: VALID_CARGO_ID,
         status: "aberta",
         posicoesDisponiveis: 3,
+        notaCorte: "72.50",
         remuneracaoOferecida: "4500.00",
         cidade: "São Paulo",
         uf: "SP",
       });
     });
 
-    it("applies defaults for status ('aberta') and posicoesDisponiveis (1)", () => {
+    it("applies defaults for status, positions and cutoff score", () => {
       const minimalPayload = {
         cargoId: VALID_CARGO_ID,
         cidade: "Rio de Janeiro",
@@ -216,6 +234,7 @@ describe("vaga validation schemas", () => {
         cargoId: VALID_CARGO_ID,
         status: "aberta",
         posicoesDisponiveis: 1,
+        notaCorte: "65.00",
         remuneracaoOferecida: undefined,
         cidade: "Rio de Janeiro",
         uf: "RJ",
@@ -313,6 +332,9 @@ describe("vaga validation schemas", () => {
       const updateRemuneracao = { remuneracaoOferecida: "6000.00" };
       const parsedRemuneracao = updateVagaSchema.parse(updateRemuneracao);
       expect(parsedRemuneracao).toEqual({ remuneracaoOferecida: "6000.00" });
+
+      const parsedNotaCorte = updateVagaSchema.parse({ notaCorte: "80" });
+      expect(parsedNotaCorte).toEqual({ notaCorte: "80.00" });
     });
 
     it("allows updating multiple fields partially", () => {

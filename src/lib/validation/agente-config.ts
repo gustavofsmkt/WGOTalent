@@ -11,12 +11,6 @@ export const agenteConfigUpdateSchema = z
     model: nonEmptyString("O modelo é obrigatório").max(100),
     systemPrompt: nonEmptyString("O system prompt é obrigatório"),
     userPrompt: nonEmptyString("O user prompt é obrigatório"),
-    thresholdScore: z
-      .number()
-      .min(0, "O threshold deve ser entre 0 e 100")
-      .max(100, "O threshold deve ser entre 0 e 100")
-      .optional()
-      .nullable(),
     ativo: z.boolean(),
   })
   .superRefine((val, ctx) => {

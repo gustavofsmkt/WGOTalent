@@ -33,7 +33,6 @@ vi.mock("~/server/db", () => ({
 import { createVaga, updateVaga, deleteVaga } from "./vagas";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { cargoRepository } from "~/server/db/repositories/cargo";
-import { db } from "~/server/db";
 import { revalidatePath } from "next/cache";
 import type { Vaga } from "~/server/db/schema";
 
@@ -51,6 +50,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "aberta" as const,
         posicoesDisponiveis: 2,
+        notaCorte: "75.00",
         remuneracaoOferecida: "5000.00",
         cidade: "São Paulo",
         uf: "SP" as const,
@@ -85,6 +85,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "aberta",
         posicoesDisponiveis: 2,
+        notaCorte: 75,
         remuneracaoOferecida: "5000.00",
         cidade: "São Paulo",
         uf: "SP",
@@ -96,6 +97,9 @@ describe("vagas server actions", () => {
         expect(result.data.status).toBe("aberta");
       }
       expect(vagaRepository.create).toHaveBeenCalled();
+      expect(vagaRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ notaCorte: "75.00" }),
+      );
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
     });
 
@@ -105,6 +109,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "pausada" as const,
         posicoesDisponiveis: 1,
+        notaCorte: "65.00",
         remuneracaoOferecida: null,
         cidade: "Curitiba",
         uf: "PR" as const,
@@ -258,6 +263,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "concluida" as const,
         posicoesDisponiveis: 3,
+        notaCorte: "80.00",
         remuneracaoOferecida: "6000.00",
         cidade: "São Paulo",
         uf: "SP" as const,
@@ -273,6 +279,7 @@ describe("vagas server actions", () => {
       const result = await updateVaga("vaga-1", {
         status: "concluida",
         posicoesDisponiveis: 3,
+        notaCorte: 80,
       });
 
       expect(result.success).toBe(true);
@@ -282,6 +289,10 @@ describe("vagas server actions", () => {
       }
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
       expect(revalidatePath).toHaveBeenCalledWith("/vagas/vaga-1");
+      expect(vagaRepository.update).toHaveBeenCalledWith(
+        "vaga-1",
+        expect.objectContaining({ notaCorte: "80.00" }),
+      );
     });
 
     it("validates cargo is active when updating cargoId", async () => {
@@ -338,6 +349,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "aberta" as const,
         posicoesDisponiveis: 1,
+        notaCorte: "65.00",
         remuneracaoOferecida: null,
         cidade: "São Paulo",
         uf: "SP" as const,

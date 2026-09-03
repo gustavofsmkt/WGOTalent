@@ -5,7 +5,6 @@ const {
   findOpenByCidadeMock,
   findByIdWithCargoAndDepartamentoMock,
   findActiveByCidadeMock,
-  findBySlotMock,
   existsForParMock,
   createTriagemMock,
   gravarAvaliacaoIAMock,
@@ -18,7 +17,6 @@ const {
   findOpenByCidadeMock: vi.fn(),
   findByIdWithCargoAndDepartamentoMock: vi.fn(),
   findActiveByCidadeMock: vi.fn(),
-  findBySlotMock: vi.fn(),
   existsForParMock: vi.fn(),
   createTriagemMock: vi.fn(),
   gravarAvaliacaoIAMock: vi.fn(),
@@ -48,9 +46,6 @@ vi.mock("~/server/db/repositories/triagem", () => ({
     create: createTriagemMock,
     gravarAvaliacaoIA: gravarAvaliacaoIAMock,
   },
-}));
-vi.mock("~/server/db/repositories/agente-config", () => ({
-  agenteConfigRepository: { findBySlot: findBySlotMock },
 }));
 vi.mock("./classificador-aderencia", () => ({
   executarClassificadorAderencia: executarClassificadorAderenciaMock,
@@ -98,9 +93,8 @@ describe("orquestrarParaCandidatoNovo", () => {
       resumoProfissional: "r",
     });
     findOpenByCidadeMock.mockResolvedValueOnce([
-      { id: "v1", cargo: cargoBase },
+      { id: "v1", notaCorte: "65.00", cargo: cargoBase },
     ]);
-    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
     executarClassificadorAderenciaMock.mockResolvedValueOnce({
       ok: true,
       scores: [{ id: "v1", score: 40 }],
@@ -119,9 +113,8 @@ describe("orquestrarParaCandidatoNovo", () => {
       resumoProfissional: "r",
     });
     findOpenByCidadeMock.mockResolvedValueOnce([
-      { id: "v1", cargo: cargoBase },
+      { id: "v1", notaCorte: "65.00", cargo: cargoBase },
     ]);
-    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
     executarClassificadorAderenciaMock.mockResolvedValueOnce({
       ok: false,
       motivo: "falha_provedor",
@@ -140,10 +133,9 @@ describe("orquestrarParaCandidatoNovo", () => {
       resumoProfissional: "r",
     });
     findOpenByCidadeMock.mockResolvedValueOnce([
-      { id: "v1", cargo: cargoBase },
-      { id: "v2", cargo: cargoBase },
+      { id: "v1", notaCorte: "80.00", cargo: cargoBase },
+      { id: "v2", notaCorte: "50.00", cargo: cargoBase },
     ]);
-    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
     executarClassificadorAderenciaMock.mockResolvedValueOnce({
       ok: true,
       scores: [
@@ -185,9 +177,8 @@ describe("orquestrarParaCandidatoNovo", () => {
       resumoProfissional: "r",
     });
     findOpenByCidadeMock.mockResolvedValueOnce([
-      { id: "v1", cargo: cargoBase },
+      { id: "v1", notaCorte: "65.00", cargo: cargoBase },
     ]);
-    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
     executarClassificadorAderenciaMock.mockResolvedValueOnce({
       ok: true,
       scores: [{ id: "v1", score: 90 }],
@@ -209,12 +200,12 @@ describe("orquestrarParaVagaNova", () => {
     findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
       id: "v1",
       cidade: "Goiânia",
+      notaCorte: "65.00",
       cargo: cargoBase,
     });
     findActiveByCidadeMock.mockResolvedValueOnce([
       { id: "c1", resumoProfissional: "r" },
     ]);
-    findBySlotMock.mockResolvedValueOnce({ thresholdScore: "65" });
     executarClassificadorAderenciaMock.mockResolvedValueOnce({
       ok: true,
       scores: [{ id: "c1", score: 70 }],
@@ -233,5 +224,25 @@ describe("orquestrarParaVagaNova", () => {
       expect.objectContaining({ candidatoId: "c1", vagaId: "v1" }),
     );
     expect(desmarcarBancoTalentosMock).toHaveBeenCalledWith("c1");
+  });
+
+  it("uses the vacancy cutoff score when matching existing candidates", async () => {
+    findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
+      id: "v1",
+      cidade: "Goiânia",
+      notaCorte: "75.00",
+      cargo: cargoBase,
+    });
+    findActiveByCidadeMock.mockResolvedValueOnce([
+      { id: "c1", resumoProfissional: "r" },
+    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [{ id: "c1", score: 70 }],
+    });
+
+    await orquestrarParaVagaNova("v1");
+
+    expect(createTriagemMock).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import {
   vagaSchema,
+  notaCorteSchema,
+  posicoesDisponiveisSchema,
+  remuneracaoOferecidaSchema,
+  statusVagaSchema,
   STATUS_VAGA_VALUES,
   type StatusVaga,
 } from "~/lib/validation/vaga";
@@ -57,6 +61,7 @@ export interface VagaFormProps {
     cargoId: string;
     status: StatusVaga;
     posicoesDisponiveis: number;
+    notaCorte: string;
     remuneracaoOferecida?: string | null;
     cidade: string;
     uf: string;
@@ -93,15 +98,13 @@ export function VagaForm({
     defaultValues: {
       cargoId: vaga?.cargoId ?? "",
       status: (vaga?.status ?? "aberta") as StatusVaga,
-      posicoesDisponiveis: vaga?.posicoesDisponiveis ?? 1,
+      posicoesDisponiveis: (vaga?.posicoesDisponiveis ?? 1) as string | number,
+      notaCorte: (vaga?.notaCorte ?? "65.00") as string | number,
       remuneracaoOferecida: (vaga?.remuneracaoOferecida
         ? String(vaga.remuneracaoOferecida)
-        : "") as string,
+        : "") as string | number | null | undefined,
       cidade: vaga?.cidade ?? "",
       uf: vaga?.uf ?? "",
-    },
-    validators: {
-      onBlur: vagaSchema,
     },
     onSubmit: ({ value }) => {
       const req =
@@ -168,7 +171,7 @@ export function VagaForm({
 
               <form.AppField
                 name="status"
-                validators={{ onBlur: vagaSchema.shape.status }}
+                validators={{ onBlur: statusVagaSchema }}
               >
                 {(field) => (
                   <field.SelectField
@@ -185,12 +188,12 @@ export function VagaForm({
               </form.AppField>
             </div>
 
-            {/* Linha 2: Posições e Remuneração */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {/* Linha 2: Posições, nota de corte e remuneração */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <form.Field
                 name="posicoesDisponiveis"
                 validators={{
-                  onBlur: vagaSchema.shape.posicoesDisponiveis,
+                  onBlur: posicoesDisponiveisSchema,
                 }}
               >
                 {(field) => {
@@ -235,9 +238,53 @@ export function VagaForm({
                 }}
               </form.Field>
 
+              <form.Field
+                name="notaCorte"
+                validators={{ onBlur: notaCorteSchema }}
+              >
+                {(field) => {
+                  const hasErrors =
+                    field.state.meta.isTouched &&
+                    field.state.meta.errors.length > 0;
+                  const fieldId = "vaga-nota-corte";
+                  const errorId = `${fieldId}-error`;
+                  const descId = `${fieldId}-description`;
+
+                  return (
+                    <Field data-invalid={hasErrors}>
+                      <FieldLabel htmlFor={fieldId}>Nota de Corte *</FieldLabel>
+                      <Input
+                        id={fieldId}
+                        name={field.name}
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        placeholder="65"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={hasErrors}
+                        aria-describedby={
+                          hasErrors ? `${descId} ${errorId}` : descId
+                        }
+                        autoComplete="off"
+                      />
+                      <FieldDescription id={descId}>
+                        Aderência mínima (0–100) para criar uma triagem.
+                      </FieldDescription>
+                      <FieldError
+                        id={errorId}
+                        errors={field.state.meta.errors}
+                      />
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
               <form.AppField
                 name="remuneracaoOferecida"
-                validators={{ onBlur: vagaSchema.shape.remuneracaoOferecida }}
+                validators={{ onBlur: remuneracaoOferecidaSchema }}
               >
                 {(field) => (
                   <field.InputField

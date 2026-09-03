@@ -117,6 +117,7 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
         cargoId: "cargo-1",
         status: "aberta",
         posicoesDisponiveis: 2,
+        notaCorte: "65.00",
         remuneracaoOferecida: "7000.00",
         cidade: "São Paulo",
         uf: "SP",

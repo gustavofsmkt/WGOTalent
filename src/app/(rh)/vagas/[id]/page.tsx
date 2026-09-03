@@ -218,6 +218,20 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
 
               <div>
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
+                  Nota de Corte
+                </span>
+                <span className="text-sm font-medium text-foreground block">
+                  {Number(vaga.notaCorte).toLocaleString("pt-BR", {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  pontos
+                </span>
+              </div>
+
+              <Separator />
+
+              <div>
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground block">
                   Remuneração Oferecida
                 </span>
                 <span className="text-sm font-medium text-foreground  block">

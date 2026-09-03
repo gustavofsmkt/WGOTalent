@@ -25,29 +25,23 @@ export async function updateAgenteConfig(
   }
 
   try {
-    const { thresholdScore, ...rest } = parsed.data;
+    const config = parsed.data;
 
     // Só bloqueia se o agente for ficar ativo — permite salvar um rascunho
     // inativo apontando para um provedor ainda sem credencial.
-    if (rest.ativo) {
+    if (config.ativo) {
       const credencial = await llmCredencialRepository.findActiveByProvider(
-        rest.provider,
+        config.provider,
       );
       if (!credencial) {
         return {
           success: false,
-          message: `Nenhuma credencial ativa para o provedor "${rest.provider}". Cadastre a chave em Administração › Credenciais antes de ativar este agente.`,
+          message: `Nenhuma credencial ativa para o provedor "${config.provider}". Cadastre a chave em Administração › Credenciais antes de ativar este agente.`,
         };
       }
     }
 
-    const updated = await agenteConfigRepository.update(slot, {
-      ...rest,
-      thresholdScore:
-        thresholdScore === null || thresholdScore === undefined
-          ? null
-          : thresholdScore.toString(),
-    });
+    const updated = await agenteConfigRepository.update(slot, config);
     if (!updated) {
       return {
         success: false,

@@ -52,9 +52,6 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
       model: agenteConfig.model,
       systemPrompt: agenteConfig.systemPrompt,
       userPrompt: agenteConfig.userPrompt,
-      thresholdScore: agenteConfig.thresholdScore
-        ? Number(agenteConfig.thresholdScore)
-        : null,
       ativo: agenteConfig.ativo,
     } as unknown as AgenteConfigUpdateInput,
     validators: {
@@ -141,26 +138,6 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               />
             )}
           </form.AppField>
-
-          {agenteConfig.slot === "classificador_aderencia" && (
-            <form.AppField name="thresholdScore">
-              {(field) => (
-                <field.InputField
-                  type="number"
-                  label="Threshold de aprovação (0–100)"
-                  description="Pares com score abaixo deste valor não viram Triagem."
-                  min={0}
-                  max={100}
-                  step={5}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value === "" ? null : Number(e.target.value),
-                    )
-                  }
-                />
-              )}
-            </form.AppField>
-          )}
 
           <form.AppField name="ativo">
             {(field) => (

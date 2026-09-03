@@ -172,7 +172,7 @@ planejada originalmente — ver
   concorrência limitada via `runWithLimit`
   ([src/lib/concurrency/run-with-limit.ts](src/lib/concurrency/run-with-limit.ts)).
 - **Banco de talentos automático**: candidato sem nenhuma vaga aberta
-  compatível na cidade, ou sem nenhuma vaga passando no threshold do
+  compatível na cidade, ou sem nenhuma vaga passando na nota de corte da vaga no
   classificador, é marcado automaticamente (`candidatos.em_banco_talentos`)
   em vez de ficar invisível para o RH; volta a ficar ativo assim que uma
   `Triagem` é criada para ele — inclusive quando surge uma vaga nova

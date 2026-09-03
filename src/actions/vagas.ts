@@ -34,6 +34,7 @@ export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
       uf: parsed.data.uf,
       status: parsed.data.status,
       posicoesDisponiveis: parsed.data.posicoesDisponiveis,
+      notaCorte: parsed.data.notaCorte,
       remuneracaoOferecida: parsed.data.remuneracaoOferecida ?? null,
     });
     if (isDuplicate) {
@@ -123,7 +124,7 @@ export async function deleteVaga(id: string): Promise<ActionState> {
       success: true,
       message: "Vaga excluída com sucesso.",
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: "Erro ao excluir vaga.",

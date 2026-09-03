@@ -16,6 +16,8 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 - [0010: Captação de Currículo via E-mail (IMAP)](./0010-captacao-curriculo-via-email.md)
 - [0011: Suporte a Múltiplos Provedores de LLM (Roteiro Pós-MVP)](./0011-multiplos-provedores-llm.md)
 - [0012: Autenticação e Autorização (Roteiro Pós-MVP, Última Prioridade)](./0012-autenticacao-autorizacao.md)
+- [0013: Banco de Talentos Automático para Candidatos sem Vaga Compatível](./0013-banco-de-talentos-automatico.md)
+- [0014: Nota de Corte de Aderência Configurada por Vaga](./0014-nota-corte-por-vaga.md)
 
 ---
 

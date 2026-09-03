@@ -53,6 +53,7 @@ export const vagaRepository = {
           id: vagas.id,
           status: vagas.status,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
+          notaCorte: vagas.notaCorte,
           cargoId: vagas.cargoId,
           remuneracaoOferecida: vagas.remuneracaoOferecida,
           cidade: vagas.cidade,
@@ -80,6 +81,7 @@ export const vagaRepository = {
       id: r.id,
       status: r.status,
       posicoesDisponiveis: r.posicoesDisponiveis,
+      notaCorte: r.notaCorte,
       cargoId: r.cargoId,
       remuneracaoOferecida: r.remuneracaoOferecida,
       cidade: r.cidade,
@@ -122,6 +124,7 @@ export const vagaRepository = {
           id: vagas.id,
           status: vagas.status,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
+          notaCorte: vagas.notaCorte,
           cargoId: vagas.cargoId,
           remuneracaoOferecida: vagas.remuneracaoOferecida,
           cidade: vagas.cidade,
@@ -153,6 +156,7 @@ export const vagaRepository = {
       id: r.id,
       status: r.status,
       posicoesDisponiveis: r.posicoesDisponiveis,
+      notaCorte: r.notaCorte,
       cargoId: r.cargoId,
       remuneracaoOferecida: r.remuneracaoOferecida,
       cidade: r.cidade,
@@ -185,6 +189,7 @@ export const vagaRepository = {
         id: vagas.id,
         status: vagas.status,
         posicoesDisponiveis: vagas.posicoesDisponiveis,
+        notaCorte: vagas.notaCorte,
         cargoId: vagas.cargoId,
         remuneracaoOferecida: vagas.remuneracaoOferecida,
         cidade: vagas.cidade,
@@ -214,6 +219,7 @@ export const vagaRepository = {
       id: r.id,
       status: r.status,
       posicoesDisponiveis: r.posicoesDisponiveis,
+      notaCorte: r.notaCorte,
       cargoId: r.cargoId,
       remuneracaoOferecida: r.remuneracaoOferecida,
       cidade: r.cidade,
@@ -275,6 +281,7 @@ export const vagaRepository = {
           id: vagas.id,
           status: vagas.status,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
+          notaCorte: vagas.notaCorte,
           cargoId: vagas.cargoId,
           remuneracaoOferecida: vagas.remuneracaoOferecida,
           cidade: vagas.cidade,
@@ -303,6 +310,7 @@ export const vagaRepository = {
       id: r.id,
       status: r.status,
       posicoesDisponiveis: r.posicoesDisponiveis,
+      notaCorte: r.notaCorte,
       cargoId: r.cargoId,
       remuneracaoOferecida: r.remuneracaoOferecida,
       cidade: r.cidade,
@@ -333,6 +341,7 @@ export const vagaRepository = {
       uf: string;
       status: string;
       posicoesDisponiveis: number;
+      notaCorte: string;
       remuneracaoOferecida?: string | null;
     },
     dbOrTx: DbOrTx = db,
@@ -346,6 +355,7 @@ export const vagaRepository = {
       eq(vagas.uf, data.uf),
       eq(vagas.status, data.status as Vaga["status"]),
       eq(vagas.posicoesDisponiveis, data.posicoesDisponiveis),
+      eq(vagas.notaCorte, data.notaCorte),
       data.remuneracaoOferecida
         ? eq(vagas.remuneracaoOferecida, data.remuneracaoOferecida)
         : isNull(vagas.remuneracaoOferecida),

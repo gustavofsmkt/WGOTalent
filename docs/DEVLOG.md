@@ -227,3 +227,12 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - **Refactor de `shared.ts`:** `parseRespostaEstruturada` (texto → JSON → Zod) foi dividido — `validarRespostaEstruturada` (só a parte Zod) é reusado pelo anthropic-client, que já recebe o objeto parseado de `tool_use.input`.
 - Testes novos: `schema-dialect.test.ts`, `anthropic-client.test.ts` (12 casos), casos de `{ ok: false }` em `classificador-aderencia.test.ts` e "falha de provedor não marca banco de talentos" em `orquestracao.test.ts`. Suíte: 481 testes passando.
 - **Fora do escopo desta mudança:** a rigidez do schema de extração (`dateStringSchema` recusa datas parciais; `cidade` `nonEmptyString`; colunas `data_inicio`/`data_entrada` `NOT NULL`) continua derrubando currículos sem data/cidade — track separada de resiliência da extração.
+
+## Marco: Nota de Corte de Aderência por Vaga (ADR-0014)
+
+*Data: 2026-09-03*
+
+- A nota de corte deixou a configuração administrativa do `classificador_aderencia` e passou a ser configurada nos formulários de criação e edição de cada vaga.
+- A orquestração candidato→vagas aplica a nota da vaga correspondente a cada score; a orquestração vaga→candidatos aplica a nota da vaga que iniciou o processamento.
+- A migration `0023_move_nota_corte_to_vagas` preserva o limite global anterior nas vagas existentes antes de remover a coluna obsoleta de `agente_config`; novas vagas usam 65 por padrão.
+- Adicionadas validação e constraint de banco para o intervalo de 0 a 100, exibição na tela de detalhes da vaga e testes de regressão do filtro por vaga.
