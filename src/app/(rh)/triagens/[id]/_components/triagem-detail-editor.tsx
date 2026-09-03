@@ -9,6 +9,8 @@ import {
   Loader2,
   ChevronRight,
   CheckCircle2,
+  XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import { updateTriagem } from "~/actions/triagens";
@@ -30,6 +32,7 @@ import {
   resultadoLabels,
   motivoReprovacaoLabels,
   motivoDesistenciaLabels,
+  RESULTADOS_ENCERRAMENTO,
   PARECER_FIELD_BY_ETAPA,
 } from "~/lib/triagem-format";
 import {
@@ -88,18 +91,43 @@ const RESULTADO_OPTIONS = (
   Object.keys(resultadoLabels) as TriagemResultado[]
 ).map((value) => ({ value, label: resultadoLabels[value] }));
 
-export function TriagemDetailEditor({
-  triagem,
+const RESULTADO_ENCERRAMENTO_OPTIONS = RESULTADOS_ENCERRAMENTO.map((value) => ({
+  value,
+  label: resultadoLabels[value],
+}));
+
+/**
+ * Bloco Resultado + Motivo + botão de confirmação. Compartilhado pela aba
+ * "Finalizado" (resultado completo, botão "Finalizar") e pelo encerramento
+ * antecipado nas etapas anteriores (só reprovado/desistente/banco, botão
+ * "Encerrar processo") — mantém um único lugar definindo esse layout.
+ */
+function ResultadoMotivoForm({
+  pending,
+  setPending,
+  motivoError,
+  setMotivoError,
+  isPending,
+  resultadoOptions,
+  confirmLabel,
+  confirmIcon,
+  confirmVariant = "default",
+  parecerPreenchido,
+  onConfirm,
 }: {
-  triagem: TriagemEditorData;
+  pending: PendingState;
+  setPending: React.Dispatch<React.SetStateAction<PendingState>>;
+  motivoError: string | null;
+  setMotivoError: (value: string | null) => void;
+  isPending: boolean;
+  resultadoOptions: { value: TriagemResultado; label: string }[];
+  confirmLabel: string;
+  confirmIcon: LucideIcon;
+  confirmVariant?: "default" | "destructive";
+  parecerPreenchido: boolean;
+  onConfirm: () => void;
 }) {
-  const router = useRouter();
-  const [pending, setPending] = React.useState<PendingState>(() =>
-    buildInitialState(triagem),
-  );
-  const [activeTab, setActiveTab] = React.useState<TriagemEtapa>(triagem.etapa);
-  const [isPending, startTransition] = React.useTransition();
-  const [motivoError, setMotivoError] = React.useState<string | null>(null);
+  const ConfirmIcon = confirmIcon;
 
   const requiresMotivo =
     pending.resultado === "reprovado" || pending.resultado === "desistente";
@@ -127,6 +155,118 @@ export function TriagemDetailEditor({
     }));
     setMotivoError(null);
   };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-4">
+        <Field className="flex-1">
+          <FieldLabel>Resultado</FieldLabel>
+          <Select
+            value={pending.resultado}
+            onValueChange={(v) => handleResultadoChange(v as TriagemResultado)}
+            disabled={isPending}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o resultado...">
+                {(val: string | null) =>
+                  resultadoOptions.find((o) => o.value === val)?.label ??
+                  "Selecione o resultado..."
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {resultadoOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        {requiresMotivo && (
+          <Field className="flex-1">
+            <FieldLabel>Motivo</FieldLabel>
+            <Select
+              value={pending.motivo ?? ""}
+              onValueChange={(v) => {
+                setPending((p) => ({ ...p, motivo: v as TriagemMotivo }));
+                setMotivoError(null);
+              }}
+              disabled={isPending}
+            >
+              <SelectTrigger aria-invalid={Boolean(motivoError)}>
+                <SelectValue placeholder="Selecione o motivo...">
+                  {(val: string | null) =>
+                    motivoOptions.find((o) => o.value === val)?.label ??
+                    "Selecione o motivo..."
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {motivoOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {motivoError && (
+              <span className="text-xs text-destructive">{motivoError}</span>
+            )}
+          </Field>
+        )}
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant={confirmVariant}
+          onClick={onConfirm}
+          disabled={
+            isPending ||
+            !parecerPreenchido ||
+            pending.resultado === "em_andamento" ||
+            (requiresMotivo && !pending.motivo)
+          }
+        >
+          {isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <ConfirmIcon className="size-4" />
+          )}
+          {confirmLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function TriagemDetailEditor({
+  triagem,
+}: {
+  triagem: TriagemEditorData;
+}) {
+  const router = useRouter();
+  const [pending, setPending] = React.useState<PendingState>(() =>
+    buildInitialState(triagem),
+  );
+  const [activeTab, setActiveTab] = React.useState<TriagemEtapa>(triagem.etapa);
+  const [isPending, startTransition] = React.useTransition();
+  const [motivoError, setMotivoError] = React.useState<string | null>(null);
+  const [encerrando, setEncerrando] = React.useState(false);
+
+  // Descarta o resultado/motivo escolhidos no encerramento antecipado sem
+  // confirmar — o "Avançar" opera sobre o mesmo `pending`.
+  const resetEncerramento = React.useCallback(() => {
+    setEncerrando(false);
+    setMotivoError(null);
+    setPending((p) => ({
+      ...p,
+      resultado: triagem.resultado,
+      motivo: triagem.motivo,
+    }));
+  }, [triagem.resultado, triagem.motivo]);
 
   const buildPayload = (state: PendingState) => {
     const needsMotivo =
@@ -160,6 +300,34 @@ export function TriagemDetailEditor({
         type: "success",
         description: "Triagem finalizada com sucesso.",
       });
+      router.refresh();
+    });
+  };
+
+  const handleEncerrar = () => {
+    setMotivoError(null);
+    startTransition(async () => {
+      const newState = {
+        ...pending,
+        etapa: "finalizado" as TriagemEtapa,
+      };
+      const result = await updateTriagem(triagem.id, buildPayload(newState));
+      if (!result.success) {
+        toast.add({
+          type: "error",
+          description: result.message ?? "Erro ao encerrar o processo.",
+        });
+        const motivoIssue = result.errors?.motivo?.[0];
+        if (motivoIssue) setMotivoError(motivoIssue);
+        return;
+      }
+      toast.add({
+        type: "success",
+        description: `Processo encerrado — ${resultadoLabels[pending.resultado]}.`,
+      });
+      setPending(newState);
+      setActiveTab("finalizado");
+      setEncerrando(false);
       router.refresh();
     });
   };
@@ -216,7 +384,10 @@ export function TriagemDetailEditor({
         <CardContent>
           <Tabs
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as TriagemEtapa)}
+            onValueChange={(v) => {
+              setActiveTab(v as TriagemEtapa);
+              resetEncerramento();
+            }}
           >
             <TabsList className=" w-full flex-wrap justify-between gap-2">
               {ETAPAS.map((etapa) => {
@@ -291,106 +462,73 @@ export function TriagemDetailEditor({
 
                       {isCurrentEtapa &&
                         (isFinalEtapa ? (
-                          <div className="flex flex-col gap-4">
-                            <div className="flex gap-4">
-                              <Field className="flex-1">
-                                <FieldLabel>Resultado</FieldLabel>
-                                <Select
-                                  value={pending.resultado}
-                                  onValueChange={(v) =>
-                                    handleResultadoChange(v as TriagemResultado)
-                                  }
-                                  disabled={isPending}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o resultado..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {RESULTADO_OPTIONS.map((opt) => (
-                                      <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                      >
-                                        {opt.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </Field>
-
-                              {requiresMotivo && (
-                                <Field className="flex-1">
-                                  <FieldLabel>Motivo</FieldLabel>
-                                  <Select
-                                    value={pending.motivo ?? ""}
-                                    onValueChange={(v) => {
-                                      setPending((p) => ({
-                                        ...p,
-                                        motivo: v as TriagemMotivo,
-                                      }));
-                                      setMotivoError(null);
-                                    }}
-                                    disabled={isPending}
-                                  >
-                                    <SelectTrigger
-                                      aria-invalid={Boolean(motivoError)}
-                                    >
-                                      <SelectValue placeholder="Selecione o motivo..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {motivoOptions.map((opt) => (
-                                        <SelectItem
-                                          key={opt.value}
-                                          value={opt.value}
-                                        >
-                                          {opt.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {motivoError && (
-                                    <span className="text-xs text-destructive">
-                                      {motivoError}
-                                    </span>
-                                  )}
-                                </Field>
-                              )}
-                            </div>
-
-                            <div className="flex justify-end">
+                          <ResultadoMotivoForm
+                            pending={pending}
+                            setPending={setPending}
+                            motivoError={motivoError}
+                            setMotivoError={setMotivoError}
+                            isPending={isPending}
+                            resultadoOptions={RESULTADO_OPTIONS}
+                            confirmLabel="Finalizar"
+                            confirmIcon={CheckCircle2}
+                            parecerPreenchido={Boolean(pending[field].trim())}
+                            onConfirm={handleFinalizar}
+                          />
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between gap-2">
                               <Button
                                 type="button"
-                                onClick={handleFinalizar}
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground"
+                                aria-expanded={encerrando}
+                                onClick={() =>
+                                  encerrando
+                                    ? resetEncerramento()
+                                    : setEncerrando(true)
+                                }
+                                disabled={isPending}
+                              >
+                                <XCircle className="size-4" />
+                                Encerrar processo
+                              </Button>
+
+                              <Button
+                                type="button"
+                                onClick={() => handleAvancar(etapa.value)}
                                 disabled={
                                   isPending ||
                                   !pending[field].trim() ||
-                                  pending.resultado === "em_andamento" ||
-                                  (requiresMotivo && !pending.motivo)
+                                  encerrando
                                 }
                               >
                                 {isPending ? (
                                   <Loader2 className="size-4 animate-spin" />
                                 ) : (
-                                  <CheckCircle2 className="size-4" />
+                                  <ChevronRight className="size-4" />
                                 )}
-                                Finalizar
+                                Avançar
                               </Button>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              onClick={() => handleAvancar(etapa.value)}
-                              disabled={isPending || !pending[field].trim()}
-                            >
-                              {isPending ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <ChevronRight className="size-4" />
-                              )}
-                              Avançar
-                            </Button>
+
+                            {encerrando && (
+                              <ResultadoMotivoForm
+                                pending={pending}
+                                setPending={setPending}
+                                motivoError={motivoError}
+                                setMotivoError={setMotivoError}
+                                isPending={isPending}
+                                resultadoOptions={RESULTADO_ENCERRAMENTO_OPTIONS}
+                                confirmLabel="Encerrar processo"
+                                confirmIcon={XCircle}
+                                confirmVariant="destructive"
+                                parecerPreenchido={Boolean(
+                                  pending[field].trim(),
+                                )}
+                                onConfirm={handleEncerrar}
+                              />
+                            )}
                           </div>
                         ))}
                     </>

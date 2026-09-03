@@ -188,6 +188,105 @@ describe("Triagem Server Actions", () => {
       );
     });
 
+    it("encerra antecipadamente uma triagem em andamento (reprovado + motivo, etapa forçada para finalizado)", async () => {
+      const mockExisting = {
+        id: "triagem-123",
+        etapa: "curriculo",
+        resultado: "em_andamento",
+        candidato: { id: "cand-123" },
+        vaga: { id: "vaga-123" },
+      };
+
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(
+        mockExisting as unknown as TriagemCompleta,
+      );
+      vi.mocked(triagemRepository.update).mockResolvedValue({
+        id: "triagem-123",
+        etapa: "finalizado",
+        resultado: "reprovado",
+        motivo: "curriculo",
+      } as unknown as Triagem);
+
+      const response = await updateTriagem("triagem-123", {
+        etapa: "finalizado",
+        resultado: "reprovado",
+        motivo: "curriculo",
+        parecerRhCurriculo: "Perfil não aderente à vaga.",
+      });
+
+      expect(response.success).toBe(true);
+      // Não chama checkActiveEmAndamento: só entra nessa checagem quando o
+      // resultado alvo é "em_andamento".
+      expect(triagemRepository.checkActiveEmAndamento).not.toHaveBeenCalled();
+      expect(triagemRepository.update).toHaveBeenCalledWith(
+        "triagem-123",
+        expect.objectContaining({
+          etapa: "finalizado",
+          resultado: "reprovado",
+          motivo: "curriculo",
+        }),
+      );
+    });
+
+    it("rejeita encerramento como reprovado sem motivo", async () => {
+      const mockExisting = {
+        id: "triagem-123",
+        etapa: "curriculo",
+        resultado: "em_andamento",
+        candidato: { id: "cand-123" },
+        vaga: { id: "vaga-123" },
+      };
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(
+        mockExisting as unknown as TriagemCompleta,
+      );
+
+      const response = await updateTriagem("triagem-123", {
+        etapa: "finalizado",
+        resultado: "reprovado",
+      });
+
+      expect(response.success).toBe(false);
+      if (!response.success) {
+        expect(response.errors).toHaveProperty("motivo");
+      }
+      expect(triagemRepository.update).not.toHaveBeenCalled();
+    });
+
+    it("encerra antecipadamente como banco_talentos sem exigir motivo", async () => {
+      const mockExisting = {
+        id: "triagem-123",
+        etapa: "entrevista_rh",
+        resultado: "em_andamento",
+        candidato: { id: "cand-123" },
+        vaga: { id: "vaga-123" },
+      };
+      vi.mocked(triagemRepository.findByIdWithJoins).mockResolvedValue(
+        mockExisting as unknown as TriagemCompleta,
+      );
+      vi.mocked(triagemRepository.update).mockResolvedValue({
+        id: "triagem-123",
+        etapa: "finalizado",
+        resultado: "banco_talentos",
+      } as unknown as Triagem);
+
+      const response = await updateTriagem("triagem-123", {
+        etapa: "finalizado",
+        resultado: "banco_talentos",
+        motivo: null,
+        parecerRhEntrevistaRh: "Bom perfil, sem fit para esta vaga agora.",
+      });
+
+      expect(response.success).toBe(true);
+      expect(triagemRepository.update).toHaveBeenCalledWith(
+        "triagem-123",
+        expect.objectContaining({
+          etapa: "finalizado",
+          resultado: "banco_talentos",
+          motivo: null,
+        }),
+      );
+    });
+
     it("deve bloquear update para em_andamento se já existir outra triagem em_andamento", async () => {
       const mockExisting = {
         id: "triagem-123",

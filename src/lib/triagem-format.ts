@@ -75,6 +75,16 @@ export const motivoReprovacaoLabels: Record<
   gestor: "Avaliação do Gestor desfavorável",
 };
 
+/**
+ * Resultados oferecidos no encerramento antecipado de uma triagem (etapas
+ * anteriores a "Finalizado"). "aprovado" continua exclusivo da aba Finalizado.
+ */
+export const RESULTADOS_ENCERRAMENTO = [
+  "reprovado",
+  "desistente",
+  "banco_talentos",
+] as const satisfies readonly TriagemResultado[];
+
 export const motivoDesistenciaLabels: Record<
   (typeof motivosDesistencia)[number],
   string
