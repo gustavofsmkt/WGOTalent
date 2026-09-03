@@ -147,8 +147,6 @@ export const vagas = createTable(
       precision: 10,
       scale: 2,
     }),
-    cidade: varchar("cidade", { length: 100 }).notNull(),
-    uf: char("uf", { length: 2 }).notNull(),
     ...timestamps,
   },
   (table) => [
@@ -166,6 +164,29 @@ export const vagas = createTable(
 
 export type Vaga = typeof vagas.$inferSelect;
 export type NovaVaga = typeof vagas.$inferInsert;
+
+export const vagaCidades = createTable(
+  "vaga_cidades",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    vagaId: uuid("vaga_id")
+      .notNull()
+      .references(() => vagas.id),
+    cidadeId: uuid("cidade_id")
+      .notNull()
+      .references(() => cidades.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("vaga_cidades_vaga_id_idx").on(table.vagaId),
+    uniqueIndex("vaga_cidades_vaga_cidade_idx")
+      .on(table.vagaId, table.cidadeId)
+      .where(isNull(table.deletedAt)),
+  ],
+);
+
+export type VagaCidade = typeof vagaCidades.$inferSelect;
+export type NovaVagaCidade = typeof vagaCidades.$inferInsert;
 
 export const candidatos = createTable(
   "candidatos",
@@ -458,6 +479,18 @@ export const vagasRelations = relations(vagas, ({ one, many }) => ({
     references: [cargos.id],
   }),
   triagens: many(triagens),
+  vagaCidades: many(vagaCidades),
+}));
+
+export const vagaCidadesRelations = relations(vagaCidades, ({ one }) => ({
+  vaga: one(vagas, {
+    fields: [vagaCidades.vagaId],
+    references: [vagas.id],
+  }),
+  cidade: one(cidades, {
+    fields: [vagaCidades.cidadeId],
+    references: [cidades.id],
+  }),
 }));
 
 export const candidatosRelations = relations(candidatos, ({ one, many }) => ({
@@ -535,6 +568,7 @@ export interface CandidatoCompleto extends Candidato {
 }
 
 export interface VagaCompleta extends Vaga {
+  cidades: Cidade[];
   cargo: Cargo & { departamento: Departamento };
 }
 

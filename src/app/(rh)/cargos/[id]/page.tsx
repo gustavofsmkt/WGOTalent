@@ -262,7 +262,7 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
                     <TableCell className="pl-4">
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="size-3.5 text-muted-foreground" />
-                        {vaga.cidade} / {vaga.uf}
+                        {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -390,9 +390,10 @@ export const candidatoRepository = {
 
   /** Espelha vagaRepository.findOpenByCidade — estoque para a fase 1 do classificador_aderencia. */
   findActiveByCidade: async (
-    cidade: string,
+    cidades: string[],
     dbOrTx: DbOrTx = db,
   ): Promise<{ id: string; resumoProfissional: string }[]> => {
+    if (cidades.length === 0) return [];
     return notDeleted(
       dbOrTx
         .select({
@@ -401,7 +402,7 @@ export const candidatoRepository = {
         })
         .from(candidatos),
       candidatos,
-      eq(candidatos.cidade, cidade),
+      inArray(candidatos.cidade, cidades),
     );
   },
 

@@ -38,6 +38,7 @@ import type { Vaga } from "~/server/db/schema";
 
 describe("vagas server actions", () => {
   const validCargoId = "550e8400-e29b-41d4-a716-446655440000";
+  const validCidadeId = "660e8400-e29b-41d4-a716-446655440001";
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -52,8 +53,6 @@ describe("vagas server actions", () => {
         posicoesDisponiveis: 2,
         notaCorte: "75.00",
         remuneracaoOferecida: "5000.00",
-        cidade: "São Paulo",
-        uf: "SP" as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -87,8 +86,7 @@ describe("vagas server actions", () => {
         posicoesDisponiveis: 2,
         notaCorte: 75,
         remuneracaoOferecida: "5000.00",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidadeIds: [validCidadeId],
       });
 
       expect(result.success).toBe(true);
@@ -111,8 +109,6 @@ describe("vagas server actions", () => {
         posicoesDisponiveis: 1,
         notaCorte: "65.00",
         remuneracaoOferecida: null,
-        cidade: "Curitiba",
-        uf: "PR" as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -144,8 +140,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "pausada",
         posicoesDisponiveis: 1,
-        cidade: "Curitiba",
-        uf: "PR",
+        cidadeIds: [validCidadeId],
       });
 
       expect(result.success).toBe(true);
@@ -176,8 +171,7 @@ describe("vagas server actions", () => {
         status: "aberta",
         posicoesDisponiveis: 2,
         remuneracaoOferecida: "5000.00",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidadeIds: [validCidadeId],
       });
 
       expect(result.success).toBe(false);
@@ -207,8 +201,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "aberta",
         posicoesDisponiveis: 1,
-        cidade: "São Paulo",
-        uf: "SP",
+        cidadeIds: [validCidadeId],
       });
 
       expect(result.success).toBe(false);
@@ -225,8 +218,7 @@ describe("vagas server actions", () => {
         cargoId: validCargoId,
         status: "aberta",
         posicoesDisponiveis: 1,
-        cidade: "São Paulo",
-        uf: "SP",
+        cidadeIds: [validCidadeId],
       });
 
       expect(result.success).toBe(false);
@@ -239,8 +231,7 @@ describe("vagas server actions", () => {
     it("returns validation error for invalid inputs", async () => {
       const result = await createVaga({
         cargoId: "not-a-uuid",
-        cidade: "",
-        uf: "INVALID",
+        cidadeIds: [],
         posicoesDisponiveis: 0,
       });
 
@@ -248,8 +239,7 @@ describe("vagas server actions", () => {
       expect(result.message).toBe("Dados inválidos");
       if (!result.success) {
         expect(result.errors?.cargoId).toBeDefined();
-        expect(result.errors?.cidade).toBeDefined();
-        expect(result.errors?.uf).toBeDefined();
+        expect(result.errors?.cidadeIds).toBeDefined();
         expect(result.errors?.posicoesDisponiveis).toBeDefined();
       }
       expect(vagaRepository.create).not.toHaveBeenCalled();
@@ -265,8 +255,6 @@ describe("vagas server actions", () => {
         posicoesDisponiveis: 3,
         notaCorte: "80.00",
         remuneracaoOferecida: "6000.00",
-        cidade: "São Paulo",
-        uf: "SP" as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null,
@@ -351,8 +339,6 @@ describe("vagas server actions", () => {
         posicoesDisponiveis: 1,
         notaCorte: "65.00",
         remuneracaoOferecida: null,
-        cidade: "São Paulo",
-        uf: "SP" as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: new Date().toISOString(),

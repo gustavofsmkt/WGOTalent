@@ -515,7 +515,7 @@ export default async function DashboardPage() {
                       <TableCell className="text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                           <MapPin className="h-3 w-3 shrink-0" />
-                          {vaga.cidade}/{vaga.uf}
+                          {vaga.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">

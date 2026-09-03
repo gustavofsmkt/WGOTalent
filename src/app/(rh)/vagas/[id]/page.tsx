@@ -81,7 +81,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             </span>
             <span className="flex items-center gap-2">
               <MapPin className="size-3.5" />
-              {vaga.cidade} / {vaga.uf}
+              {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
             </span>
             <span className="flex items-center gap-2">
               <Users className="size-3.5" />
@@ -94,7 +94,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
           <div className="flex items-center gap-2">
             <DeleteVagaButton
               vagaId={vaga.id}
-              vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
+              vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidades.map((c) => c.nome).join(", ")})`}
               redirectTo="/vagas"
               variant="button"
             />
@@ -198,7 +198,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                   Local de Trabalho
                 </span>
                 <span className="text-sm font-medium text-foreground  block">
-                  {vaga.cidade} / {vaga.uf}
+                  {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
                 </span>
               </div>
 

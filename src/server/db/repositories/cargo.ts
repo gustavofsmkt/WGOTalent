@@ -9,6 +9,7 @@ import {
   type Vaga,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
+import type { CidadeRef } from "~/server/db/repositories/vaga";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -24,6 +25,20 @@ export interface DepartamentoOption {
   id: string;
   nome: string;
 }
+
+const cidadesSubquery = sql<CidadeRef[]>`
+  COALESCE(
+    (
+      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
+      FROM wgotalent_vaga_cidades vc
+      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
+      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
+    ),
+    '[]'::json
+  )
+`;
+
+export type VagaComCidades = Vaga & { cidades: CidadeRef[] };
 
 export const cargoRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Cargo[]> => {
@@ -194,9 +209,22 @@ export const cargoRepository = {
   findActiveVagas: async (
     cargoId: string,
     dbOrTx: DbOrTx = db,
-  ): Promise<Vaga[]> => {
+  ): Promise<VagaComCidades[]> => {
     return notDeleted(
-      dbOrTx.select().from(vagas),
+      dbOrTx
+        .select({
+          id: vagas.id,
+          cargoId: vagas.cargoId,
+          status: vagas.status,
+          posicoesDisponiveis: vagas.posicoesDisponiveis,
+          notaCorte: vagas.notaCorte,
+          remuneracaoOferecida: vagas.remuneracaoOferecida,
+          createdAt: vagas.createdAt,
+          updatedAt: vagas.updatedAt,
+          deletedAt: vagas.deletedAt,
+          cidades: cidadesSubquery,
+        })
+        .from(vagas),
       vagas,
       eq(vagas.cargoId, cargoId),
     );

@@ -34,8 +34,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
         id: "vaga-1",
         cargoTitulo: "Desenvolvedor Frontend",
         departamentoNome: "Tecnologia",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidades: [{ id: "cid-1", nome: "São Paulo", uf: "SP" }],
       },
       avaliacaoIa: {
         id: "aval-1",
@@ -59,8 +58,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
         id: "vaga-2",
         cargoTitulo: "Analista de RH",
         departamentoNome: "Recursos Humanos",
-        cidade: "Rio de Janeiro",
-        uf: "RJ",
+        cidades: [{ id: "cid-2", nome: "Rio de Janeiro", uf: "RJ" }],
       },
       avaliacaoIa: null,
     },
@@ -80,8 +78,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
         id: "vaga-1",
         cargoTitulo: "Desenvolvedor Frontend",
         departamentoNome: "Tecnologia",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidades: [{ id: "cid-1", nome: "São Paulo", uf: "SP" }],
       },
       avaliacaoIa: {
         id: "aval-3",
@@ -128,7 +125,7 @@ describe("TriagensPage - Server Component Logic & Pipeline", () => {
         item.candidato.nome.toLowerCase().includes(query) ||
         (item.candidato.email?.toLowerCase().includes(query) ?? false) ||
         item.vaga.cargoTitulo.toLowerCase().includes(query) ||
-        item.vaga.cidade.toLowerCase().includes(query),
+        item.vaga.cidades.some((c) => c.nome.toLowerCase().includes(query)),
     );
 
     expect(filtered).toHaveLength(1);

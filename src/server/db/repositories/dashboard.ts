@@ -11,6 +11,19 @@ import {
   triagemResultadoEnum,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
+import type { CidadeRef } from "~/server/db/repositories/vaga";
+
+const cidadesSubquery = sql<CidadeRef[]>`
+  COALESCE(
+    (
+      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
+      FROM wgotalent_vaga_cidades vc
+      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
+      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
+    ),
+    '[]'::json
+  )
+`;
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -38,8 +51,7 @@ export interface VagaComMaisCandidatosItem {
   vagaId: string;
   cargoTitulo: string;
   departamentoNome: string;
-  cidade: string;
-  uf: string;
+  cidades: CidadeRef[];
   posicoesDisponiveis: number;
   totalCandidatos: number;
 }
@@ -259,8 +271,7 @@ export const dashboardRepository = {
           vagaId: vagas.id,
           cargoTitulo: cargos.titulo,
           departamentoNome: departamentos.nome,
-          cidade: vagas.cidade,
-          uf: vagas.uf,
+          cidades: cidadesSubquery,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
           totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
         })
@@ -274,8 +285,6 @@ export const dashboardRepository = {
         vagas.id,
         cargos.titulo,
         departamentos.nome,
-        vagas.cidade,
-        vagas.uf,
         vagas.posicoesDisponiveis,
       )
       .orderBy(
@@ -290,8 +299,7 @@ export const dashboardRepository = {
       vagaId: r.vagaId,
       cargoTitulo: r.cargoTitulo,
       departamentoNome: r.departamentoNome,
-      cidade: r.cidade,
-      uf: r.uf,
+      cidades: r.cidades,
       posicoesDisponiveis: r.posicoesDisponiveis,
       totalCandidatos: Number(r.totalCandidatos ?? 0),
     }));

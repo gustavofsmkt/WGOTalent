@@ -176,6 +176,13 @@
       "when": 1788455198926,
       "tag": "0024_wild_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1788458510805,
+      "tag": "0025_slimy_mimic",
+      "breakpoints": true
     }
   ]
 }

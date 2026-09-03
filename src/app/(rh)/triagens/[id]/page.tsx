@@ -53,8 +53,7 @@ export default async function TriagemDetailPage({
         titulo: triagem.vaga.cargo.titulo,
         departamento: { nome: triagem.vaga.cargo.departamento.nome },
       },
-      cidade: triagem.vaga.cidade,
-      uf: triagem.vaga.uf,
+      cidades: triagem.vaga.cidades,
     },
   };
 

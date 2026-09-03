@@ -30,8 +30,6 @@ export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
 
     const isDuplicate = await vagaRepository.existsRecentDuplicate({
       cargoId: parsed.data.cargoId,
-      cidade: parsed.data.cidade,
-      uf: parsed.data.uf,
       status: parsed.data.status,
       posicoesDisponiveis: parsed.data.posicoesDisponiveis,
       notaCorte: parsed.data.notaCorte,
@@ -44,9 +42,16 @@ export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
       };
     }
 
-    const vaga = await vagaRepository.create(parsed.data);
+    const vaga = await vagaRepository.create({
+      cargoId: parsed.data.cargoId,
+      status: parsed.data.status,
+      posicoesDisponiveis: parsed.data.posicoesDisponiveis,
+      notaCorte: parsed.data.notaCorte,
+      remuneracaoOferecida: parsed.data.remuneracaoOferecida ?? null,
+      cidadeIds: parsed.data.cidadeIds,
+    });
 
-    // Dispara a fase 1 de matching (vaga -> candidatos ativos na mesma cidade). Fire-and-forget.
+    // Dispara a fase 1 de matching (vaga -> candidatos ativos nas cidades). Fire-and-forget.
     orquestrarParaVagaNova(vaga.id).catch((err) =>
       console.error("[createVaga] Falha na orquestração de matching:", err),
     );
@@ -90,7 +95,10 @@ export async function updateVaga(
       }
     }
 
-    const vaga = await vagaRepository.update(id, parsed.data);
+    const vaga = await vagaRepository.update(id, {
+      ...parsed.data,
+      cidadeIds: parsed.data.cidadeIds,
+    });
 
     if (!vaga) {
       return { success: false, message: "Vaga não encontrada" };

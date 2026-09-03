@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ufSchema } from "./common";
 
 /**
  * Status válidos para uma vaga no WGOTalent.
@@ -205,15 +204,12 @@ export const vagaSchema = z
     posicoesDisponiveis: posicoesDisponiveisSchema.default(1),
     notaCorte: notaCorteSchema.default("65.00"),
     remuneracaoOferecida: remuneracaoOferecidaSchema.optional(),
-    cidade: z
-      .string({
-        required_error: "Cidade é obrigatória",
-        invalid_type_error: "Cidade deve ser um texto",
+    cidadeIds: z
+      .array(z.string().uuid({ message: "ID de cidade inválido" }), {
+        required_error: "Selecione pelo menos uma cidade",
+        invalid_type_error: "Cidades devem ser uma lista",
       })
-      .trim()
-      .min(1, { message: "Cidade é obrigatória" })
-      .max(100, { message: "Cidade deve ter no máximo 100 caracteres" }),
-    uf: ufSchema,
+      .min(1, { message: "Selecione pelo menos uma cidade" }),
   })
   .strict();
 

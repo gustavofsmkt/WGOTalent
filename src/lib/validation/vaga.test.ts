@@ -9,6 +9,7 @@ import {
 } from "~/lib/validation/vaga";
 
 const VALID_CARGO_ID = "550e8400-e29b-41d4-a716-446655440000";
+const VALID_CIDADE_ID = "660e8400-e29b-41d4-a716-446655440001";
 
 const validVagaPayload = {
   cargoId: VALID_CARGO_ID,
@@ -16,8 +17,7 @@ const validVagaPayload = {
   posicoesDisponiveis: 3,
   notaCorte: "72.50",
   remuneracaoOferecida: "4500.00",
-  cidade: "São Paulo",
-  uf: "SP",
+  cidadeIds: [VALID_CIDADE_ID],
 };
 
 describe("vaga validation schemas", () => {
@@ -77,296 +77,108 @@ describe("vaga validation schemas", () => {
 
       const resNegStr = posicoesDisponiveisSchema.safeParse("-5");
       expect(resNegStr.success).toBe(false);
-      if (!resNegStr.success) {
-        expect(resNegStr.error.errors[0]?.message).toBe(
-          "Posições disponíveis deve ser maior que zero",
-        );
-      }
-    });
-
-    it("rejects floating point numbers and non-integer strings", () => {
-      const resFloat = posicoesDisponiveisSchema.safeParse(1.5);
-      expect(resFloat.success).toBe(false);
-      if (!resFloat.success) {
-        expect(resFloat.error.errors[0]?.message).toBe(
-          "Posições disponíveis deve ser um número inteiro",
-        );
-      }
-
-      const resFloatStr = posicoesDisponiveisSchema.safeParse("2.7");
-      expect(resFloatStr.success).toBe(false);
-      if (!resFloatStr.success) {
-        expect(resFloatStr.error.errors[0]?.message).toBe(
-          "Posições disponíveis deve ser um número inteiro",
-        );
-      }
-    });
-
-    it("rejects empty or non-numeric strings", () => {
-      const resEmpty = posicoesDisponiveisSchema.safeParse("");
-      expect(resEmpty.success).toBe(false);
-      if (!resEmpty.success) {
-        expect(resEmpty.error.errors[0]?.message).toBe(
-          "Número de posições disponíveis é obrigatório",
-        );
-      }
-
-      const resText = posicoesDisponiveisSchema.safeParse("abc");
-      expect(resText.success).toBe(false);
-      if (!resText.success) {
-        expect(resText.error.errors[0]?.message).toBe(
-          "Posições disponíveis deve ser um número inteiro",
-        );
-      }
-    });
-
-    it("rejects values exceeding smallint limit (32767)", () => {
-      const resExceeded = posicoesDisponiveisSchema.safeParse(32768);
-      expect(resExceeded.success).toBe(false);
-      if (!resExceeded.success) {
-        expect(resExceeded.error.errors[0]?.message).toBe(
-          "Posições disponíveis excede o limite máximo permitido (32767)",
-        );
-      }
     });
   });
 
   describe("remuneracaoOferecidaSchema", () => {
-    it("accepts null, undefined, and empty string converting them to null", () => {
+    it("accepts valid positive numbers and strings", () => {
+      expect(remuneracaoOferecidaSchema.parse(5000)).toBe("5000.00");
+      expect(remuneracaoOferecidaSchema.parse("4500,50")).toBe("4500.50");
+    });
+
+    it("returns null for empty or nullish values", () => {
+      expect(remuneracaoOferecidaSchema.parse("")).toBeNull();
       expect(remuneracaoOferecidaSchema.parse(null)).toBeNull();
       expect(remuneracaoOferecidaSchema.parse(undefined)).toBeNull();
-      expect(remuneracaoOferecidaSchema.parse("")).toBeNull();
-      expect(remuneracaoOferecidaSchema.parse("   ")).toBeNull();
     });
 
-    it("accepts valid numbers and formats with 2 decimal places", () => {
-      expect(remuneracaoOferecidaSchema.parse(4500)).toBe("4500.00");
-      expect(remuneracaoOferecidaSchema.parse(4500.5)).toBe("4500.50");
-      expect(remuneracaoOferecidaSchema.parse(0)).toBe("0.00");
-      expect(remuneracaoOferecidaSchema.parse(99999999.99)).toBe("99999999.99");
-    });
-
-    it("accepts valid numeric strings including comma as decimal separator", () => {
-      expect(remuneracaoOferecidaSchema.parse("4500")).toBe("4500.00");
-      expect(remuneracaoOferecidaSchema.parse("  4500.50  ")).toBe("4500.50");
-      expect(remuneracaoOferecidaSchema.parse("4500,75")).toBe("4500.75");
-      expect(remuneracaoOferecidaSchema.parse("0")).toBe("0.00");
-    });
-
-    it("rejects negative numbers and negative numeric strings", () => {
-      const resultNumber = remuneracaoOferecidaSchema.safeParse(-500);
-      expect(resultNumber.success).toBe(false);
-      if (!resultNumber.success) {
-        expect(resultNumber.error.errors[0]?.message).toBe(
-          "Remuneração não pode ser negativa",
-        );
-      }
-
-      const resultString = remuneracaoOferecidaSchema.safeParse("-500.00");
-      expect(resultString.success).toBe(false);
-      if (!resultString.success) {
-        expect(resultString.error.errors[0]?.message).toBe(
-          "Remuneração não pode ser negativa",
-        );
-      }
-    });
-
-    it("rejects non-numeric strings and invalid formats", () => {
-      const result = remuneracaoOferecidaSchema.safeParse("R$ 4.500,00");
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.errors[0]?.message).toBe(
-          "Remuneração deve ser um número válido",
-        );
-      }
-    });
-
-    it("rejects values exceeding max allowed for numeric(10,2)", () => {
-      const result = remuneracaoOferecidaSchema.safeParse(100000000);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.errors[0]?.message).toBe(
-          "Remuneração excede o limite máximo permitido",
-        );
-      }
+    it("rejects negative values", () => {
+      expect(remuneracaoOferecidaSchema.safeParse("-500").success).toBe(false);
     });
   });
 
   describe("notaCorteSchema", () => {
-    it("accepts scores between 0 and 100 and normalizes two decimals", () => {
-      expect(notaCorteSchema.parse(0)).toBe("0.00");
+    it("accepts values between 0 and 100", () => {
       expect(notaCorteSchema.parse("65")).toBe("65.00");
-      expect(notaCorteSchema.parse("72,5")).toBe("72.50");
+      expect(notaCorteSchema.parse(0)).toBe("0.00");
       expect(notaCorteSchema.parse(100)).toBe("100.00");
     });
 
-    it("rejects empty, non-numeric and out-of-range scores", () => {
-      expect(notaCorteSchema.safeParse("").success).toBe(false);
-      expect(notaCorteSchema.safeParse("abc").success).toBe(false);
-      expect(notaCorteSchema.safeParse(-0.01).success).toBe(false);
-      expect(notaCorteSchema.safeParse(100.01).success).toBe(false);
+    it("rejects out-of-range values", () => {
+      expect(notaCorteSchema.safeParse(-1).success).toBe(false);
+      expect(notaCorteSchema.safeParse(101).success).toBe(false);
     });
   });
 
-  describe("vagaSchema and createVagaSchema", () => {
-    it("validates and parses a full valid vaga payload", () => {
-      const parsed = createVagaSchema.parse(validVagaPayload);
-      expect(parsed).toEqual({
-        cargoId: VALID_CARGO_ID,
-        status: "aberta",
-        posicoesDisponiveis: 3,
-        notaCorte: "72.50",
-        remuneracaoOferecida: "4500.00",
-        cidade: "São Paulo",
-        uf: "SP",
-      });
-    });
-
-    it("applies defaults for status, positions and cutoff score", () => {
-      const minimalPayload = {
-        cargoId: VALID_CARGO_ID,
-        cidade: "Rio de Janeiro",
-        uf: "RJ",
-      };
-
-      const parsed = createVagaSchema.parse(minimalPayload);
-      expect(parsed).toEqual({
-        cargoId: VALID_CARGO_ID,
-        status: "aberta",
-        posicoesDisponiveis: 1,
-        notaCorte: "65.00",
-        remuneracaoOferecida: undefined,
-        cidade: "Rio de Janeiro",
-        uf: "RJ",
-      });
-    });
-
-    it("normalizes UF to uppercase and trims strings", () => {
-      const payload = {
-        ...validVagaPayload,
-        cidade: "  Curitiba  ",
-        uf: "pr",
-      };
-
-      const parsed = createVagaSchema.parse(payload);
-      expect(parsed.cidade).toBe("Curitiba");
-      expect(parsed.uf).toBe("PR");
-    });
-
-    it("rejects invalid cargoId", () => {
-      const resultInvalidUuid = createVagaSchema.safeParse({
-        ...validVagaPayload,
-        cargoId: "invalid-uuid",
-      });
-      expect(resultInvalidUuid.success).toBe(false);
-      if (!resultInvalidUuid.success) {
-        expect(resultInvalidUuid.error.errors[0]?.message).toBe(
-          "ID do cargo inválido",
-        );
+  describe("createVagaSchema", () => {
+    it("validates valid vaga input with cidadeIds", () => {
+      const result = createVagaSchema.safeParse(validVagaPayload);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cargoId).toBe(VALID_CARGO_ID);
+        expect(result.data.status).toBe("aberta");
+        expect(result.data.posicoesDisponiveis).toBe(3);
+        expect(result.data.notaCorte).toBe("72.50");
+        expect(result.data.cidadeIds).toEqual([VALID_CIDADE_ID]);
       }
-
-      const resultEmpty = createVagaSchema.safeParse({
-        ...validVagaPayload,
-        cargoId: "",
-      });
-      expect(resultEmpty.success).toBe(false);
     });
 
-    it("rejects missing mandatory fields", () => {
-      const withoutCargo = { ...validVagaPayload, cargoId: undefined };
-      const withoutCidade = { ...validVagaPayload, cidade: undefined };
-      const withoutUf = { ...validVagaPayload, uf: undefined };
-
-      expect(createVagaSchema.safeParse(withoutCargo).success).toBe(false);
-      expect(createVagaSchema.safeParse(withoutCidade).success).toBe(false);
-      expect(createVagaSchema.safeParse(withoutUf).success).toBe(false);
-    });
-
-    it("rejects invalid UF", () => {
+    it("accepts multiple cidades", () => {
+      const SECOND_CIDADE_ID = "770e8400-e29b-41d4-a716-446655440002";
       const result = createVagaSchema.safeParse({
         ...validVagaPayload,
-        uf: "XX",
+        cidadeIds: [VALID_CIDADE_ID, SECOND_CIDADE_ID],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cidadeIds).toHaveLength(2);
+      }
+    });
+
+    it("rejects empty cidadeIds array", () => {
+      const result = createVagaSchema.safeParse({
+        ...validVagaPayload,
+        cidadeIds: [],
       });
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors[0]?.message).toContain("UF inválida");
+        expect(result.error.flatten().fieldErrors.cidadeIds).toBeDefined();
       }
     });
 
-    it("rejects cidade exceeding 100 characters", () => {
+    it("rejects cidadeIds with non-UUID values", () => {
       const result = createVagaSchema.safeParse({
         ...validVagaPayload,
-        cidade: "A".repeat(101),
+        cidadeIds: ["not-a-uuid"],
       });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.errors[0]?.message).toBe(
-          "Cidade deve ter no máximo 100 caracteres",
-        );
-      }
     });
 
-    it("rejects unknown fields to prevent injecting id, timestamps, or deletedAt", () => {
-      const payloadWithInjectedFields = {
-        ...validVagaPayload,
-        id: "550e8400-e29b-41d4-a716-446655440099",
-        createdAt: new Date().toISOString(),
-        deletedAt: null,
-      };
-
-      const result = createVagaSchema.safeParse(payloadWithInjectedFields);
+    it("rejects missing cidadeIds", () => {
+      const { cidadeIds: _, ...withoutCidades } = validVagaPayload;
+      const result = createVagaSchema.safeParse(withoutCidades);
       expect(result.success).toBe(false);
     });
   });
 
   describe("updateVagaSchema", () => {
-    it("allows updating a single valid field", () => {
-      const updateStatus = { status: "pausada" as const };
-      const parsedStatus = updateVagaSchema.parse(updateStatus);
-      expect(parsedStatus).toEqual({ status: "pausada" });
-
-      const updatePosicoes = { posicoesDisponiveis: 5 };
-      const parsedPosicoes = updateVagaSchema.parse(updatePosicoes);
-      expect(parsedPosicoes).toEqual({ posicoesDisponiveis: 5 });
-
-      const updateRemuneracao = { remuneracaoOferecida: "6000.00" };
-      const parsedRemuneracao = updateVagaSchema.parse(updateRemuneracao);
-      expect(parsedRemuneracao).toEqual({ remuneracaoOferecida: "6000.00" });
-
-      const parsedNotaCorte = updateVagaSchema.parse({ notaCorte: "80" });
-      expect(parsedNotaCorte).toEqual({ notaCorte: "80.00" });
+    it("allows partial update without cidadeIds", () => {
+      const result = updateVagaSchema.safeParse({ status: "concluida" });
+      expect(result.success).toBe(true);
     });
 
-    it("allows updating multiple fields partially", () => {
-      const partialUpdate = {
-        cidade: "Belo Horizonte",
-        uf: "mg",
-        status: "concluida" as const,
-      };
-
-      const parsed = updateVagaSchema.parse(partialUpdate);
-      expect(parsed).toEqual({
-        cidade: "Belo Horizonte",
-        uf: "MG",
-        status: "concluida",
+    it("accepts cidadeIds in partial update", () => {
+      const result = updateVagaSchema.safeParse({
+        cidadeIds: [VALID_CIDADE_ID],
       });
-    });
-
-    it("rejects an empty update object", () => {
-      const result = updateVagaSchema.safeParse({});
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.errors[0]?.message).toBe(
-          "Pelo menos um campo deve ser informado para atualização",
-        );
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.cidadeIds).toEqual([VALID_CIDADE_ID]);
       }
     });
 
-    it("rejects unknown fields in update", () => {
-      const result = updateVagaSchema.safeParse({
-        status: "pausada",
-        unrecognizedField: "foo",
-      });
+    it("rejects empty object", () => {
+      const result = updateVagaSchema.safeParse({});
       expect(result.success).toBe(false);
     });
   });

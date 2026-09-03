@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
   vagaSchema,
-  posicoesDisponiveisSchema,
   notaCorteSchema,
+  posicoesDisponiveisSchema,
   remuneracaoOferecidaSchema,
   statusVagaSchema,
   STATUS_VAGA_VALUES,
 } from "~/lib/validation/vaga";
-import { BRAZILIAN_UFS } from "~/lib/validation/common";
 
 describe("VagaForm - Validation Integration", () => {
   const validCargoId = "11111111-1111-1111-1111-111111111111";
+  const validCidadeId = "22222222-2222-2222-2222-222222222222";
 
   it("validates valid vaga input according to shared schema", () => {
     const input = {
@@ -19,8 +19,7 @@ describe("VagaForm - Validation Integration", () => {
       posicoesDisponiveis: 2,
       notaCorte: "75",
       remuneracaoOferecida: "6500.00",
-      cidade: "São Paulo",
-      uf: "SP",
+      cidadeIds: [validCidadeId],
     };
 
     const result = vagaSchema.safeParse(input);
@@ -31,8 +30,7 @@ describe("VagaForm - Validation Integration", () => {
       expect(result.data.posicoesDisponiveis).toBe(2);
       expect(result.data.notaCorte).toBe("75.00");
       expect(result.data.remuneracaoOferecida).toBe("6500.00");
-      expect(result.data.cidade).toBe("São Paulo");
-      expect(result.data.uf).toBe("SP");
+      expect(result.data.cidadeIds).toEqual([validCidadeId]);
     }
   });
 
@@ -115,37 +113,16 @@ describe("VagaForm - Validation Integration", () => {
     expect(notaCorteSchema.safeParse(101).success).toBe(false);
   });
 
-  it("validates onBlur field schema for 'cidade'", () => {
-    const cidadeSchema = vagaSchema.shape.cidade;
+  it("validates 'cidadeIds' requires at least one UUID", () => {
+    const cidadeIdsSchema = vagaSchema.shape.cidadeIds;
 
-    const validCidade = cidadeSchema.safeParse("Curitiba");
-    expect(validCidade.success).toBe(true);
+    const valid = cidadeIdsSchema.safeParse([validCidadeId]);
+    expect(valid.success).toBe(true);
 
-    const emptyCidade = cidadeSchema.safeParse("");
-    expect(emptyCidade.success).toBe(false);
+    const empty = cidadeIdsSchema.safeParse([]);
+    expect(empty.success).toBe(false);
 
-    const whitespaceCidade = cidadeSchema.safeParse("   ");
-    expect(whitespaceCidade.success).toBe(false);
-
-    const longCidade = cidadeSchema.safeParse("A".repeat(101));
-    expect(longCidade.success).toBe(false);
-  });
-
-  it("validates onBlur field schema for 'uf'", () => {
-    const ufFieldSchema = vagaSchema.shape.uf;
-
-    expect(BRAZILIAN_UFS.length).toBe(27);
-
-    const validUf = ufFieldSchema.safeParse("SP");
-    expect(validUf.success).toBe(true);
-
-    const lowerUf = ufFieldSchema.safeParse("sp");
-    expect(lowerUf.success).toBe(true);
-    if (lowerUf.success) {
-      expect(lowerUf.data).toBe("SP");
-    }
-
-    const invalidUf = ufFieldSchema.safeParse("XX");
-    expect(invalidUf.success).toBe(false);
+    const nonUuid = cidadeIdsSchema.safeParse(["not-a-uuid"]);
+    expect(nonUuid.success).toBe(false);
   });
 });

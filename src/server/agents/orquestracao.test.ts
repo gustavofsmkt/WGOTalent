@@ -199,7 +199,7 @@ describe("orquestrarParaVagaNova", () => {
   it("creates a triagem for each approved candidato", async () => {
     findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
       id: "v1",
-      cidade: "Goiânia",
+      cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
       notaCorte: "65.00",
       cargo: cargoBase,
     });
@@ -229,7 +229,7 @@ describe("orquestrarParaVagaNova", () => {
   it("uses the vacancy cutoff score when matching existing candidates", async () => {
     findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
       id: "v1",
-      cidade: "Goiânia",
+      cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
       notaCorte: "75.00",
       cargo: cargoBase,
     });

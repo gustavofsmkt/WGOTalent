@@ -1,9 +1,11 @@
-import { eq, desc, asc, type SQL } from "drizzle-orm";
+import { eq, desc, asc, sql, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   triagens,
   candidatos,
   vagas,
+  vagaCidades,
+  cidades,
   cargos,
   departamentos,
   avaliacaoIA,
@@ -17,6 +19,20 @@ import {
   type NovaAvaliacaoIA,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
+import type { CidadeRef } from "~/server/db/repositories/vaga";
+
+/** Correlated subquery that aggregates all active cidades for the current vagas.id row. */
+const cidadesSubquery = sql<CidadeRef[]>`
+  COALESCE(
+    (
+      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
+      FROM wgotalent_vaga_cidades vc
+      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
+      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
+    ),
+    '[]'::json
+  )
+`;
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -45,8 +61,7 @@ export interface TriagemListItem {
     id: string;
     cargoTitulo: string;
     departamentoNome: string;
-    cidade: string;
-    uf: string;
+    cidades: CidadeRef[];
   };
   avaliacaoIa: {
     id: string;
@@ -58,8 +73,7 @@ export interface TriagemListItem {
 export interface VagaOption {
   id: string;
   status: string;
-  cidade: string;
-  uf: string;
+  cidades: CidadeRef[];
   cargo: {
     titulo: string;
     departamento: {
@@ -95,6 +109,7 @@ export const triagemRepository = {
           triagem: triagens,
           candidato: candidatos,
           vaga: vagas,
+          vagaCidades: cidadesSubquery,
           cargo: cargos,
           departamento: departamentos,
           avaliacao: avaliacaoIA,
@@ -125,8 +140,7 @@ export const triagemRepository = {
         id: r.vaga.id,
         cargoTitulo: r.cargo.titulo,
         departamentoNome: r.departamento.nome,
-        cidade: r.vaga.cidade,
-        uf: r.vaga.uf,
+        cidades: r.vagaCidades,
       },
       avaliacaoIa: r.avaliacao
         ? {
@@ -148,6 +162,7 @@ export const triagemRepository = {
           triagem: triagens,
           candidato: candidatos,
           vaga: vagas,
+          vagaCidades: cidadesSubquery,
           cargo: cargos,
           departamento: departamentos,
           avaliacao: avaliacaoIA,
@@ -170,6 +185,7 @@ export const triagemRepository = {
       candidato: r.candidato,
       vaga: {
         ...r.vaga,
+        cidades: r.vagaCidades,
         cargo: {
           ...r.cargo,
           departamento: r.departamento,
@@ -185,6 +201,7 @@ export const triagemRepository = {
       dbOrTx
         .select({
           vaga: vagas,
+          vagaCidades: cidadesSubquery,
           cargo: cargos,
           departamento: departamentos,
         })
@@ -197,8 +214,7 @@ export const triagemRepository = {
     return rows.map((r) => ({
       id: r.vaga.id,
       status: r.vaga.status,
-      cidade: r.vaga.cidade,
-      uf: r.vaga.uf,
+      cidades: r.vagaCidades,
       cargo: {
         titulo: r.cargo.titulo,
         departamento: {

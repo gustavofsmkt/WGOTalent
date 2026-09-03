@@ -57,8 +57,7 @@ interface TriagemEditorData {
   candidato: { nome: string };
   vaga: {
     cargo: { titulo: string; departamento: { nome: string } };
-    cidade: string;
-    uf: string;
+    cidades: { id: string; nome: string; uf: string }[];
   };
 }
 
@@ -435,7 +434,9 @@ export function TriagemDetailEditor({
               <span className="hidden sm:inline mx-1">•</span>
               <MapPin className="h-4 w-4 hidden sm:block" />
               <span>
-                {triagem.vaga.cidade} - {triagem.vaga.uf}
+                {triagem.vaga.cidades
+                  .map((c) => `${c.nome} - ${c.uf}`)
+                  .join(", ")}
               </span>
             </div>
           </div>

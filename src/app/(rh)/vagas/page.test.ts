@@ -23,8 +23,7 @@ describe("VagasPage - Server Component Logic", () => {
       posicoesDisponiveis: 3,
       notaCorte: "65.00",
       remuneracaoOferecida: "6500.00",
-      cidade: "São Paulo",
-      uf: "SP",
+      cidades: [{ id: "cid-1", nome: "São Paulo", uf: "SP" }],
       createdAt: "2025-01-01T00:00:00.000Z",
       updatedAt: "2025-01-01T00:00:00.000Z",
       deletedAt: null,
@@ -49,8 +48,7 @@ describe("VagasPage - Server Component Logic", () => {
       posicoesDisponiveis: 1,
       notaCorte: "70.00",
       remuneracaoOferecida: "4500.00",
-      cidade: "Curitiba",
-      uf: "PR",
+      cidades: [{ id: "cid-2", nome: "Curitiba", uf: "PR" }],
       createdAt: "2025-01-02T00:00:00.000Z",
       updatedAt: "2025-01-02T00:00:00.000Z",
       deletedAt: null,
@@ -75,8 +73,10 @@ describe("VagasPage - Server Component Logic", () => {
       posicoesDisponiveis: 2,
       notaCorte: "60.00",
       remuneracaoOferecida: null,
-      cidade: "Campinas",
-      uf: "SP",
+      cidades: [
+        { id: "cid-3", nome: "Campinas", uf: "SP" },
+        { id: "cid-1", nome: "São Paulo", uf: "SP" },
+      ],
       createdAt: "2025-01-03T00:00:00.000Z",
       updatedAt: "2025-01-03T00:00:00.000Z",
       deletedAt: null,
@@ -119,18 +119,38 @@ describe("VagasPage - Server Component Logic", () => {
     expect(totalPosicoes).toBe(6);
   });
 
-  it("filters vagas by search query (cargo, departamento, cidade, uf)", () => {
+  it("filters vagas by search query against cidades array", () => {
     const query = "curitiba";
     const filtered = mockVagas.filter(
       (vaga) =>
         vaga.cargo.titulo.toLowerCase().includes(query) ||
         vaga.cargo.departamento.nome.toLowerCase().includes(query) ||
-        vaga.cidade.toLowerCase().includes(query) ||
-        vaga.uf.toLowerCase().includes(query),
+        vaga.cidades.some(
+          (c) =>
+            c.nome.toLowerCase().includes(query) ||
+            c.uf.toLowerCase().includes(query),
+        ),
     );
 
     expect(filtered).toHaveLength(1);
     expect(filtered[0]?.id).toBe("vaga-2");
+  });
+
+  it("matches vagas with multiple cities when query matches any of them", () => {
+    const query = "campinas";
+    const filtered = mockVagas.filter(
+      (vaga) =>
+        vaga.cargo.titulo.toLowerCase().includes(query) ||
+        vaga.cargo.departamento.nome.toLowerCase().includes(query) ||
+        vaga.cidades.some(
+          (c) =>
+            c.nome.toLowerCase().includes(query) ||
+            c.uf.toLowerCase().includes(query),
+        ),
+    );
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]?.id).toBe("vaga-3");
   });
 
   it("filters vagas by status", () => {

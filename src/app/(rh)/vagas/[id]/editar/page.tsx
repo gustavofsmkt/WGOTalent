@@ -17,8 +17,9 @@ interface EditarVagaPageProps {
 
 export default async function EditarVagaPage(props: EditarVagaPageProps) {
   const params = await props.params;
-  const [vaga, activeCargoOptions, cidadeOptions] = await Promise.all([
+  const [vaga, cidadeIds, activeCargoOptions, cidadeOptions] = await Promise.all([
     vagaRepository.findById(params.id),
+    vagaRepository.findCidadeIdsByVagaId(params.id),
     vagaRepository.findActiveCargoOptions(),
     cidadeRepository.findAll(),
   ]);
@@ -78,8 +79,7 @@ export default async function EditarVagaPage(props: EditarVagaPageProps) {
             posicoesDisponiveis: vaga.posicoesDisponiveis,
             notaCorte: vaga.notaCorte,
             remuneracaoOferecida: vaga.remuneracaoOferecida,
-            cidade: vaga.cidade,
-            uf: vaga.uf,
+            cidadeIds,
           }}
           cargoOptions={cargoOptions}
           cidadeOptions={cidadeOptions}

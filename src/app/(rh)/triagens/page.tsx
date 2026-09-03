@@ -130,8 +130,11 @@ export default async function TriagensPage(props: TriagensPageProps) {
       (item.candidato.email?.toLowerCase().includes(query) ?? false) ||
       item.vaga.cargoTitulo.toLowerCase().includes(query) ||
       item.vaga.departamentoNome.toLowerCase().includes(query) ||
-      item.vaga.cidade.toLowerCase().includes(query) ||
-      item.vaga.uf.toLowerCase().includes(query)
+      item.vaga.cidades.some(
+        (c) =>
+          c.nome.toLowerCase().includes(query) ||
+          c.uf.toLowerCase().includes(query),
+      )
     );
   });
 
@@ -183,7 +186,8 @@ export default async function TriagensPage(props: TriagensPageProps) {
             {item.vaga.cargoTitulo}
           </p>
           <p className="text-xs text-muted-foreground">
-            {item.vaga.departamentoNome} • {item.vaga.cidade}/{item.vaga.uf}
+            {item.vaga.departamentoNome} •{" "}
+            {item.vaga.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}
           </p>
         </div>
       ),
@@ -322,7 +326,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
                       { value: "todas", label: "Todas as Vagas" },
                       ...vagaOptions.map((v) => ({
                         value: v.id,
-                        label: `${v.cargo.titulo} — ${v.cidade}/${v.uf}`,
+                        label: `${v.cargo.titulo} — ${v.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}`,
                       })),
                     ],
                   },

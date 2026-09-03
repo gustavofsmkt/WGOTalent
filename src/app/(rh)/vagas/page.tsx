@@ -53,8 +53,11 @@ export default async function VagasPage(props: VagasPageProps) {
       !query ||
       vaga.cargo.titulo.toLowerCase().includes(query) ||
       vaga.cargo.departamento.nome.toLowerCase().includes(query) ||
-      vaga.cidade.toLowerCase().includes(query) ||
-      vaga.uf.toLowerCase().includes(query);
+      vaga.cidades.some(
+        (c) =>
+          c.nome.toLowerCase().includes(query) ||
+          c.uf.toLowerCase().includes(query),
+      );
 
     const matchesStatus =
       !statusFilter || statusFilter === "todas" || vaga.status === statusFilter;
@@ -108,7 +111,7 @@ export default async function VagasPage(props: VagasPageProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MapPin className="size-3.5 text-muted-foreground shrink-0" />
           <span>
-            {vaga.cidade} / {vaga.uf}
+            {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
           </span>
         </div>
       ),
@@ -157,7 +160,7 @@ export default async function VagasPage(props: VagasPageProps) {
           </Link>
           <DeleteVagaButton
             vagaId={vaga.id}
-            vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
+            vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidades.map((c) => c.nome).join(", ")})`}
           />
         </div>
       ),
@@ -279,7 +282,7 @@ export default async function VagasPage(props: VagasPageProps) {
                       <div className="flex items-center gap-2">
                         <MapPin className="size-3.5 text-muted-foreground" />
                         <span>
-                          {vaga.cidade} / {vaga.uf}
+                          {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -316,7 +319,7 @@ export default async function VagasPage(props: VagasPageProps) {
                         </Link>
                         <DeleteVagaButton
                           vagaId={vaga.id}
-                          vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidade}/${vaga.uf})`}
+                          vagaTitulo={`${vaga.cargo.titulo} (${vaga.cidades.map((c) => c.nome).join(", ")})`}
                         />
                       </div>
                     </div>

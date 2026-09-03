@@ -92,8 +92,9 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
   const vaga = await vagaRepository.findByIdWithCargoAndDepartamento(vagaId);
   if (!vaga) return;
 
+  const nomeCidades = vaga.cidades.map((c) => c.nome);
   const candidatosAtivos = await candidatoRepository.findActiveByCidade(
-    vaga.cidade,
+    nomeCidades,
   );
   if (candidatosAtivos.length === 0) return;
 

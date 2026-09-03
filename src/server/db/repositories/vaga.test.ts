@@ -37,6 +37,7 @@ describe("vagaRepository", () => {
     ).toBe("function");
     expect(typeof vagaRepository.findActiveCargoOptions).toBe("function");
     expect(typeof vagaRepository.findOpenByCidade).toBe("function");
+    expect(typeof vagaRepository.findCidadeIdsByVagaId).toBe("function");
     expect(typeof vagaRepository.create).toBe("function");
     expect(typeof vagaRepository.update).toBe("function");
     expect(typeof vagaRepository.softDelete).toBe("function");
@@ -90,16 +91,5 @@ describe("vagaRepository", () => {
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_cargos"."deleted_at" is null');
     expect(sql).toContain('"wgotalent_cargos"."ativo" =');
-  });
-
-  it("builds open vagas by cidade query with notDeleted filter", () => {
-    const qb = notDeleted(
-      mockDb.select().from(vagas),
-      vagas,
-      eq(vagas.cidade, "São Paulo"),
-    );
-    const sql = qb.toSQL().sql;
-    expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
-    expect(sql).toContain('"wgotalent_vagas"."cidade" =');
   });
 });

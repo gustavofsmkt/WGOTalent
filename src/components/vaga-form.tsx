@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, X, MapPin } from "lucide-react";
 import {
   vagaSchema,
   notaCorteSchema,
@@ -37,6 +39,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import { toastActionPromise } from "~/lib/toast-promise";
 import { cn } from "~/lib/utils";
 
@@ -63,8 +66,7 @@ export interface VagaFormProps {
     posicoesDisponiveis: number;
     notaCorte: string;
     remuneracaoOferecida?: string | null;
-    cidade: string;
-    uf: string;
+    cidadeIds: string[];
   } | null;
   cargoOptions: CargoOption[];
   cidadeOptions: CidadeOption[];
@@ -93,6 +95,7 @@ export function VagaForm({
 }: VagaFormProps) {
   const router = useRouter();
   const isEdit = Boolean(vaga?.id);
+  const [pendingCidadeId, setPendingCidadeId] = useState<string>("");
 
   const form = useAppForm({
     defaultValues: {
@@ -103,8 +106,7 @@ export function VagaForm({
       remuneracaoOferecida: (vaga?.remuneracaoOferecida
         ? String(vaga.remuneracaoOferecida)
         : "") as string | number | null | undefined,
-      cidade: vaga?.cidade ?? "",
-      uf: vaga?.uf ?? "",
+      cidadeIds: vaga?.cidadeIds ?? ([] as string[]),
     },
     onSubmit: ({ value }) => {
       const req =
@@ -298,101 +300,146 @@ export function VagaForm({
               </form.AppField>
             </div>
 
-            {/* Linha 3: Cidade */}
+            {/* Linha 3: Cidades */}
             <form.Field
-              name="cidade"
-              validators={{ onBlur: vagaSchema.shape.cidade }}
+              name="cidadeIds"
+              validators={{
+                onBlur: vagaSchema.shape.cidadeIds,
+                onChange: vagaSchema.shape.cidadeIds,
+              }}
             >
-              {(cidadeField) => (
-                <form.Field
-                  name="uf"
-                  validators={{ onBlur: vagaSchema.shape.uf }}
-                >
-                  {(ufField) => {
-                    const selectedOption =
-                      cidadeOptions.find(
-                        (o) =>
-                          o.nome === cidadeField.state.value &&
-                          o.uf === ufField.state.value,
-                      ) ?? null;
+              {(field) => {
+                const hasErrors =
+                  field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0;
+                const fieldId = "vaga-cidades";
+                const errorId = `${fieldId}-error`;
+                const descId = `${fieldId}-description`;
+                const selected: string[] = field.state.value ?? [];
+                const available = cidadeOptions.filter(
+                  (c) => !selected.includes(c.id),
+                );
 
-                    const hasErrors =
-                      (cidadeField.state.meta.isTouched &&
-                        cidadeField.state.meta.errors.length > 0) ||
-                      (ufField.state.meta.isTouched &&
-                        ufField.state.meta.errors.length > 0);
+                const handleAdd = () => {
+                  if (!pendingCidadeId) return;
+                  field.handleChange([...selected, pendingCidadeId]);
+                  field.handleBlur();
+                  setPendingCidadeId("");
+                };
 
-                    const fieldId = "vaga-cidade";
-                    const errorId = `${fieldId}-error`;
-                    const descId = `${fieldId}-description`;
+                return (
+                  <Field data-invalid={hasErrors}>
+                    <FieldLabel>Cidades *</FieldLabel>
 
-                    return (
-                      <Field data-invalid={hasErrors}>
-                        <FieldLabel htmlFor={fieldId}>Cidade *</FieldLabel>
-                        <Select
-                          value={selectedOption?.id ?? ""}
-                          onValueChange={(val) => {
-                            const option = cidadeOptions.find(
-                              (o) => o.id === val,
-                            );
-                            if (option) {
-                              cidadeField.handleChange(option.nome);
-                              ufField.handleChange(option.uf);
-                              cidadeField.handleBlur();
-                              ufField.handleBlur();
-                            }
-                          }}
-                        >
-                          <SelectTrigger
-                            id={fieldId}
-                            className="w-full"
-                            aria-invalid={hasErrors}
-                            aria-describedby={
-                              hasErrors ? `${descId} ${errorId}` : descId
-                            }
+                    {cidadeOptions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-2">
+                        Nenhuma cidade cadastrada. Cadastre em Administração →
+                        Configurações Gerais.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Select + botão adicionar */}
+                        <div className="flex gap-2">
+                          <Select
+                            value={pendingCidadeId}
+                            onValueChange={setPendingCidadeId}
+                            disabled={available.length === 0}
                           >
-                            <SelectValue placeholder="Selecione uma cidade...">
-                              {(val: string | null) => {
-                                if (!val) return "Selecione uma cidade...";
-                                const o = cidadeOptions.find(
-                                  (c) => c.id === val,
-                                );
-                                return o
-                                  ? `${o.nome} - ${o.uf}`
-                                  : "Selecione uma cidade...";
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {cidadeOptions.length === 0 ? (
-                              <SelectItem value="none" disabled>
-                                Nenhuma cidade cadastrada
-                              </SelectItem>
-                            ) : (
-                              cidadeOptions.map((o) => (
-                                <SelectItem key={o.id} value={o.id}>
-                                  {o.nome} - {o.uf}
+                            <SelectTrigger
+                              className="flex-1"
+                              aria-label="Selecione uma cidade para adicionar"
+                            >
+                              <SelectValue
+                                placeholder={
+                                  available.length === 0
+                                    ? "Todas as cidades adicionadas"
+                                    : "Selecione uma cidade..."
+                                }
+                              >
+                                {(val: string | null) => {
+                                  if (!val)
+                                    return available.length === 0
+                                      ? "Todas as cidades adicionadas"
+                                      : "Selecione uma cidade...";
+                                  const c = cidadeOptions.find(
+                                    (o) => o.id === val,
+                                  );
+                                  return c
+                                    ? `${c.nome} - ${c.uf}`
+                                    : "Selecione uma cidade...";
+                                }}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {available.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.nome} - {c.uf}
                                 </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription id={descId}>
-                          Município de atuação da vaga. Cadastre cidades em
-                          Administração → Configurações Gerais.
-                        </FieldDescription>
-                        <FieldError
-                          id={errorId}
-                          errors={[
-                            ...cidadeField.state.meta.errors,
-                            ...ufField.state.meta.errors,
-                          ]}
-                        />
-                      </Field>
-                    );
-                  }}
-                </form.Field>
-              )}
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleAdd}
+                            disabled={!pendingCidadeId}
+                          >
+                            <Plus className="size-4 mr-1" />
+                            Adicionar cidade
+                          </Button>
+                        </div>
+
+                        {/* Lista das cidades já adicionadas */}
+                        {selected.length > 0 && (
+                          <div
+                            className="flex flex-wrap gap-2"
+                            aria-label="Cidades selecionadas"
+                          >
+                            {selected.map((id) => {
+                              const cidade = cidadeOptions.find(
+                                (c) => c.id === id,
+                              );
+                              if (!cidade) return null;
+                              return (
+                                <Badge
+                                  key={id}
+                                  variant="secondary"
+                                  className="flex items-center gap-1.5 pr-1 text-sm"
+                                >
+                                  <MapPin className="size-3 shrink-0" />
+                                  {cidade.nome} - {cidade.uf}
+                                  <button
+                                    type="button"
+                                    aria-label={`Remover ${cidade.nome}`}
+                                    onClick={() => {
+                                      field.handleChange(
+                                        selected.filter((s) => s !== id),
+                                      );
+                                      field.handleBlur();
+                                    }}
+                                    className="ml-0.5 rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
+                                  >
+                                    <X className="size-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <FieldDescription id={descId}>
+                      Municípios de atuação da vaga. Adicione uma ou mais
+                      cidades.
+                    </FieldDescription>
+                    <FieldError
+                      id={errorId}
+                      errors={field.state.meta.errors}
+                    />
+                  </Field>
+                );
+              }}
             </form.Field>
           </FieldGroup>
         </CardContent>

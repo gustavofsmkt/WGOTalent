@@ -110,7 +110,7 @@ function PipelineCard({ item }: { item: TriagemListItem }) {
             <span className="truncate">{item.vaga.departamentoNome}</span>
             <span>•</span>
             <span>
-              {item.vaga.cidade}/{item.vaga.uf}
+              {item.vaga.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}
             </span>
           </div>
         </div>
