@@ -6,14 +6,7 @@ import { Search, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { Field, FieldLabel } from "./ui/field";
+import { useAppForm } from "~/hooks/form";
 
 export interface FilterOption {
   value: string;
@@ -53,16 +46,6 @@ export function PageFilter({
   const [, startTransition] = React.useTransition();
 
   const currentQuery = searchParams.get("q") ?? "";
-  const [searchTerm, setSearchTerm] = React.useState(currentQuery);
-
-  React.useEffect(() => {
-    setSearchTerm(currentQuery);
-  }, [currentQuery]);
-
-  const getSelectValue = React.useCallback(
-    (cfg: SelectConfig) => searchParams.get(cfg.paramKey) ?? cfg.defaultValue,
-    [searchParams],
-  );
 
   const applyParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -76,24 +59,43 @@ export function PageFilter({
     startTransition(() => router.replace(`${pathname}?${params.toString()}`));
   };
 
-  const handleSearchApply = (term: string) => {
-    applyParams({ q: term.trim() || null });
-  };
+  const form = useAppForm({
+    defaultValues: {
+      q: currentQuery,
+      ...Object.fromEntries(
+        (filterBar?.selects ?? []).map((cfg) => [
+          cfg.paramKey,
+          searchParams.get(cfg.paramKey) ?? cfg.defaultValue,
+        ]),
+      ),
+    } as Record<string, string>,
+    onSubmit: ({ value }) => {
+      applyParams({ q: value.q?.trim() || null });
+    },
+  });
 
-  const handleSelectChange = (cfg: SelectConfig, value: string) => {
-    applyParams({
-      [cfg.paramKey]: value !== cfg.defaultValue ? value : null,
-    });
-  };
+  const filterSelectsRef = React.useRef(filterBar?.selects);
+  filterSelectsRef.current = filterBar?.selects;
+
+  React.useEffect(() => {
+    form.setFieldValue("q", currentQuery);
+    for (const cfg of filterSelectsRef.current ?? []) {
+      form.setFieldValue(
+        cfg.paramKey,
+        searchParams.get(cfg.paramKey) ?? cfg.defaultValue,
+      );
+    }
+  }, [searchParams, form]);
 
   const handleCheckboxChange = (cfg: CheckboxConfig, checked: boolean) => {
     applyParams({ [cfg.paramKey]: checked ? (cfg.trueValue ?? "1") : null });
   };
 
   const handleClearAll = () => {
-    setSearchTerm("");
+    form.setFieldValue("q", "");
     const updates: Record<string, null> = { q: null };
     for (const select of filterBar?.selects ?? []) {
+      form.setFieldValue(select.paramKey, select.defaultValue);
       updates[select.paramKey] = null;
     }
     if (filterBar?.checkbox) {
@@ -104,8 +106,9 @@ export function PageFilter({
 
   const hasActiveFilters = React.useMemo(() => {
     if (currentQuery) return true;
-    for (const select of filterBar?.selects ?? []) {
-      if (getSelectValue(select) !== select.defaultValue) return true;
+    for (const cfg of filterBar?.selects ?? []) {
+      const current = searchParams.get(cfg.paramKey) ?? cfg.defaultValue;
+      if (current !== cfg.defaultValue) return true;
     }
     if (filterBar?.checkbox) {
       const trueValue = filterBar.checkbox.trueValue ?? "1";
@@ -113,7 +116,7 @@ export function PageFilter({
         return true;
     }
     return false;
-  }, [currentQuery, filterBar, getSelectValue, searchParams]);
+  }, [currentQuery, filterBar, searchParams]);
 
   const hasFilterBar =
     !!filterBar && (!!filterBar.selects?.length || !!filterBar.checkbox);
@@ -124,72 +127,72 @@ export function PageFilter({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleSearchApply(searchTerm);
+          e.stopPropagation();
+          void form.handleSubmit();
         }}
         className="relative flex items-center max-w-md"
       >
         <Search className="absolute left-3 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          type="search"
-          placeholder={searchPlaceholder}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onBlur={() => {
-            if (searchTerm !== currentQuery) handleSearchApply(searchTerm);
-          }}
-          className="pl-9 pr-4 h-9 text-sm bg-card"
-          aria-label={searchAriaLabel ?? searchPlaceholder}
-        />
-        {searchTerm && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              setSearchTerm("");
-              applyParams({ q: null });
-            }}
-            className="absolute right-2 text-muted-foreground hover:text-foreground"
-            aria-label="Limpar busca"
-          >
-            <X className="size-3.5" />
-          </Button>
-        )}
+        <form.Field name="q">
+          {(field) => (
+            <>
+              <Input
+                type="search"
+                placeholder={searchPlaceholder}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={() => {
+                  field.handleBlur();
+                  if (field.state.value !== currentQuery) {
+                    applyParams({ q: field.state.value.trim() || null });
+                  }
+                }}
+                className="pl-9 pr-4 h-9 text-sm bg-card"
+                aria-label={searchAriaLabel ?? searchPlaceholder}
+              />
+              {field.state.value && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => {
+                    field.handleChange("");
+                    applyParams({ q: null });
+                  }}
+                  className="absolute right-2 text-muted-foreground hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="size-3.5" />
+                </Button>
+              )}
+            </>
+          )}
+        </form.Field>
       </form>
 
       {/* Row 2: Filter bar */}
       {hasFilterBar && (
-        <div className="flex  items-end gap-x-3 gap-y-2 p-2 bg-card rounded-lg border border-border/60">
+        <div className="flex items-end gap-x-3 gap-y-2 p-2 bg-card rounded-lg border border-border/60">
           {filterBar!.selects?.map((cfg) => (
-            <Field key={cfg.paramKey}>
-              <FieldLabel
-                htmlFor={`filter-select-${cfg.paramKey}`}
-                className="text-xs font-medium text-muted-foreground"
-              >
-                {cfg.placeholder}
-              </FieldLabel>
-              <Select
-                value={getSelectValue(cfg)}
-                onValueChange={(val) => handleSelectChange(cfg, val as string)}
-              >
-                <SelectTrigger id={`filter-select-${cfg.paramKey}`}>
-                  <SelectValue placeholder={cfg.placeholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {cfg.options.map((opt) => (
-                    <SelectItem
-                      key={opt.value}
-                      value={opt.value}
-                      className="text-xs"
-                    >
-                      <span className="whitespace-normal break-words">
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <form.AppField
+              key={cfg.paramKey}
+              name={cfg.paramKey}
+              listeners={{
+                onChange: ({ value }) => {
+                  applyParams({
+                    [cfg.paramKey]: value !== cfg.defaultValue ? value : null,
+                  });
+                },
+              }}
+            >
+              {(field) => (
+                <field.SelectField
+                  label={cfg.placeholder}
+                  options={cfg.options}
+                  placeholder={cfg.placeholder}
+                />
+              )}
+            </form.AppField>
           ))}
 
           {filterBar!.checkbox && (
