@@ -65,7 +65,13 @@ export default function SelectField({
           onBlur={field.handleBlur}
           disabled={disabled}
         >
-          <SelectValue placeholder={disabled ? "-" : placeholder} />
+          <SelectValue placeholder={disabled ? "-" : placeholder}>
+            {(value: string | null) => {
+              const selected = options.find((o) => o.value === value);
+              if (selected) return selected.label;
+              return disabled ? "-" : placeholder;
+            }}
+          </SelectValue>
         </SelectTrigger>
 
         <SelectContent>
