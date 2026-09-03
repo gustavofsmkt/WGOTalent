@@ -98,15 +98,6 @@ async function tentarGerarResposta<T>(
             strict: true,
           },
         },
-        ...(input.params?.temperature !== undefined
-          ? { temperature: input.params.temperature }
-          : {}),
-        ...(input.params?.topP !== undefined
-          ? { top_p: input.params.topP }
-          : {}),
-        ...(input.params?.maxOutputTokens !== undefined
-          ? { max_output_tokens: input.params.maxOutputTokens }
-          : {}),
       }),
     });
   } catch (error) {

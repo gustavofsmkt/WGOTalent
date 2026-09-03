@@ -102,7 +102,7 @@ async function tentarGerarResposta<T>(
       },
       body: JSON.stringify({
         model: input.model,
-        max_tokens: input.params?.maxOutputTokens ?? DEFAULT_MAX_TOKENS,
+        max_tokens: DEFAULT_MAX_TOKENS,
         system: input.systemPrompt,
         messages: [
           { role: "user", content: montarBlocosUsuario(input) },
@@ -116,12 +116,6 @@ async function tentarGerarResposta<T>(
           },
         ],
         tool_choice: { type: "tool", name: TOOL_NAME },
-        ...(input.params?.temperature !== undefined
-          ? { temperature: input.params.temperature }
-          : {}),
-        ...(input.params?.topP !== undefined
-          ? { top_p: input.params.topP }
-          : {}),
       }),
     });
   } catch (error) {

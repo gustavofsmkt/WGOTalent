@@ -5,7 +5,6 @@ import { decryptCredential } from "~/lib/agents/crypto";
 import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
 import { objetoComLista } from "~/lib/agents/schema-dialect";
 import { resolveTemplate } from "~/lib/agents/template";
-import { parseLlmParams } from "~/lib/validation/agente-config";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 
 const CHUNK_SIZE = 25;
@@ -72,7 +71,6 @@ export async function executarClassificadorAderencia(
   }
 
   const apiKey = decryptCredential(credencial.apiKeyCifrada);
-  const params = parseLlmParams(config.params);
   const idsValidos = new Set(itensComparacao.map((item) => item.id));
 
   const chunks: ItemAderencia[][] = [];
@@ -104,7 +102,6 @@ export async function executarClassificadorAderencia(
         userPrompt,
         responseJsonSchema: RESPONSE_JSON_SCHEMA,
         responseZodSchema: resultadoClassificadorSchema,
-        params,
       });
       return resposta.itens;
     },

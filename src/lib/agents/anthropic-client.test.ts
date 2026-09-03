@@ -101,21 +101,6 @@ describe("gerarRespostaEstruturada (anthropic)", () => {
     expect(bloco.source.media_type).toBe("image/png");
   });
 
-  it("maps canonical params to the Anthropic body", async () => {
-    fetchMock.mockResolvedValueOnce(respostaComToolUse({ score: 1 }));
-
-    await gerarRespostaEstruturada({
-      ...baseInput,
-      params: { temperature: 0.2, topP: 0.9, maxOutputTokens: 2048 },
-    });
-
-    const [, requestInit] = fetchMock.mock.calls[0]!;
-    const body = JSON.parse(requestInit.body as string);
-    expect(body.temperature).toBe(0.2);
-    expect(body.top_p).toBe(0.9);
-    expect(body.max_tokens).toBe(2048);
-  });
-
   it("throws before calling fetch when the schema root is not an object", async () => {
     await expect(
       gerarRespostaEstruturada({

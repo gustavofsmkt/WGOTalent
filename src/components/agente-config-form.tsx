@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import {
   agenteConfigUpdateSchema,
   type AgenteConfigUpdateInput,
-  type LlmParamsInput,
 } from "~/lib/validation/agente-config";
 import { updateAgenteConfig } from "~/actions/agente-config";
 import type { AgenteConfig } from "~/server/db/schema";
@@ -53,19 +52,12 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
       agenteConfig.slot !== "extracao_curriculo" || p.capabilities.multimodalPdf,
   ).map((p) => ({ value: p.value, label: p.label }));
 
-  const paramsIniciais = (agenteConfig.params ?? {}) as LlmParamsInput;
-
   const form = useAppForm({
     defaultValues: {
       provider: agenteConfig.provider,
       model: agenteConfig.model,
       systemPrompt: agenteConfig.systemPrompt,
       userPrompt: agenteConfig.userPrompt,
-      params: {
-        temperature: paramsIniciais.temperature ?? null,
-        maxOutputTokens: paramsIniciais.maxOutputTokens ?? null,
-        topP: paramsIniciais.topP ?? null,
-      },
       thresholdScore: agenteConfig.thresholdScore
         ? Number(agenteConfig.thresholdScore)
         : null,
@@ -75,7 +67,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
       onBlur: agenteConfigUpdateSchema,
     },
     onSubmit: ({ value }) => {
-      const req = updateAgenteConfig(agenteConfig.slot, normalizarParams(value));
+      const req = updateAgenteConfig(agenteConfig.slot, value);
 
       toastActionPromise(req, {
         loading: "Salvando configuração do agente...",
@@ -158,89 +150,6 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
             )}
           </form.AppField>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <form.Field name="params.temperature">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="agente-temperature">
-                    Temperature
-                  </FieldLabel>
-                  <Input
-                    id="agente-temperature"
-                    name={field.name}
-                    type="number"
-                    min={0}
-                    max={2}
-                    step={0.1}
-                    value={field.state.value ?? ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value === "" ? null : Number(e.target.value),
-                      )
-                    }
-                  />
-                  <FieldDescription>
-                    0–2. Vazio = default do provedor.
-                  </FieldDescription>
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
-
-            <form.Field name="params.maxOutputTokens">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="agente-max-tokens">
-                    Máx. tokens de saída
-                  </FieldLabel>
-                  <Input
-                    id="agente-max-tokens"
-                    name={field.name}
-                    type="number"
-                    min={1}
-                    max={32000}
-                    step={1}
-                    value={field.state.value ?? ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value === "" ? null : Number(e.target.value),
-                      )
-                    }
-                  />
-                  <FieldDescription>Inteiro. Vazio = default.</FieldDescription>
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
-
-            <form.Field name="params.topP">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor="agente-top-p">Top-P</FieldLabel>
-                  <Input
-                    id="agente-top-p"
-                    name={field.name}
-                    type="number"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={field.state.value ?? ""}
-                    onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value === "" ? null : Number(e.target.value),
-                      )
-                    }
-                  />
-                  <FieldDescription>0–1. Vazio = default.</FieldDescription>
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
-          </div>
-
           {agenteConfig.slot === "classificador_aderencia" && (
             <form.Field name="thresholdScore">
               {(field) => {
@@ -301,18 +210,4 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
       </form>
     </Card>
   );
-}
-
-/** O form usa `null` para "campo numérico vazio"; a action/Zod esperam a chave ausente. */
-function normalizarParams(value: AgenteConfigUpdateInput): AgenteConfigUpdateInput {
-  const p = (value.params ?? {}) as Record<string, number | null | undefined>;
-  const limpos: Record<string, number> = {};
-  for (const chave of ["temperature", "maxOutputTokens", "topP"] as const) {
-    const v = p[chave];
-    if (typeof v === "number" && !Number.isNaN(v)) limpos[chave] = v;
-  }
-  return {
-    ...value,
-    params: Object.keys(limpos).length > 0 ? limpos : null,
-  } as AgenteConfigUpdateInput;
 }

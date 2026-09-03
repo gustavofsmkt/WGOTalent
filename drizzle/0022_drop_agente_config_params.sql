@@ -1,0 +1,1 @@
+ALTER TABLE "wgotalent_agente_config" DROP COLUMN "params";

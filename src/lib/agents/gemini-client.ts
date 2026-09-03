@@ -58,15 +58,6 @@ async function tentarGerarResposta<T>(
         systemInstruction: input.systemPrompt,
         responseMimeType: "application/json",
         responseJsonSchema: input.responseJsonSchema,
-        ...(input.params?.temperature !== undefined
-          ? { temperature: input.params.temperature }
-          : {}),
-        ...(input.params?.topP !== undefined
-          ? { topP: input.params.topP }
-          : {}),
-        ...(input.params?.maxOutputTokens !== undefined
-          ? { maxOutputTokens: input.params.maxOutputTokens }
-          : {}),
       },
     });
     responseText = response.text;

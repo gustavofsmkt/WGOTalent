@@ -34,7 +34,6 @@ const config = {
   model: "gemini-3.5-flash-lite",
   systemPrompt: "sys {{tipo_principal}}",
   userPrompt: "cmp {{tipo_comparacao}}",
-  params: null,
 };
 const credencial = { apiKeyCifrada: "cifrada" };
 

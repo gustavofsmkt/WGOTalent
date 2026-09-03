@@ -25,7 +25,7 @@ export async function updateAgenteConfig(
   }
 
   try {
-    const { thresholdScore, params, ...rest } = parsed.data;
+    const { thresholdScore, ...rest } = parsed.data;
 
     // Só bloqueia se o agente for ficar ativo — permite salvar um rascunho
     // inativo apontando para um provedor ainda sem credencial.
@@ -43,7 +43,6 @@ export async function updateAgenteConfig(
 
     const updated = await agenteConfigRepository.update(slot, {
       ...rest,
-      params: params ?? null,
       thresholdScore:
         thresholdScore === null || thresholdScore === undefined
           ? null
