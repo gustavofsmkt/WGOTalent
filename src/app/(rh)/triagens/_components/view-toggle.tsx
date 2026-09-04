@@ -15,6 +15,7 @@ export function ViewToggle() {
 
   const setView = (view: string) => {
     const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
     if (view !== "lista") {
       params.set("view", view);
     } else {

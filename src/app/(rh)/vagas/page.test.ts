@@ -96,16 +96,19 @@ describe("VagasPage - Server Component Logic", () => {
     },
   ];
 
-  it("fetches all active vagas with cargo and departamento", async () => {
+  it("fetches a page of active vagas with cargo and departamento", async () => {
     vi.spyOn(
       vagaRepository,
-      "findAllWithCargoAndDepartamento",
-    ).mockResolvedValueOnce(mockVagas);
+      "findPageWithCargoAndDepartamento",
+    ).mockResolvedValueOnce({ items: mockVagas, total: 3 });
 
-    const result = await vagaRepository.findAllWithCargoAndDepartamento();
-    expect(result).toHaveLength(3);
-    expect(result[0]?.cargo.titulo).toBe("Desenvolvedor Frontend");
-    expect(result[0]?.cargo.departamento.nome).toBe("Tecnologia");
+    const result = await vagaRepository.findPageWithCargoAndDepartamento(
+      {},
+      { page: 1, pageSize: 10 },
+    );
+    expect(result.total).toBe(3);
+    expect(result.items[0]?.cargo.titulo).toBe("Desenvolvedor Frontend");
+    expect(result.items[0]?.cargo.departamento.nome).toBe("Tecnologia");
   });
 
   it("calculates summary statistics correctly", () => {

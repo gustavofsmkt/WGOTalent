@@ -1,41 +1,50 @@
-import { eq, desc, asc, sql, type SQL } from "drizzle-orm";
+import {
+  eq,
+  desc,
+  asc,
+  sql,
+  ilike,
+  or,
+  and,
+  isNull,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   triagens,
   candidatos,
   vagas,
-  vagaCidades,
-  cidades,
   cargos,
   departamentos,
   avaliacaoIA,
   triagemEtapaEnum,
   triagemResultadoEnum,
   triagemMotivoEnum,
+  type CidadeRef,
   type Triagem,
   type NovaTriagem,
   type TriagemCompleta,
   type AvaliacaoIA,
   type NovaAvaliacaoIA,
 } from "~/server/db/schema";
-import { notDeleted } from "~/server/db/query-helpers";
-import type { CidadeRef } from "~/server/db/repositories/vaga";
-
-/** Correlated subquery that aggregates all active cidades for the current vagas.id row. */
-const cidadesSubquery = sql<CidadeRef[]>`
-  COALESCE(
-    (
-      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
-      FROM wgotalent_vaga_cidades vc
-      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
-      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
-    ),
-    '[]'::json
-  )
-`;
+import {
+  activeCitiesForVaga,
+  matchesActiveVagaCity,
+  notDeleted,
+} from "~/server/db/query-helpers";
+import {
+  getPaginationOffset,
+  type PaginatedResult,
+  type PaginationInput,
+} from "~/lib/pagination";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
+
+const avaliacaoAtivaJoin = and(
+  eq(triagens.id, avaliacaoIA.triagemId),
+  isNull(avaliacaoIA.deletedAt),
+);
 
 export interface TriagemFiltros {
   etapa?: (typeof triagemEtapaEnum.enumValues)[number];
@@ -43,6 +52,13 @@ export interface TriagemFiltros {
   motivo?: (typeof triagemMotivoEnum.enumValues)[number];
   vagaId?: string;
   vagaAtiva?: boolean;
+  query?: string;
+}
+
+export interface TriagemListSummary {
+  total: number;
+  emAndamento: number;
+  aprovados: number;
 }
 
 export interface TriagemListItem {
@@ -88,18 +104,42 @@ export interface CandidatoOption {
   email: string | null;
 }
 
+function buildTriagemConditions(
+  filtros: TriagemFiltros | undefined,
+  dbOrTx: DbOrTx,
+): SQL[] {
+  const conditions: (SQL | undefined)[] = [];
+  if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa));
+  if (filtros?.resultado) {
+    conditions.push(eq(triagens.resultado, filtros.resultado));
+  }
+  if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo));
+  if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
+  if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
+
+  const query = filtros?.query?.trim();
+  if (query) {
+    const pattern = `%${query}%`;
+    conditions.push(
+      or(
+        ilike(candidatos.nome, pattern),
+        ilike(candidatos.email, pattern),
+        ilike(cargos.titulo, pattern),
+        ilike(departamentos.nome, pattern),
+        matchesActiveVagaCity(dbOrTx, pattern),
+      ),
+    );
+  }
+
+  return conditions.filter((condition): condition is SQL => Boolean(condition));
+}
+
 export const triagemRepository = {
   findAllWithJoins: async (
     filtros?: TriagemFiltros,
     dbOrTx: DbOrTx = db,
   ): Promise<TriagemListItem[]> => {
-    const conditions: (SQL | undefined)[] = [];
-    if (filtros?.etapa) conditions.push(eq(triagens.etapa, filtros.etapa));
-    if (filtros?.resultado)
-      conditions.push(eq(triagens.resultado, filtros.resultado));
-    if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo));
-    if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
-    if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
+    const conditions = buildTriagemConditions(filtros, dbOrTx);
 
     // Uses notDeleted ONLY on triagens. This respects the ADR of soft delete semantics:
     // even if a Vaga or Candidato is soft-deleted, historical Triagens remain intact and their references hydrate correctly.
@@ -109,7 +149,7 @@ export const triagemRepository = {
           triagem: triagens,
           candidato: candidatos,
           vaga: vagas,
-          vagaCidades: cidadesSubquery,
+          vagaCidades: activeCitiesForVaga(dbOrTx),
           cargo: cargos,
           departamento: departamentos,
           avaliacao: avaliacaoIA,
@@ -119,7 +159,7 @@ export const triagemRepository = {
         .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-        .leftJoin(avaliacaoIA, eq(triagens.id, avaliacaoIA.triagemId)),
+        .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
       triagens,
       ...conditions,
     ).orderBy(desc(triagens.createdAt));
@@ -152,6 +192,139 @@ export const triagemRepository = {
     }));
   },
 
+  findPageWithJoins: async (
+    filtros: TriagemFiltros,
+    pagination: PaginationInput,
+    dbOrTx: DbOrTx = db,
+  ): Promise<PaginatedResult<TriagemListItem>> => {
+    const conditions = buildTriagemConditions(filtros, dbOrTx);
+    const [rows, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select({
+            triagem: triagens,
+            candidato: candidatos,
+            vaga: vagas,
+            vagaCidades: activeCitiesForVaga(dbOrTx),
+            cargo: cargos,
+            departamento: departamentos,
+            avaliacao: avaliacaoIA,
+          })
+          .from(triagens)
+          .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+          .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
+        triagens,
+        ...conditions,
+      )
+        .orderBy(desc(triagens.createdAt), desc(triagens.id))
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(triagens)
+          .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        triagens,
+        ...conditions,
+      ),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.triagem.id,
+        etapa: row.triagem.etapa,
+        resultado: row.triagem.resultado,
+        motivo: row.triagem.motivo,
+        createdAt: row.triagem.createdAt,
+        updatedAt: row.triagem.updatedAt,
+        candidato: {
+          id: row.candidato.id,
+          nome: row.candidato.nome,
+          email: row.candidato.email,
+        },
+        vaga: {
+          id: row.vaga.id,
+          cargoTitulo: row.cargo.titulo,
+          departamentoNome: row.departamento.nome,
+          cidades: row.vagaCidades,
+        },
+        avaliacaoIa: row.avaliacao
+          ? {
+              id: row.avaliacao.id,
+              scoreIa: row.avaliacao.scoreIa,
+              parecerIa: row.avaliacao.parecerIa,
+            }
+          : null,
+      })),
+      total: Number(totalRows[0]?.count ?? 0),
+    };
+  },
+
+  getListSummary: async (
+    filtros: TriagemFiltros,
+    dbOrTx: DbOrTx = db,
+  ): Promise<TriagemListSummary> => {
+    const conditions = buildTriagemConditions(filtros, dbOrTx);
+    const projection = {
+      total: sql<number>`count(*)::int`,
+      emAndamento: sql<number>`count(*) filter (where ${triagens.resultado} = 'em_andamento')::int`,
+      aprovados: sql<number>`count(*) filter (where ${triagens.resultado} = 'aprovado')::int`,
+    };
+
+    let rows: Array<{
+      total: number;
+      emAndamento: number;
+      aprovados: number;
+    }>;
+
+    if (filtros.query?.trim()) {
+      rows = await notDeleted(
+        dbOrTx
+          .select(projection)
+          .from(triagens)
+          .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        triagens,
+        ...conditions,
+      );
+    } else if (filtros.vagaAtiva) {
+      rows = await notDeleted(
+        dbOrTx
+          .select(projection)
+          .from(triagens)
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id)),
+        triagens,
+        ...conditions,
+      );
+    } else {
+      rows = await notDeleted(
+        dbOrTx.select(projection).from(triagens),
+        triagens,
+        ...conditions,
+      );
+    }
+
+    return {
+      total: Number(rows[0]?.total ?? 0),
+      emAndamento: Number(rows[0]?.emAndamento ?? 0),
+      aprovados: Number(rows[0]?.aprovados ?? 0),
+    };
+  },
+
   findByIdWithJoins: async (
     id: string,
     dbOrTx: DbOrTx = db,
@@ -162,7 +335,7 @@ export const triagemRepository = {
           triagem: triagens,
           candidato: candidatos,
           vaga: vagas,
-          vagaCidades: cidadesSubquery,
+          vagaCidades: activeCitiesForVaga(dbOrTx),
           cargo: cargos,
           departamento: departamentos,
           avaliacao: avaliacaoIA,
@@ -172,7 +345,7 @@ export const triagemRepository = {
         .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-        .leftJoin(avaliacaoIA, eq(triagens.id, avaliacaoIA.triagemId)),
+        .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
       triagens,
       eq(triagens.id, id),
     );
@@ -201,7 +374,7 @@ export const triagemRepository = {
       dbOrTx
         .select({
           vaga: vagas,
-          vagaCidades: cidadesSubquery,
+          vagaCidades: activeCitiesForVaga(dbOrTx),
           cargo: cargos,
           departamento: departamentos,
         })

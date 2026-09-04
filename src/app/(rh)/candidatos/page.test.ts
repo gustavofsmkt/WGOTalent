@@ -43,16 +43,20 @@ describe("CandidatosPage - Server Component Logic", () => {
       },
     ];
 
-    vi.spyOn(candidatoRepository, "findAllActiveSummary").mockResolvedValueOnce(
-      mockCandidatos,
-    );
+    vi.spyOn(
+      candidatoRepository,
+      "findPageActiveSummary",
+    ).mockResolvedValueOnce({ items: mockCandidatos, total: 2 });
 
-    const result = await candidatoRepository.findAllActiveSummary();
-    expect(result).toHaveLength(2);
-    expect(result[0]?.nome).toBe("Ana Souza");
-    expect(result[0]?.origem).toBe("manual");
-    expect(result[1]?.nome).toBe("Carlos Lima");
-    expect(result[1]?.origem).toBe("email");
+    const result = await candidatoRepository.findPageActiveSummary(
+      {},
+      { page: 1, pageSize: 10 },
+    );
+    expect(result.total).toBe(2);
+    expect(result.items[0]?.nome).toBe("Ana Souza");
+    expect(result.items[0]?.origem).toBe("manual");
+    expect(result.items[1]?.nome).toBe("Carlos Lima");
+    expect(result.items[1]?.origem).toBe("email");
   });
 
   it("filters candidates by search query in nome, email, cidade or cargoInteresse", () => {

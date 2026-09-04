@@ -24,7 +24,7 @@ import {
   departamentos,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
-import { eq, and, isNull, sql, desc } from "drizzle-orm";
+import { and, countDistinct, desc, eq, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -45,10 +45,10 @@ describe("dashboardRepository", () => {
     expect(typeof dashboardRepository.getTriagensPorEtapa).toBe("function");
     expect(typeof dashboardRepository.getTriagensPorResultado).toBe("function");
     expect(typeof dashboardRepository.getMediaScoreIa).toBe("function");
-    expect(typeof dashboardRepository.getVagasComMaisCandidatos).toBe(
+    expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
       "function",
     );
-    expect(typeof dashboardRepository.getAtividadeRecente).toBe("function");
+    expect(typeof dashboardRepository.getAtividadeRecentePage).toBe("function");
     expect(typeof dashboardRepository.getDashboardSummary).toBe("function");
   });
 
@@ -166,8 +166,6 @@ describe("dashboardRepository", () => {
           vagaId: vagas.id,
           cargoTitulo: cargos.titulo,
           departamentoNome: departamentos.nome,
-          cidade: vagas.cidade,
-          uf: vagas.uf,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
           totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
         })
@@ -180,8 +178,6 @@ describe("dashboardRepository", () => {
           vagas.id,
           cargos.titulo,
           departamentos.nome,
-          vagas.cidade,
-          vagas.uf,
           vagas.posicoesDisponiveis,
         )
         .orderBy(
@@ -195,6 +191,22 @@ describe("dashboardRepository", () => {
       const querySql = qb.toSQL().sql;
       expect(querySql).toContain('"wgotalent_vagas"."deleted_at" is null');
       expect(querySql).toContain("limit $");
+
+      const countQb = notDeleted(
+        mockDb
+          .select({ count: countDistinct(vagas.id) })
+          .from(vagas)
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        vagas,
+      );
+      const countSql = countQb.toSQL().sql;
+      expect(countSql).toContain("count(distinct");
+      expect(countSql).toContain('inner join "wgotalent_cargos"');
+      expect(countSql).toContain('inner join "wgotalent_departamentos"');
     });
 
     it("builds getAtividadeRecente query with notDeleted on triagens and limit", () => {
@@ -343,60 +355,13 @@ describe("dashboardRepository", () => {
       );
     });
 
-    it("getVagasComMaisCandidatos routes its filter through notDeleted() on vagas instead of an inline isNull", async () => {
-      vi.mocked(notDeleted).mockClear();
-      const mockFakeDb = {
-        select: () => ({
-          from: () => ({
-            innerJoin: () => ({
-              innerJoin: () => ({
-                leftJoin: () => ({
-                  where: () => ({
-                    groupBy: () => ({
-                      orderBy: () => ({
-                        limit: async () => [],
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      } as unknown as DbOrTx;
-
-      await dashboardRepository.getVagasComMaisCandidatos(5, mockFakeDb);
-
-      expect(notDeleted).toHaveBeenCalledWith(expect.anything(), vagas);
-    });
-
-    it("getAtividadeRecente routes its filter through notDeleted() on triagens instead of an inline isNull", async () => {
-      vi.mocked(notDeleted).mockClear();
-      const mockFakeDb = {
-        select: () => ({
-          from: () => ({
-            innerJoin: () => ({
-              innerJoin: () => ({
-                innerJoin: () => ({
-                  innerJoin: () => ({
-                    leftJoin: () => ({
-                      where: () => ({
-                        orderBy: () => ({
-                          limit: async () => [],
-                        }),
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      } as unknown as DbOrTx;
-
-      await dashboardRepository.getAtividadeRecente(5, mockFakeDb);
-
-      expect(notDeleted).toHaveBeenCalledWith(expect.anything(), triagens);
+    it("exposes paginated dashboard table queries", () => {
+      expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
+        "function",
+      );
+      expect(typeof dashboardRepository.getAtividadeRecentePage).toBe(
+        "function",
+      );
     });
 
     it("handles getDashboardSummary aggregate call", async () => {
@@ -434,36 +399,41 @@ describe("dashboardRepository", () => {
           banco_talentos: 5,
         });
       const spyVagasMais = vi
-        .spyOn(dashboardRepository, "getVagasComMaisCandidatos")
-        .mockResolvedValueOnce([
-          {
-            vagaId: "vaga-1",
-            cargoTitulo: "Dev Fullstack",
-            departamentoNome: "Tecnologia",
-            cidade: "São Paulo",
-            uf: "SP",
-            posicoesDisponiveis: 2,
-            totalCandidatos: 25,
-          },
-        ]);
+        .spyOn(dashboardRepository, "getVagasComMaisCandidatosPage")
+        .mockResolvedValueOnce({
+          items: [
+            {
+              vagaId: "vaga-1",
+              cargoTitulo: "Dev Fullstack",
+              departamentoNome: "Tecnologia",
+              cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
+              posicoesDisponiveis: 2,
+              totalCandidatos: 25,
+            },
+          ],
+          total: 1,
+        });
       const spyAtividades = vi
-        .spyOn(dashboardRepository, "getAtividadeRecente")
-        .mockResolvedValueOnce([
-          {
-            id: "triagem-1",
-            candidatoId: "cand-1",
-            candidatoNome: "Ana Silva",
-            vagaId: "vaga-1",
-            cargoTitulo: "Dev Fullstack",
-            departamentoNome: "Tecnologia",
-            etapa: "entrevista_rh",
-            resultado: "em_andamento",
-            motivo: null,
-            scoreIa: "85.00",
-            createdAt: "2026-08-20T10:00:00Z",
-            updatedAt: "2026-08-20T12:00:00Z",
-          },
-        ]);
+        .spyOn(dashboardRepository, "getAtividadeRecentePage")
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: "triagem-1",
+              candidatoId: "cand-1",
+              candidatoNome: "Ana Silva",
+              vagaId: "vaga-1",
+              cargoTitulo: "Dev Fullstack",
+              departamentoNome: "Tecnologia",
+              etapa: "entrevista_rh",
+              resultado: "em_andamento",
+              motivo: null,
+              scoreIa: "85.00",
+              createdAt: "2026-08-20T10:00:00Z",
+              updatedAt: "2026-08-20T12:00:00Z",
+            },
+          ],
+          total: 1,
+        });
 
       const summary = await dashboardRepository.getDashboardSummary();
 
@@ -474,8 +444,8 @@ describe("dashboardRepository", () => {
       expect(summary.mediaScoreIa).toEqual({ media: 78.4, totalAvaliadas: 30 });
       expect(summary.triagensPorEtapa.curriculo).toBe(15);
       expect(summary.triagensPorResultado.desistente).toBe(5);
-      expect(summary.vagasComMaisCandidatos).toHaveLength(1);
-      expect(summary.atividadeRecente).toHaveLength(1);
+      expect(summary.vagasComMaisCandidatos.items).toHaveLength(1);
+      expect(summary.atividadeRecente.items).toHaveLength(1);
 
       spyAbertas.mockRestore();
       spyCandidatos.mockRestore();

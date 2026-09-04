@@ -1,4 +1,4 @@
-import { eq, and, sql, isNull, desc } from "drizzle-orm";
+import { and, countDistinct, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   vagas,
@@ -9,21 +9,15 @@ import {
   departamentos,
   triagemEtapaEnum,
   triagemResultadoEnum,
+  type CidadeRef,
 } from "~/server/db/schema";
-import { notDeleted } from "~/server/db/query-helpers";
-import type { CidadeRef } from "~/server/db/repositories/vaga";
-
-const cidadesSubquery = sql<CidadeRef[]>`
-  COALESCE(
-    (
-      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
-      FROM wgotalent_vaga_cidades vc
-      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
-      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
-    ),
-    '[]'::json
-  )
-`;
+import { activeCitiesForVaga, notDeleted } from "~/server/db/query-helpers";
+import {
+  DASHBOARD_PAGE_SIZE,
+  getPaginationOffset,
+  type PaginatedResult,
+  type PaginationInput,
+} from "~/lib/pagination";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -79,8 +73,13 @@ export interface DashboardSummary {
   mediaScoreIa: MediaScoreIaResult;
   triagensPorEtapa: TriagensPorEtapaCount;
   triagensPorResultado: TriagensPorResultadoCount;
-  vagasComMaisCandidatos: VagaComMaisCandidatosItem[];
-  atividadeRecente: AtividadeRecenteItem[];
+  vagasComMaisCandidatos: PaginatedResult<VagaComMaisCandidatosItem>;
+  atividadeRecente: PaginatedResult<AtividadeRecenteItem>;
+}
+
+export interface DashboardPagination {
+  topVagas: PaginationInput;
+  atividade: PaginationInput;
 }
 
 export const dashboardRepository = {
@@ -261,111 +260,147 @@ export const dashboardRepository = {
    * Semântica: Ranking de vagas ativas (não deletadas) com maior volume de candidatos/triagens associados.
    * Evita overfetch: projeta apenas identificadores, título, departamento, localização e a contagem agregada.
    */
-  getVagasComMaisCandidatos: async (
-    limit = 5,
+  getVagasComMaisCandidatosPage: async (
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<VagaComMaisCandidatosItem[]> => {
-    const rows = await notDeleted(
-      dbOrTx
-        .select({
-          vagaId: vagas.id,
-          cargoTitulo: cargos.titulo,
-          departamentoNome: departamentos.nome,
-          cidades: cidadesSubquery,
-          posicoesDisponiveis: vagas.posicoesDisponiveis,
-          totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
-        })
-        .from(vagas)
-        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-        .leftJoin(triagens, eq(vagas.id, triagens.vagaId)),
-      vagas,
-    )
-      .groupBy(
-        vagas.id,
-        cargos.titulo,
-        departamentos.nome,
-        vagas.posicoesDisponiveis,
+  ): Promise<PaginatedResult<VagaComMaisCandidatosItem>> => {
+    const [rows, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select({
+            vagaId: vagas.id,
+            cargoTitulo: cargos.titulo,
+            departamentoNome: departamentos.nome,
+            cidades: activeCitiesForVaga(dbOrTx),
+            posicoesDisponiveis: vagas.posicoesDisponiveis,
+            totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
+          })
+          .from(vagas)
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+          .leftJoin(triagens, eq(vagas.id, triagens.vagaId)),
+        vagas,
       )
-      .orderBy(
-        desc(
-          sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
-        ),
-        desc(vagas.createdAt),
-      )
-      .limit(limit);
+        .groupBy(
+          vagas.id,
+          cargos.titulo,
+          departamentos.nome,
+          vagas.posicoesDisponiveis,
+        )
+        .orderBy(
+          desc(
+            sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
+          ),
+          desc(vagas.createdAt),
+          desc(vagas.id),
+        )
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx
+          .select({ count: countDistinct(vagas.id) })
+          .from(vagas)
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        vagas,
+      ),
+    ]);
 
-    return rows.map((r) => ({
-      vagaId: r.vagaId,
-      cargoTitulo: r.cargoTitulo,
-      departamentoNome: r.departamentoNome,
-      cidades: r.cidades,
-      posicoesDisponiveis: r.posicoesDisponiveis,
-      totalCandidatos: Number(r.totalCandidatos ?? 0),
-    }));
+    return {
+      items: rows.map((row) => ({
+        vagaId: row.vagaId,
+        cargoTitulo: row.cargoTitulo,
+        departamentoNome: row.departamentoNome,
+        cidades: row.cidades,
+        posicoesDisponiveis: row.posicoesDisponiveis,
+        totalCandidatos: Number(row.totalCandidatos ?? 0),
+      })),
+      total: Number(totalRows[0]?.count ?? 0),
+    };
   },
 
   /**
    * Semântica: Feed de atividades recentes de triagem (candidaturas, transições de etapa, aprovações, pareceres).
    * Evita overfetch: projeta exclusivamente os dados essenciais para o feed de auditoria/histórico do dashboard.
    */
-  getAtividadeRecente: async (
-    limit = 5,
+  getAtividadeRecentePage: async (
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<AtividadeRecenteItem[]> => {
-    const rows = await notDeleted(
-      dbOrTx
-        .select({
-          id: triagens.id,
-          candidatoId: candidatos.id,
-          candidatoNome: candidatos.nome,
-          vagaId: vagas.id,
-          cargoTitulo: cargos.titulo,
-          departamentoNome: departamentos.nome,
-          etapa: triagens.etapa,
-          resultado: triagens.resultado,
-          motivo: triagens.motivo,
-          scoreIa: avaliacaoIA.scoreIa,
-          createdAt: triagens.createdAt,
-          updatedAt: triagens.updatedAt,
-        })
-        .from(triagens)
-        .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
-        .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
-        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-        .leftJoin(
-          avaliacaoIA,
-          and(
-            eq(triagens.id, avaliacaoIA.triagemId),
-            isNull(avaliacaoIA.deletedAt),
+  ): Promise<PaginatedResult<AtividadeRecenteItem>> => {
+    const [rows, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select({
+            id: triagens.id,
+            candidatoId: candidatos.id,
+            candidatoNome: candidatos.nome,
+            vagaId: vagas.id,
+            cargoTitulo: cargos.titulo,
+            departamentoNome: departamentos.nome,
+            etapa: triagens.etapa,
+            resultado: triagens.resultado,
+            motivo: triagens.motivo,
+            scoreIa: avaliacaoIA.scoreIa,
+            createdAt: triagens.createdAt,
+            updatedAt: triagens.updatedAt,
+          })
+          .from(triagens)
+          .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+          .leftJoin(
+            avaliacaoIA,
+            and(
+              eq(triagens.id, avaliacaoIA.triagemId),
+              isNull(avaliacaoIA.deletedAt),
+            ),
           ),
-        ),
-      triagens,
-    )
-      .orderBy(desc(triagens.updatedAt), desc(triagens.createdAt))
-      .limit(limit);
+        triagens,
+      )
+        .orderBy(
+          desc(triagens.updatedAt),
+          desc(triagens.createdAt),
+          desc(triagens.id),
+        )
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx.select({ count: sql<number>`count(*)::int` }).from(triagens),
+        triagens,
+      ),
+    ]);
 
-    return rows.map((r) => ({
-      id: r.id,
-      candidatoId: r.candidatoId,
-      candidatoNome: r.candidatoNome,
-      vagaId: r.vagaId,
-      cargoTitulo: r.cargoTitulo,
-      departamentoNome: r.departamentoNome,
-      etapa: r.etapa,
-      resultado: r.resultado,
-      motivo: r.motivo,
-      scoreIa: r.scoreIa,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    }));
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        candidatoId: row.candidatoId,
+        candidatoNome: row.candidatoNome,
+        vagaId: row.vagaId,
+        cargoTitulo: row.cargoTitulo,
+        departamentoNome: row.departamentoNome,
+        etapa: row.etapa,
+        resultado: row.resultado,
+        motivo: row.motivo,
+        scoreIa: row.scoreIa,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })),
+      total: Number(totalRows[0]?.count ?? 0),
+    };
   },
 
   /**
    * Semântica: Agregação unificada de todas as métricas do Dashboard executadas em paralelo.
    */
   getDashboardSummary: async (
+    pagination: DashboardPagination = {
+      topVagas: { page: 1, pageSize: DASHBOARD_PAGE_SIZE },
+      atividade: { page: 1, pageSize: DASHBOARD_PAGE_SIZE },
+    },
     dbOrTx: DbOrTx = db,
   ): Promise<DashboardSummary> => {
     const [
@@ -386,8 +421,11 @@ export const dashboardRepository = {
       dashboardRepository.getMediaScoreIa(dbOrTx),
       dashboardRepository.getTriagensPorEtapa(dbOrTx),
       dashboardRepository.getTriagensPorResultado(dbOrTx),
-      dashboardRepository.getVagasComMaisCandidatos(5, dbOrTx),
-      dashboardRepository.getAtividadeRecente(5, dbOrTx),
+      dashboardRepository.getVagasComMaisCandidatosPage(
+        pagination.topVagas,
+        dbOrTx,
+      ),
+      dashboardRepository.getAtividadeRecentePage(pagination.atividade, dbOrTx),
     ]);
 
     return {

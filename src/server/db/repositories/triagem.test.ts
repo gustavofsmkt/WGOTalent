@@ -10,10 +10,10 @@ vi.mock("~/env", () => ({
 }));
 
 import { vi } from "vitest";
-import { triagemRepository } from "./triagem";
-import { triagens, vagas } from "~/server/db/schema";
+import { triagemRepository, type DbOrTx } from "./triagem";
+import { triagens, vagas, avaliacaoIA } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -24,6 +24,8 @@ const mockDb = drizzle(client);
 
 describe("triagemRepository", () => {
   it("exports a named repository object with required methods", () => {
+    expect(typeof triagemRepository.findPageWithJoins).toBe("function");
+    expect(typeof triagemRepository.getListSummary).toBe("function");
     expect(typeof triagemRepository.existsForPar).toBe("function");
     expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe(
       "function",
@@ -85,5 +87,74 @@ describe("triagemRepository", () => {
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
     expect(sql).toContain('"wgotalent_vagas"."status" =');
+  });
+
+  it("hydrates only active AI evaluations", () => {
+    const qb = notDeleted(
+      mockDb
+        .select({
+          triagemId: triagens.id,
+          avaliacaoId: avaliacaoIA.id,
+        })
+        .from(triagens)
+        .leftJoin(
+          avaliacaoIA,
+          and(
+            eq(triagens.id, avaliacaoIA.triagemId),
+            isNull(avaliacaoIA.deletedAt),
+          ),
+        ),
+      triagens,
+    );
+    const sql = qb.toSQL().sql;
+
+    expect(sql).toContain('"wgotalent_avaliacao_ia"."deleted_at" is null');
+    expect(sql).toContain(
+      '"wgotalent_triagens"."id" = "wgotalent_avaliacao_ia"."triagem_id"',
+    );
+  });
+
+  it("avoids related-table joins for triagem-only summary filters", async () => {
+    const builder = {
+      from: vi.fn(),
+      innerJoin: vi.fn(),
+      where: vi.fn(),
+    };
+    builder.from.mockReturnValue(builder);
+    builder.innerJoin.mockReturnValue(builder);
+    builder.where.mockResolvedValue([
+      { total: 4, emAndamento: 3, aprovados: 1 },
+    ]);
+    const fakeDb = {
+      select: vi.fn(() => builder),
+    } as unknown as DbOrTx;
+
+    const summary = await triagemRepository.getListSummary(
+      { resultado: "em_andamento" },
+      fakeDb,
+    );
+
+    expect(builder.innerJoin).not.toHaveBeenCalled();
+    expect(summary).toEqual({ total: 4, emAndamento: 3, aprovados: 1 });
+  });
+
+  it("joins only vagas when the summary filters active vacancies", async () => {
+    const builder = {
+      from: vi.fn(),
+      innerJoin: vi.fn(),
+      where: vi.fn(),
+    };
+    builder.from.mockReturnValue(builder);
+    builder.innerJoin.mockReturnValue(builder);
+    builder.where.mockResolvedValue([
+      { total: 2, emAndamento: 1, aprovados: 1 },
+    ]);
+    const fakeDb = {
+      select: vi.fn(() => builder),
+    } as unknown as DbOrTx;
+
+    await triagemRepository.getListSummary({ vagaAtiva: true }, fakeDb);
+
+    expect(builder.innerJoin).toHaveBeenCalledTimes(1);
   });
 });

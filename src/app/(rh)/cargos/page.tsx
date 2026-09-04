@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus, Briefcase, Eye, Building2, Pencil } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
@@ -9,24 +10,37 @@ import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "./_components/delete-cargo-button";
 import { PageFilter } from "~/components/page-filter";
 import { DataTable, type ColumnDef } from "~/components/data-table";
+import { TablePagination } from "~/components/table-pagination";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 interface CargosPageProps {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; page?: string }>;
 }
 
 export default async function CargosPage(props: CargosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim().toLowerCase();
+  const query = (searchParams.q ?? "").trim();
+  const page = parsePage(searchParams.page);
 
-  const allCargos = await cargoRepository.findAllWithDepartamento();
-
-  const filteredCargos = query
-    ? allCargos.filter(
-        (c) =>
-          c.titulo.toLowerCase().includes(query) ||
-          c.departamento.nome.toLowerCase().includes(query),
-      )
-    : allCargos;
+  const cargosPage = await cargoRepository.findPageWithDepartamento(
+    { query },
+    { page, pageSize: DEFAULT_PAGE_SIZE },
+  );
+  const totalPages = getTotalPages(cargosPage.total, DEFAULT_PAGE_SIZE);
+  if (cargosPage.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: "/cargos",
+        searchParams,
+        page: totalPages,
+      }),
+    );
+  }
 
   const formatDate = (date: Date | string) => {
     try {
@@ -40,7 +54,7 @@ export default async function CargosPage(props: CargosPageProps) {
     }
   };
 
-  type Cargo = (typeof allCargos)[number];
+  type Cargo = (typeof cargosPage.items)[number];
 
   const columns: ColumnDef<Cargo>[] = [
     {
@@ -128,7 +142,7 @@ export default async function CargosPage(props: CargosPageProps) {
         }
       />
 
-      {allCargos.length === 0 ? (
+      {cargosPage.total === 0 && !query ? (
         <DataEmptyState
           icon={Briefcase}
           title="Nenhum cargo cadastrado"
@@ -150,7 +164,7 @@ export default async function CargosPage(props: CargosPageProps) {
             searchAriaLabel="Buscar cargo por título ou departamento"
           />
 
-          {filteredCargos.length === 0 ? (
+          {cargosPage.items.length === 0 ? (
             <DataEmptyState
               title="Nenhum cargo encontrado"
               description={`Nenhum resultado corresponde à busca "${query}".`}
@@ -165,11 +179,11 @@ export default async function CargosPage(props: CargosPageProps) {
             />
           ) : (
             <>
-              <DataTable columns={columns} rows={filteredCargos} />
+              <DataTable columns={columns} rows={cargosPage.items} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-2">
-                {filteredCargos.map((cargo) => (
+                {cargosPage.items.map((cargo) => (
                   <div
                     key={cargo.id}
                     className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-4"
@@ -220,6 +234,14 @@ export default async function CargosPage(props: CargosPageProps) {
                   </div>
                 ))}
               </div>
+              <TablePagination
+                pathname="/cargos"
+                searchParams={searchParams}
+                page={page}
+                pageSize={DEFAULT_PAGE_SIZE}
+                total={cargosPage.total}
+                itemLabel="cargos"
+              />
             </>
           )}
         </div>

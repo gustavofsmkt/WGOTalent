@@ -25,7 +25,7 @@ describe("cargoRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(cargoRepository).toBeDefined();
     expect(typeof cargoRepository.findAll).toBe("function");
-    expect(typeof cargoRepository.findAllWithDepartamento).toBe("function");
+    expect(typeof cargoRepository.findPageWithDepartamento).toBe("function");
     expect(typeof cargoRepository.findById).toBe("function");
     expect(typeof cargoRepository.findByIdWithDepartamento).toBe("function");
     expect(typeof cargoRepository.findActiveDepartamentoOptions).toBe(
@@ -36,7 +36,7 @@ describe("cargoRepository", () => {
     expect(typeof cargoRepository.softDelete).toBe("function");
     expect(typeof cargoRepository.hasActiveVagas).toBe("function");
     expect(typeof cargoRepository.countActiveVagas).toBe("function");
-    expect(typeof cargoRepository.findActiveVagas).toBe("function");
+    expect(typeof cargoRepository.findActiveVagasPage).toBe("function");
   });
 
   it("builds query with notDeleted filter for findAll", () => {
@@ -45,7 +45,7 @@ describe("cargoRepository", () => {
     expect(sql).toContain('"wgotalent_cargos"."deleted_at" is null');
   });
 
-  it("builds query with notDeleted and join for findAllWithDepartamento", () => {
+  it("builds query with notDeleted and join for paginated cargo lists", () => {
     const qb = notDeleted(
       mockDb
         .select({

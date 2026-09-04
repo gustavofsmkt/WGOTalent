@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus, Building2, Eye, Pencil, Briefcase } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
@@ -10,25 +11,38 @@ import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { DeleteDepartamentoButton } from "./_components/delete-departamento-button";
 import { PageFilter } from "~/components/page-filter";
 import { DataTable, type ColumnDef } from "~/components/data-table";
+import { TablePagination } from "~/components/table-pagination";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 interface DepartamentosPageProps {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; page?: string }>;
 }
 
 export default async function DepartamentosPage(props: DepartamentosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim().toLowerCase();
+  const query = (searchParams.q ?? "").trim();
+  const page = parsePage(searchParams.page);
 
-  const allDepartamentos =
-    await departamentoRepository.findAllWithActiveCargosCount();
-
-  const filteredDepartamentos = query
-    ? allDepartamentos.filter(
-        (d) =>
-          d.nome.toLowerCase().includes(query) ||
-          d.descricao.toLowerCase().includes(query),
-      )
-    : allDepartamentos;
+  const departamentosPage =
+    await departamentoRepository.findPageWithActiveCargosCount(
+      { query },
+      { page, pageSize: DEFAULT_PAGE_SIZE },
+    );
+  const totalPages = getTotalPages(departamentosPage.total, DEFAULT_PAGE_SIZE);
+  if (departamentosPage.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: "/departamentos",
+        searchParams,
+        page: totalPages,
+      }),
+    );
+  }
 
   const formatDate = (date: Date | string) => {
     try {
@@ -42,7 +56,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
     }
   };
 
-  type Departamento = (typeof allDepartamentos)[number];
+  type Departamento = (typeof departamentosPage.items)[number];
 
   const columns: ColumnDef<Departamento>[] = [
     {
@@ -141,7 +155,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
         }
       />
 
-      {allDepartamentos.length === 0 ? (
+      {departamentosPage.total === 0 && !query ? (
         <DataEmptyState
           icon={Building2}
           title="Nenhum departamento cadastrado"
@@ -163,7 +177,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
             searchAriaLabel="Buscar departamento por nome"
           />
 
-          {filteredDepartamentos.length === 0 ? (
+          {departamentosPage.items.length === 0 ? (
             <DataEmptyState
               title="Nenhum departamento encontrado"
               description={`Nenhum resultado corresponde à busca "${query}".`}
@@ -178,11 +192,11 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
             />
           ) : (
             <>
-              <DataTable columns={columns} rows={filteredDepartamentos} />
+              <DataTable columns={columns} rows={departamentosPage.items} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-2">
-                {filteredDepartamentos.map((dept) => {
+                {departamentosPage.items.map((dept) => {
                   const initial = dept.nome.trim().charAt(0).toUpperCase();
                   return (
                     <Card
@@ -261,6 +275,14 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
                   );
                 })}
               </div>
+              <TablePagination
+                pathname="/departamentos"
+                searchParams={searchParams}
+                page={page}
+                pageSize={DEFAULT_PAGE_SIZE}
+                total={departamentosPage.total}
+                itemLabel="departamentos"
+              />
             </>
           )}
         </div>

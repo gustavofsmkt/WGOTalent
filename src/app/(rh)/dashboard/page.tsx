@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Target,
   Users,
@@ -11,9 +12,6 @@ import {
   MapPin,
   Clock,
   Briefcase,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
   TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
@@ -38,6 +36,13 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { dashboardRepository } from "~/server/db/repositories/dashboard";
 import { cn } from "~/lib/utils";
+import { TablePagination } from "~/components/table-pagination";
+import {
+  buildPaginationHref,
+  DASHBOARD_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -135,8 +140,50 @@ function getInitials(name: string): string {
   return `${first}${last}`.toUpperCase();
 }
 
-export default async function DashboardPage() {
-  const summary = await dashboardRepository.getDashboardSummary();
+interface DashboardPageProps {
+  searchParams?: Promise<{
+    topVagasPage?: string;
+    activityPage?: string;
+  }>;
+}
+
+export default async function DashboardPage(props: DashboardPageProps) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const topVagasPage = parsePage(searchParams.topVagasPage);
+  const activityPage = parsePage(searchParams.activityPage);
+  const summary = await dashboardRepository.getDashboardSummary({
+    topVagas: { page: topVagasPage, pageSize: DASHBOARD_PAGE_SIZE },
+    atividade: { page: activityPage, pageSize: DASHBOARD_PAGE_SIZE },
+  });
+  const topVagasTotalPages = getTotalPages(
+    summary.vagasComMaisCandidatos.total,
+    DASHBOARD_PAGE_SIZE,
+  );
+  const activityTotalPages = getTotalPages(
+    summary.atividadeRecente.total,
+    DASHBOARD_PAGE_SIZE,
+  );
+  const invalidTopVagasPage =
+    summary.vagasComMaisCandidatos.total > 0 &&
+    topVagasPage > topVagasTotalPages;
+  const invalidActivityPage =
+    summary.atividadeRecente.total > 0 && activityPage > activityTotalPages;
+
+  if (invalidTopVagasPage || invalidActivityPage) {
+    redirect(
+      buildPaginationHref({
+        pathname: "/dashboard",
+        searchParams,
+        pages: {
+          topVagasPage: invalidTopVagasPage ? topVagasTotalPages : topVagasPage,
+          activityPage: invalidActivityPage ? activityTotalPages : activityPage,
+        },
+        hash: invalidTopVagasPage
+          ? "vagas-com-mais-candidatos"
+          : "atividade-recente",
+      }),
+    );
+  }
 
   const totalEtapas = Object.values(summary.triagensPorEtapa).reduce(
     (acc, count) => acc + count,
@@ -460,7 +507,7 @@ export default async function DashboardPage() {
       {/* 3. Tabelas de Vagas com Mais Candidatos & Atividade Recente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Vagas com Mais Candidatos */}
-        <Card>
+        <Card id="vagas-com-mais-candidatos" className="scroll-mt-4">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -480,7 +527,7 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="p-0">
-            {summary.vagasComMaisCandidatos.length === 0 ? (
+            {summary.vagasComMaisCandidatos.total === 0 ? (
               <div className="p-4">
                 <DataEmptyState
                   title="Nenhuma vaga cadastrada"
@@ -489,65 +536,80 @@ export default async function DashboardPage() {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[45%]">Cargo / Depto</TableHead>
-                    <TableHead>Local</TableHead>
-                    <TableHead className="text-center">Vagas</TableHead>
-                    <TableHead className="text-right">Candidatos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {summary.vagasComMaisCandidatos.map((vaga) => (
-                    <TableRow key={vaga.vagaId} className="group">
-                      <TableCell className="font-medium">
-                        <Link
-                          href={`/vagas/${vaga.vagaId}`}
-                          className="hover:underline text-foreground block font-semibold truncate max-w-[200px] sm:max-w-[260px]"
-                        >
-                          {vaga.cargoTitulo}
-                        </Link>
-                        <span className="text-xs text-muted-foreground block truncate">
-                          {vaga.departamentoNome}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-2">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {vaga.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant="outline"
-                          className="font-normal text-xs"
-                        >
-                          {vaga.posicoesDisponiveis}{" "}
-                          {vaga.posicoesDisponiveis === 1 ? "vaga" : "vagas"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant="secondary"
-                          className="font-semibold text-xs"
-                        >
-                          {vaga.totalCandidatos}{" "}
-                          {vaga.totalCandidatos === 1
-                            ? "candidato"
-                            : "candidatos"}
-                        </Badge>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[45%]">Cargo / Depto</TableHead>
+                      <TableHead>Local</TableHead>
+                      <TableHead className="text-center">Vagas</TableHead>
+                      <TableHead className="text-right">Candidatos</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {summary.vagasComMaisCandidatos.items.map((vaga) => (
+                      <TableRow key={vaga.vagaId} className="group">
+                        <TableCell className="font-medium">
+                          <Link
+                            href={`/vagas/${vaga.vagaId}`}
+                            className="hover:underline text-foreground block font-semibold truncate max-w-[200px] sm:max-w-[260px]"
+                          >
+                            {vaga.cargoTitulo}
+                          </Link>
+                          <span className="text-xs text-muted-foreground block truncate">
+                            {vaga.departamentoNome}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-2">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {vaga.cidades
+                              .map((c) => `${c.nome}/${c.uf}`)
+                              .join(", ")}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant="outline"
+                            className="font-normal text-xs"
+                          >
+                            {vaga.posicoesDisponiveis}{" "}
+                            {vaga.posicoesDisponiveis === 1 ? "vaga" : "vagas"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge
+                            variant="secondary"
+                            className="font-semibold text-xs"
+                          >
+                            {vaga.totalCandidatos}{" "}
+                            {vaga.totalCandidatos === 1
+                              ? "candidato"
+                              : "candidatos"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  pathname="/dashboard"
+                  searchParams={searchParams}
+                  page={topVagasPage}
+                  pageSize={DASHBOARD_PAGE_SIZE}
+                  total={summary.vagasComMaisCandidatos.total}
+                  pageParam="topVagasPage"
+                  hash="vagas-com-mais-candidatos"
+                  itemLabel="vagas"
+                  className="border-t px-4 py-3"
+                />
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Atividade Recente */}
-        <Card>
+        <Card id="atividade-recente" className="scroll-mt-4">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -567,7 +629,7 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="p-0">
-            {summary.atividadeRecente.length === 0 ? (
+            {summary.atividadeRecente.total === 0 ? (
               <div className="p-4">
                 <DataEmptyState
                   title="Nenhuma atividade recente"
@@ -576,69 +638,84 @@ export default async function DashboardPage() {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40%]">Candidato / Vaga</TableHead>
-                    <TableHead>Etapa & Desfecho</TableHead>
-                    <TableHead className="text-center">Score IA</TableHead>
-                    <TableHead className="text-right">Atualização</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {summary.atividadeRecente.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                            {getInitials(item.candidatoNome)}
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">
+                        Candidato / Vaga
+                      </TableHead>
+                      <TableHead>Etapa & Desfecho</TableHead>
+                      <TableHead className="text-center">Score IA</TableHead>
+                      <TableHead className="text-right">Atualização</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {summary.atividadeRecente.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                              {getInitials(item.candidatoNome)}
+                            </div>
+                            <div className="min-w-0">
+                              <Link
+                                href={`/triagens/${item.id}`}
+                                className="font-medium text-foreground hover:underline block text-sm truncate max-w-[150px] sm:max-w-[180px]"
+                              >
+                                {item.candidatoNome}
+                              </Link>
+                              <span className="text-xs text-muted-foreground block truncate max-w-[150px] sm:max-w-[180px]">
+                                {item.cargoTitulo}
+                              </span>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <Link
-                              href={`/triagens/${item.id}`}
-                              className="font-medium text-foreground hover:underline block text-sm truncate max-w-[150px] sm:max-w-[180px]"
-                            >
-                              {item.candidatoNome}
-                            </Link>
-                            <span className="text-xs text-muted-foreground block truncate max-w-[150px] sm:max-w-[180px]">
-                              {item.cargoTitulo}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-2 items-start">
+                            <StatusBadge
+                              status={item.resultado}
+                              className="text-[11px] py-0 px-2"
+                            />
+                            <span className="text-[11px] text-muted-foreground capitalize">
+                              {item.etapa.replace("_", " ")}
                             </span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-2 items-start">
-                          <StatusBadge
-                            status={item.resultado}
-                            className="text-[11px] py-0 px-2"
-                          />
-                          <span className="text-[11px] text-muted-foreground capitalize">
-                            {item.etapa.replace("_", " ")}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.scoreIa ? (
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-semibold bg-primary/5 text-primary border-primary/20"
-                          >
-                            <Sparkles className="h-3 w-3 mr-2 text-primary" />
-                            {item.scoreIa}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            —
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDate(item.updatedAt || item.createdAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {item.scoreIa ? (
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-semibold bg-primary/5 text-primary border-primary/20"
+                            >
+                              <Sparkles className="h-3 w-3 mr-2 text-primary" />
+                              {item.scoreIa}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              —
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDate(item.updatedAt || item.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  pathname="/dashboard"
+                  searchParams={searchParams}
+                  page={activityPage}
+                  pageSize={DASHBOARD_PAGE_SIZE}
+                  total={summary.atividadeRecente.total}
+                  pageParam="activityPage"
+                  hash="atividade-recente"
+                  itemLabel="atividades"
+                  className="border-t px-4 py-3"
+                />
+              </>
             )}
           </CardContent>
         </Card>

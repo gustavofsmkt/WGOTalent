@@ -1,15 +1,20 @@
-import { eq, and, sql, isNull, asc, gte } from "drizzle-orm";
+import { eq, sql, asc, desc, gte, ilike, or } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   cargos,
   departamentos,
   vagas,
+  type CidadeRef,
   type Cargo,
   type NovoCargo,
   type Vaga,
 } from "~/server/db/schema";
-import { notDeleted } from "~/server/db/query-helpers";
-import type { CidadeRef } from "~/server/db/repositories/vaga";
+import { activeCitiesForVaga, notDeleted } from "~/server/db/query-helpers";
+import {
+  getPaginationOffset,
+  type PaginatedResult,
+  type PaginationInput,
+} from "~/lib/pagination";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -26,17 +31,9 @@ export interface DepartamentoOption {
   nome: string;
 }
 
-const cidadesSubquery = sql<CidadeRef[]>`
-  COALESCE(
-    (
-      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
-      FROM wgotalent_vaga_cidades vc
-      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
-      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
-    ),
-    '[]'::json
-  )
-`;
+export interface CargoListFilters {
+  query?: string;
+}
 
 export type VagaComCidades = Vaga & { cidades: CidadeRef[] };
 
@@ -47,35 +44,69 @@ export const cargoRepository = {
     );
   },
 
-  findAllWithDepartamento: async (
+  findPageWithDepartamento: async (
+    filters: CargoListFilters,
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<CargoWithDepartamento[]> => {
-    const rows = await notDeleted(
-      dbOrTx
-        .select({
-          id: cargos.id,
-          departamentoId: cargos.departamentoId,
-          titulo: cargos.titulo,
-          descricao: cargos.descricao,
-          ativo: cargos.ativo,
-          faixaSalarial: cargos.faixaSalarial,
-          requisitos: cargos.requisitos,
-          requisitosDesejaveis: cargos.requisitosDesejaveis,
-          criteriosEliminatorios: cargos.criteriosEliminatorios,
-          createdAt: cargos.createdAt,
-          updatedAt: cargos.updatedAt,
-          deletedAt: cargos.deletedAt,
-          departamento: {
-            id: departamentos.id,
-            nome: departamentos.nome,
-          },
-        })
-        .from(cargos)
-        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id)),
-      cargos,
-    ).orderBy(asc(cargos.titulo));
+  ): Promise<PaginatedResult<CargoWithDepartamento>> => {
+    const pattern = filters.query?.trim()
+      ? `%${filters.query.trim()}%`
+      : undefined;
+    const searchCondition = pattern
+      ? or(ilike(cargos.titulo, pattern), ilike(departamentos.nome, pattern))
+      : undefined;
 
-    return rows;
+    const baseSelect = {
+      id: cargos.id,
+      departamentoId: cargos.departamentoId,
+      titulo: cargos.titulo,
+      descricao: cargos.descricao,
+      ativo: cargos.ativo,
+      faixaSalarial: cargos.faixaSalarial,
+      requisitos: cargos.requisitos,
+      requisitosDesejaveis: cargos.requisitosDesejaveis,
+      criteriosEliminatorios: cargos.criteriosEliminatorios,
+      createdAt: cargos.createdAt,
+      updatedAt: cargos.updatedAt,
+      deletedAt: cargos.deletedAt,
+      departamento: {
+        id: departamentos.id,
+        nome: departamentos.nome,
+      },
+    };
+
+    const [items, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select(baseSelect)
+          .from(cargos)
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        cargos,
+        searchCondition,
+      )
+        .orderBy(asc(cargos.titulo), asc(cargos.id))
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(cargos)
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        cargos,
+        searchCondition,
+      ),
+    ]);
+
+    return {
+      items,
+      total: Number(totalRows[0]?.count ?? 0),
+    };
   },
 
   findById: async (id: string, dbOrTx: DbOrTx = db): Promise<Cargo | null> => {
@@ -206,27 +237,43 @@ export const cargoRepository = {
     return Number(rows[0]?.count ?? 0);
   },
 
-  findActiveVagas: async (
+  findActiveVagasPage: async (
     cargoId: string,
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<VagaComCidades[]> => {
-    return notDeleted(
-      dbOrTx
-        .select({
-          id: vagas.id,
-          cargoId: vagas.cargoId,
-          status: vagas.status,
-          posicoesDisponiveis: vagas.posicoesDisponiveis,
-          notaCorte: vagas.notaCorte,
-          remuneracaoOferecida: vagas.remuneracaoOferecida,
-          createdAt: vagas.createdAt,
-          updatedAt: vagas.updatedAt,
-          deletedAt: vagas.deletedAt,
-          cidades: cidadesSubquery,
-        })
-        .from(vagas),
-      vagas,
-      eq(vagas.cargoId, cargoId),
-    );
+  ): Promise<PaginatedResult<VagaComCidades>> => {
+    const [items, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select({
+            id: vagas.id,
+            cargoId: vagas.cargoId,
+            status: vagas.status,
+            posicoesDisponiveis: vagas.posicoesDisponiveis,
+            notaCorte: vagas.notaCorte,
+            remuneracaoOferecida: vagas.remuneracaoOferecida,
+            createdAt: vagas.createdAt,
+            updatedAt: vagas.updatedAt,
+            deletedAt: vagas.deletedAt,
+            cidades: activeCitiesForVaga(dbOrTx),
+          })
+          .from(vagas),
+        vagas,
+        eq(vagas.cargoId, cargoId),
+      )
+        .orderBy(desc(vagas.createdAt), desc(vagas.id))
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx.select({ count: sql<number>`count(*)::int` }).from(vagas),
+        vagas,
+        eq(vagas.cargoId, cargoId),
+      ),
+    ]);
+
+    return {
+      items,
+      total: Number(totalRows[0]?.count ?? 0),
+    };
   },
 };

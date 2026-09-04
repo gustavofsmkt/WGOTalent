@@ -1,10 +1,9 @@
 import * as React from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ArrowLeft,
   Pencil,
-  Building2,
   Calendar,
   Clock,
   Briefcase,
@@ -32,9 +31,17 @@ import {
 } from "~/components/ui/table";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { DeleteDepartamentoButton } from "../_components/delete-departamento-button";
+import { TablePagination } from "~/components/table-pagination";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 interface DepartamentoDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata(props: DepartamentoDetailPageProps) {
@@ -57,13 +64,29 @@ export default async function DepartamentoDetailPage(
   props: DepartamentoDetailPageProps,
 ) {
   const { id } = await props.params;
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const page = parsePage(searchParams.page);
   const departamento = await departamentoRepository.findById(id);
 
   if (!departamento) {
     notFound();
   }
 
-  const cargosVinculados = await departamentoRepository.findActiveCargos(id);
+  const cargosVinculados = await departamentoRepository.findActiveCargosPage(
+    id,
+    { page, pageSize: DEFAULT_PAGE_SIZE },
+  );
+  const totalPages = getTotalPages(cargosVinculados.total, DEFAULT_PAGE_SIZE);
+  if (cargosVinculados.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: `/departamentos/${id}`,
+        searchParams,
+        page: totalPages,
+        hash: "cargos-vinculados",
+      }),
+    );
+  }
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return "—";
@@ -175,7 +198,10 @@ export default async function DepartamentoDetailPage(
           </Card>
 
           {/* Linked Cargos Section */}
-          <Card className="border-border/60 shadow-xs">
+          <Card
+            id="cargos-vinculados"
+            className="border-border/60 shadow-xs scroll-mt-4"
+          >
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -184,7 +210,7 @@ export default async function DepartamentoDetailPage(
                     Cargos Vinculados
                   </CardTitle>
                   <Badge variant="secondary" className="font-mono text-xs">
-                    {cargosVinculados.length}
+                    {cargosVinculados.total}
                   </Badge>
                 </div>
                 <CardDescription className="text-xs mt-2">
@@ -200,7 +226,7 @@ export default async function DepartamentoDetailPage(
               </Link>
             </CardHeader>
             <CardContent className="p-0">
-              {cargosVinculados.length === 0 ? (
+              {cargosVinculados.total === 0 ? (
                 <div className="p-4">
                   <DataEmptyState
                     icon={Briefcase}
@@ -221,62 +247,74 @@ export default async function DepartamentoDetailPage(
                   />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40">
-                        <TableHead>Título do Cargo</TableHead>
-                        <TableHead className="w-[120px]">Status</TableHead>
-                        <TableHead className="w-[180px]">
-                          Faixa Salarial
-                        </TableHead>
-                        <TableHead className="w-[100px] text-right">
-                          Ações
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cargosVinculados.map((cargo) => (
-                        <TableRow
-                          key={cargo.id}
-                          className="hover:bg-muted/30 transition-colors"
-                        >
-                          <TableCell className="font-medium">
-                            <Link
-                              href={`/cargos/${cargo.id}`}
-                              className="hover:text-primary hover:underline transition-colors"
-                            >
-                              {cargo.titulo}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={cargo.ativo ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {cargo.ativo ? "Ativo" : "Inativo"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatCurrency(cargo.faixaSalarial)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Link
-                              href={`/cargos/${cargo.id}`}
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "sm",
-                                className: "text-xs",
-                              })}
-                            >
-                              Ver
-                            </Link>
-                          </TableCell>
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40 hover:bg-muted/40">
+                          <TableHead>Título do Cargo</TableHead>
+                          <TableHead className="w-[120px]">Status</TableHead>
+                          <TableHead className="w-[180px]">
+                            Faixa Salarial
+                          </TableHead>
+                          <TableHead className="w-[100px] text-right">
+                            Ações
+                          </TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {cargosVinculados.items.map((cargo) => (
+                          <TableRow
+                            key={cargo.id}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
+                            <TableCell className="font-medium">
+                              <Link
+                                href={`/cargos/${cargo.id}`}
+                                className="hover:text-primary hover:underline transition-colors"
+                              >
+                                {cargo.titulo}
+                              </Link>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={cargo.ativo ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {cargo.ativo ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatCurrency(cargo.faixaSalarial)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Link
+                                href={`/cargos/${cargo.id}`}
+                                className={buttonVariants({
+                                  variant: "ghost",
+                                  size: "sm",
+                                  className: "text-xs",
+                                })}
+                              >
+                                Ver
+                              </Link>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <TablePagination
+                    pathname={`/departamentos/${id}`}
+                    searchParams={searchParams}
+                    page={page}
+                    pageSize={DEFAULT_PAGE_SIZE}
+                    total={cargosVinculados.total}
+                    itemLabel="cargos"
+                    hash="cargos-vinculados"
+                    className="border-t px-4 py-3"
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -321,7 +359,7 @@ export default async function DepartamentoDetailPage(
                     Total de cargos ativos:
                   </span>
                   <span className="font-semibold text-foreground">
-                    {cargosVinculados.length}
+                    {cargosVinculados.total}
                   </span>
                 </div>
               </div>

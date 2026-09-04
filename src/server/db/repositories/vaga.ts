@@ -1,24 +1,39 @@
-import { eq, and, sql, isNull, asc, desc, gte } from "drizzle-orm";
+import {
+  eq,
+  and,
+  sql,
+  isNull,
+  asc,
+  desc,
+  gte,
+  ilike,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   vagas,
   vagaCidades,
-  cidades,
   cargos,
   departamentos,
+  type CidadeRef,
   type Vaga,
   type NovaVaga,
 } from "~/server/db/schema";
-import { notDeleted } from "~/server/db/query-helpers";
+import {
+  activeCitiesForVaga,
+  matchesActiveVagaCity,
+  matchesActiveVagaCityName,
+  notDeleted,
+} from "~/server/db/query-helpers";
+import {
+  getPaginationOffset,
+  type PaginatedResult,
+  type PaginationInput,
+} from "~/lib/pagination";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
-
-export interface CidadeRef {
-  id: string;
-  nome: string;
-  uf: string;
-}
 
 export interface VagaWithCargoAndDepartamento extends Vaga {
   cidades: CidadeRef[];
@@ -46,18 +61,16 @@ export interface CargoOption {
   };
 }
 
-/** Correlated subquery that aggregates all active cidades for the current vagas.id row. */
-const cidadesSubquery = sql<CidadeRef[]>`
-  COALESCE(
-    (
-      SELECT json_agg(json_build_object('id', c.id::text, 'nome', c.nome, 'uf', c.uf) ORDER BY c.nome)
-      FROM wgotalent_vaga_cidades vc
-      JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
-      WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL
-    ),
-    '[]'::json
-  )
-`;
+export interface VagaListFilters {
+  query?: string;
+  status?: Vaga["status"];
+}
+
+export interface VagaListSummary {
+  total: number;
+  abertas: number;
+  posicoes: number;
+}
 
 function mapRowToVagaWithCargo(r: {
   id: string;
@@ -107,27 +120,51 @@ function mapRowToVagaWithCargo(r: {
   };
 }
 
-const fullVagaSelect = {
-  id: vagas.id,
-  status: vagas.status,
-  posicoesDisponiveis: vagas.posicoesDisponiveis,
-  notaCorte: vagas.notaCorte,
-  cargoId: vagas.cargoId,
-  remuneracaoOferecida: vagas.remuneracaoOferecida,
-  createdAt: vagas.createdAt,
-  updatedAt: vagas.updatedAt,
-  deletedAt: vagas.deletedAt,
-  cidades: cidadesSubquery,
-  cargoIdValue: cargos.id,
-  cargoTitulo: cargos.titulo,
-  cargoAtivo: cargos.ativo,
-  cargoDescricao: cargos.descricao,
-  cargoRequisitos: cargos.requisitos,
-  cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
-  cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
-  departamentoIdValue: departamentos.id,
-  departamentoNome: departamentos.nome,
-};
+function fullVagaSelect(dbOrTx: DbOrTx) {
+  return {
+    id: vagas.id,
+    status: vagas.status,
+    posicoesDisponiveis: vagas.posicoesDisponiveis,
+    notaCorte: vagas.notaCorte,
+    cargoId: vagas.cargoId,
+    remuneracaoOferecida: vagas.remuneracaoOferecida,
+    createdAt: vagas.createdAt,
+    updatedAt: vagas.updatedAt,
+    deletedAt: vagas.deletedAt,
+    cidades: activeCitiesForVaga(dbOrTx),
+    cargoIdValue: cargos.id,
+    cargoTitulo: cargos.titulo,
+    cargoAtivo: cargos.ativo,
+    cargoDescricao: cargos.descricao,
+    cargoRequisitos: cargos.requisitos,
+    cargoRequisitosDesejaveis: cargos.requisitosDesejaveis,
+    cargoCriteriosEliminatorios: cargos.criteriosEliminatorios,
+    departamentoIdValue: departamentos.id,
+    departamentoNome: departamentos.nome,
+  };
+}
+
+function buildVagaListConditions(
+  filters: VagaListFilters,
+  dbOrTx: DbOrTx,
+): SQL[] {
+  const conditions: (SQL | undefined)[] = [];
+  const query = filters.query?.trim();
+
+  if (query) {
+    const pattern = `%${query}%`;
+    conditions.push(
+      or(
+        ilike(cargos.titulo, pattern),
+        ilike(departamentos.nome, pattern),
+        matchesActiveVagaCity(dbOrTx, pattern),
+      ),
+    );
+  }
+
+  if (filters.status) conditions.push(eq(vagas.status, filters.status));
+  return conditions.filter((condition): condition is SQL => Boolean(condition));
+}
 
 export const vagaRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Vaga[]> => {
@@ -136,19 +173,65 @@ export const vagaRepository = {
     );
   },
 
-  findAllWithCargoAndDepartamento: async (
+  findPageWithCargoAndDepartamento: async (
+    filters: VagaListFilters,
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<VagaWithCargoAndDepartamento[]> => {
+  ): Promise<PaginatedResult<VagaWithCargoAndDepartamento>> => {
+    const conditions = buildVagaListConditions(filters, dbOrTx);
+    const [rows, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select(fullVagaSelect(dbOrTx))
+          .from(vagas)
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        vagas,
+        ...conditions,
+      )
+        .orderBy(desc(vagas.createdAt), desc(vagas.id))
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(vagas)
+          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+          .innerJoin(
+            departamentos,
+            eq(cargos.departamentoId, departamentos.id),
+          ),
+        vagas,
+        ...conditions,
+      ),
+    ]);
+
+    return {
+      items: rows.map(mapRowToVagaWithCargo),
+      total: Number(totalRows[0]?.count ?? 0),
+    };
+  },
+
+  getListSummary: async (dbOrTx: DbOrTx = db): Promise<VagaListSummary> => {
     const rows = await notDeleted(
       dbOrTx
-        .select(fullVagaSelect)
-        .from(vagas)
-        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id)),
+        .select({
+          total: sql<number>`count(*)::int`,
+          abertas: sql<number>`count(*) filter (where ${vagas.status} = 'aberta')::int`,
+          posicoes: sql<number>`coalesce(sum(${vagas.posicoesDisponiveis}), 0)::int`,
+        })
+        .from(vagas),
       vagas,
-    ).orderBy(desc(vagas.createdAt));
+    );
 
-    return rows.map(mapRowToVagaWithCargo);
+    return {
+      total: Number(rows[0]?.total ?? 0),
+      abertas: Number(rows[0]?.abertas ?? 0),
+      posicoes: Number(rows[0]?.posicoes ?? 0),
+    };
   },
 
   findById: async (id: string, dbOrTx: DbOrTx = db): Promise<Vaga | null> => {
@@ -166,7 +249,7 @@ export const vagaRepository = {
   ): Promise<VagaWithCargoAndDepartamento | null> => {
     const rows = await notDeleted(
       dbOrTx
-        .select(fullVagaSelect)
+        .select(fullVagaSelect(dbOrTx))
         .from(vagas)
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id)),
@@ -185,7 +268,7 @@ export const vagaRepository = {
   ): Promise<VagaWithCargoAndDepartamento | null> => {
     const rows = await dbOrTx
       .select({
-        ...fullVagaSelect,
+        ...fullVagaSelect(dbOrTx),
         cargoIdValue: sql<string>`COALESCE(${cargos.id}::text, '')`,
         cargoTitulo: sql<string>`COALESCE(${cargos.titulo}, 'Cargo não identificado')`,
         cargoAtivo: sql<boolean>`COALESCE(${cargos.ativo}, false)`,
@@ -203,7 +286,9 @@ export const vagaRepository = {
 
     const r = rows[0];
     if (!r) return null;
-    return mapRowToVagaWithCargo(r as Parameters<typeof mapRowToVagaWithCargo>[0]);
+    return mapRowToVagaWithCargo(
+      r as Parameters<typeof mapRowToVagaWithCargo>[0],
+    );
   },
 
   findActiveCargoOptions: async (
@@ -241,19 +326,14 @@ export const vagaRepository = {
   ): Promise<VagaWithCargoAndDepartamento[]> => {
     const rows = await notDeleted(
       dbOrTx
-        .select(fullVagaSelect)
+        .select(fullVagaSelect(dbOrTx))
         .from(vagas)
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id)),
       vagas,
       and(
         eq(vagas.status, "aberta"),
-        sql`EXISTS (
-          SELECT 1
-          FROM wgotalent_vaga_cidades vc
-          JOIN wgotalent_cidades c ON c.id = vc.cidade_id AND c.deleted_at IS NULL
-          WHERE vc.vaga_id = ${vagas.id} AND vc.deleted_at IS NULL AND c.nome = ${cidade}
-        )`,
+        matchesActiveVagaCityName(dbOrTx, cidade),
       ),
     ).orderBy(desc(vagas.createdAt));
 
@@ -300,7 +380,9 @@ export const vagaRepository = {
       if (cidadeIds.length > 0) {
         await tx
           .insert(vagaCidades)
-          .values(cidadeIds.map((cidadeId) => ({ vagaId: created.id, cidadeId })));
+          .values(
+            cidadeIds.map((cidadeId) => ({ vagaId: created.id, cidadeId })),
+          );
       }
 
       return created;
@@ -332,7 +414,9 @@ export const vagaRepository = {
         await tx
           .update(vagaCidades)
           .set({ deletedAt: sql`now()` })
-          .where(and(eq(vagaCidades.vagaId, id), isNull(vagaCidades.deletedAt)));
+          .where(
+            and(eq(vagaCidades.vagaId, id), isNull(vagaCidades.deletedAt)),
+          );
 
         if (cidadeIds.length > 0) {
           await tx
@@ -344,7 +428,11 @@ export const vagaRepository = {
       return updated;
     };
 
-    if (cidadeIds !== undefined && "transaction" in dbOrTx && typeof dbOrTx.transaction === "function") {
+    if (
+      cidadeIds !== undefined &&
+      "transaction" in dbOrTx &&
+      typeof dbOrTx.transaction === "function"
+    ) {
       return (dbOrTx as typeof db).transaction(doUpdate);
     }
     return doUpdate(dbOrTx);
@@ -364,10 +452,11 @@ export const vagaRepository = {
     vagaId: string,
     dbOrTx: DbOrTx = db,
   ): Promise<string[]> => {
-    const rows = await dbOrTx
-      .select({ cidadeId: vagaCidades.cidadeId })
-      .from(vagaCidades)
-      .where(and(eq(vagaCidades.vagaId, vagaId), isNull(vagaCidades.deletedAt)));
+    const rows = await notDeleted(
+      dbOrTx.select({ cidadeId: vagaCidades.cidadeId }).from(vagaCidades),
+      vagaCidades,
+      eq(vagaCidades.vagaId, vagaId),
+    );
     return rows.map((r) => r.cidadeId);
   },
 };

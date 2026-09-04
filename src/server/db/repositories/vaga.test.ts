@@ -25,9 +25,10 @@ describe("vagaRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(vagaRepository).toBeDefined();
     expect(typeof vagaRepository.findAll).toBe("function");
-    expect(typeof vagaRepository.findAllWithCargoAndDepartamento).toBe(
+    expect(typeof vagaRepository.findPageWithCargoAndDepartamento).toBe(
       "function",
     );
+    expect(typeof vagaRepository.getListSummary).toBe("function");
     expect(typeof vagaRepository.findById).toBe("function");
     expect(typeof vagaRepository.findByIdWithCargoAndDepartamento).toBe(
       "function",
@@ -49,7 +50,7 @@ describe("vagaRepository", () => {
     expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
   });
 
-  it("builds query with notDeleted and joins for findAllWithCargoAndDepartamento", () => {
+  it("builds query with notDeleted and joins for paginated vaga lists", () => {
     const qb = notDeleted(
       mockDb
         .select({

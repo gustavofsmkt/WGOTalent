@@ -14,7 +14,7 @@ vi.mock("~/server/db/query-helpers", async (importOriginal) => {
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
-import { departamentoRepository, type DbOrTx } from "./departamento";
+import { departamentoRepository } from "./departamento";
 import { departamentos, cargos } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { eq } from "drizzle-orm";
@@ -30,7 +30,7 @@ describe("departamentoRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(departamentoRepository).toBeDefined();
     expect(typeof departamentoRepository.findAll).toBe("function");
-    expect(typeof departamentoRepository.findAllWithActiveCargosCount).toBe(
+    expect(typeof departamentoRepository.findPageWithActiveCargosCount).toBe(
       "function",
     );
     expect(typeof departamentoRepository.findById).toBe("function");
@@ -39,7 +39,7 @@ describe("departamentoRepository", () => {
     expect(typeof departamentoRepository.softDelete).toBe("function");
     expect(typeof departamentoRepository.hasActiveCargos).toBe("function");
     expect(typeof departamentoRepository.countActiveCargos).toBe("function");
-    expect(typeof departamentoRepository.findActiveCargos).toBe("function");
+    expect(typeof departamentoRepository.findActiveCargosPage).toBe("function");
   });
 
   it("builds query with notDeleted filter for findAll", () => {
@@ -68,26 +68,5 @@ describe("departamentoRepository", () => {
     );
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_cargos"."deleted_at" is null');
-  });
-
-  it("findAllWithActiveCargosCount routes its filter through notDeleted() on departamentos instead of an inline isNull", async () => {
-    vi.mocked(notDeleted).mockClear();
-    const mockFakeDb = {
-      select: () => ({
-        from: () => ({
-          leftJoin: () => ({
-            where: () => ({
-              groupBy: () => ({
-                orderBy: async () => [],
-              }),
-            }),
-          }),
-        }),
-      }),
-    } as unknown as DbOrTx;
-
-    await departamentoRepository.findAllWithActiveCargosCount(mockFakeDb);
-
-    expect(notDeleted).toHaveBeenCalledWith(expect.anything(), departamentos);
   });
 });

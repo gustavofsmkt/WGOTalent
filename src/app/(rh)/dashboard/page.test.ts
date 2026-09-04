@@ -97,33 +97,38 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
         desistente: 1,
         banco_talentos: 0,
       },
-      vagasComMaisCandidatos: [
-        {
-          vagaId: "vaga-123",
-          cargoTitulo: "Dev Fullstack",
-          departamentoNome: "Engenharia",
-          cidade: "São Paulo",
-          uf: "SP",
-          posicoesDisponiveis: 1,
-          totalCandidatos: 8,
-        },
-      ],
-      atividadeRecente: [
-        {
-          id: "triagem-999",
-          candidatoId: "c-1",
-          candidatoNome: "Lucas Oliveira",
-          vagaId: "vaga-123",
-          cargoTitulo: "Dev Fullstack",
-          departamentoNome: "Engenharia",
-          etapa: "curriculo",
-          resultado: "em_andamento",
-          motivo: null,
-          scoreIa: "91",
-          createdAt: "2024-03-01T10:00:00.000Z",
-          updatedAt: "2024-03-01T11:00:00.000Z",
-        },
-      ],
+      vagasComMaisCandidatos: {
+        items: [
+          {
+            vagaId: "vaga-123",
+            cargoTitulo: "Dev Fullstack",
+            departamentoNome: "Engenharia",
+            cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
+            posicoesDisponiveis: 1,
+            totalCandidatos: 8,
+          },
+        ],
+        total: 1,
+      },
+      atividadeRecente: {
+        items: [
+          {
+            id: "triagem-999",
+            candidatoId: "c-1",
+            candidatoNome: "Lucas Oliveira",
+            vagaId: "vaga-123",
+            cargoTitulo: "Dev Fullstack",
+            departamentoNome: "Engenharia",
+            etapa: "curriculo",
+            resultado: "em_andamento",
+            motivo: null,
+            scoreIa: "91",
+            createdAt: "2024-03-01T10:00:00.000Z",
+            updatedAt: "2024-03-01T11:00:00.000Z",
+          },
+        ],
+        total: 1,
+      },
     };
 
     vi.spyOn(dashboardRepository, "getDashboardSummary").mockResolvedValueOnce(
@@ -134,8 +139,10 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
     expect(data.vagasAbertas).toBe(4);
     expect(data.candidatosAtivos).toBe(18);
     expect(data.mediaScoreIa.media).toBe(78.4);
-    expect(data.vagasComMaisCandidatos).toHaveLength(1);
-    expect(data.vagasComMaisCandidatos[0]?.cargoTitulo).toBe("Dev Fullstack");
-    expect(data.atividadeRecente[0]?.scoreIa).toBe("91");
+    expect(data.vagasComMaisCandidatos.items).toHaveLength(1);
+    expect(data.vagasComMaisCandidatos.items[0]?.cargoTitulo).toBe(
+      "Dev Fullstack",
+    );
+    expect(data.atividadeRecente.items[0]?.scoreIa).toBe("91");
   });
 });

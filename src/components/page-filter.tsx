@@ -29,15 +29,23 @@ export interface CheckboxConfig {
 export interface PageFilterProps {
   searchPlaceholder: string;
   searchAriaLabel?: string;
+  pageParam?: string;
   filterBar?: {
     selects?: SelectConfig[];
     checkbox?: CheckboxConfig;
   };
 }
 
+const URL_SYNC_OPTIONS = {
+  dontRunListeners: true,
+  dontUpdateMeta: true,
+  dontValidate: true,
+} as const;
+
 export function PageFilter({
   searchPlaceholder,
   searchAriaLabel,
+  pageParam = "page",
   filterBar,
 }: PageFilterProps) {
   const router = useRouter();
@@ -49,6 +57,7 @@ export function PageFilter({
 
   const applyParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
+    params.delete(pageParam);
     for (const [key, value] of Object.entries(updates)) {
       if (value === null) {
         params.delete(key);
@@ -78,24 +87,29 @@ export function PageFilter({
   filterSelectsRef.current = filterBar?.selects;
 
   React.useEffect(() => {
-    form.setFieldValue("q", currentQuery);
+    form.setFieldValue("q", currentQuery, URL_SYNC_OPTIONS);
     for (const cfg of filterSelectsRef.current ?? []) {
       form.setFieldValue(
         cfg.paramKey,
         searchParams.get(cfg.paramKey) ?? cfg.defaultValue,
+        URL_SYNC_OPTIONS,
       );
     }
-  }, [searchParams, form]);
+  }, [currentQuery, searchParams, form]);
 
   const handleCheckboxChange = (cfg: CheckboxConfig, checked: boolean) => {
     applyParams({ [cfg.paramKey]: checked ? (cfg.trueValue ?? "1") : null });
   };
 
   const handleClearAll = () => {
-    form.setFieldValue("q", "");
+    form.setFieldValue("q", "", URL_SYNC_OPTIONS);
     const updates: Record<string, null> = { q: null };
     for (const select of filterBar?.selects ?? []) {
-      form.setFieldValue(select.paramKey, select.defaultValue);
+      form.setFieldValue(
+        select.paramKey,
+        select.defaultValue,
+        URL_SYNC_OPTIONS,
+      );
       updates[select.paramKey] = null;
     }
     if (filterBar?.checkbox) {

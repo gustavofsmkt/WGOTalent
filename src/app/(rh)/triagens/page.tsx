@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus, Sparkles, Eye, Layers, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
@@ -21,6 +22,15 @@ import { ViewToggle } from "./_components/view-toggle";
 import { DeleteTriagemButton } from "./_components/delete-triagem-button";
 import MetricCardsSummary from "~/components/metric-cards-summary";
 import { DataTable, type ColumnDef } from "~/components/data-table";
+import { TablePagination } from "~/components/table-pagination";
+import { Skeleton } from "~/components/ui/skeleton";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+  type SearchParamsRecord,
+} from "~/lib/pagination";
 
 const ETAPA_OPTIONS = [
   { value: "todas", label: "Todas as Etapas" },
@@ -65,27 +75,34 @@ function isEnumValue<T extends string>(
   return (values as readonly string[]).includes(value);
 }
 
-interface TriagensPageProps {
-  searchParams?: Promise<{
-    etapa?: string;
-    resultado?: string;
-    motivo?: string;
-    q?: string;
-    view?: string;
-    vagaAtiva?: string;
-    vaga?: string;
-  }>;
+interface TriagensSearchParams extends SearchParamsRecord {
+  etapa?: string;
+  resultado?: string;
+  motivo?: string;
+  q?: string;
+  view?: string;
+  vagaAtiva?: string;
+  vaga?: string;
+  page?: string;
 }
 
-export default async function TriagensPage(props: TriagensPageProps) {
-  const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim().toLowerCase();
+interface TriagensPageProps {
+  searchParams?: Promise<TriagensSearchParams>;
+}
+
+async function TriagensContent({
+  searchParams,
+}: {
+  searchParams: TriagensSearchParams;
+}) {
+  const query = (searchParams.q ?? "").trim();
   const etapaFilter = (searchParams.etapa ?? "").trim().toLowerCase();
   const resultadoFilter = (searchParams.resultado ?? "").trim().toLowerCase();
   const motivoFilter = (searchParams.motivo ?? "").trim().toLowerCase();
   const currentView = searchParams.view === "pipeline" ? "pipeline" : "lista";
   const vagaAtivaFilter = searchParams.vagaAtiva === "1";
   const vagaFilter = (searchParams.vaga ?? "").trim();
+  const page = parsePage(searchParams.page);
 
   const dbFilter: TriagemFiltros = {};
   if (
@@ -115,36 +132,35 @@ export default async function TriagensPage(props: TriagensPageProps) {
   if (vagaFilter && vagaFilter !== "todas") {
     dbFilter.vagaId = vagaFilter;
   }
+  if (query) {
+    dbFilter.query = query;
+  }
 
-  const [allTriagens, vagaOptions] = await Promise.all([
-    triagemRepository.findAllWithJoins(
-      Object.keys(dbFilter).length > 0 ? dbFilter : undefined,
-    ),
+  const triagensPromise =
+    currentView === "pipeline"
+      ? triagemRepository
+          .findAllWithJoins(dbFilter)
+          .then((items) => ({ items, total: items.length }))
+      : triagemRepository.findPageWithJoins(dbFilter, {
+          page,
+          pageSize: DEFAULT_PAGE_SIZE,
+        });
+
+  const [triagensPage, summary, vagaOptions] = await Promise.all([
+    triagensPromise,
+    triagemRepository.getListSummary(dbFilter),
     triagemRepository.findActiveVagaOptions(),
   ]);
-
-  const filteredTriagens = allTriagens.filter((item) => {
-    if (!query) return true;
-    return (
-      item.candidato.nome.toLowerCase().includes(query) ||
-      (item.candidato.email?.toLowerCase().includes(query) ?? false) ||
-      item.vaga.cargoTitulo.toLowerCase().includes(query) ||
-      item.vaga.departamentoNome.toLowerCase().includes(query) ||
-      item.vaga.cidades.some(
-        (c) =>
-          c.nome.toLowerCase().includes(query) ||
-          c.uf.toLowerCase().includes(query),
-      )
+  const totalPages = getTotalPages(triagensPage.total, DEFAULT_PAGE_SIZE);
+  if (currentView === "lista" && triagensPage.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: "/triagens",
+        searchParams,
+        page: totalPages,
+      }),
     );
-  });
-
-  const totalCount = filteredTriagens.length;
-  const emAndamentoCount = filteredTriagens.filter(
-    (t) => t.resultado === "em_andamento",
-  ).length;
-  const aprovadosCount = filteredTriagens.filter(
-    (t) => t.resultado === "aprovado",
-  ).length;
+  }
 
   const hasActiveFilters =
     Boolean(query) ||
@@ -154,7 +170,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
     vagaAtivaFilter ||
     Boolean(vagaFilter && vagaFilter !== "todas");
 
-  type Triagem = (typeof allTriagens)[number];
+  type Triagem = (typeof triagensPage.items)[number];
 
   const columns: ColumnDef<Triagem>[] = [
     {
@@ -271,7 +287,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
         }
       />
 
-      {allTriagens.length === 0 && !hasActiveFilters ? (
+      {summary.total === 0 && !hasActiveFilters ? (
         <DataEmptyState
           title={"Nenhuma triagem cadastrada"}
           description={
@@ -293,19 +309,19 @@ export default async function TriagensPage(props: TriagensPageProps) {
             cards={[
               {
                 title: "Total de Triagens",
-                info: totalCount.toString(),
+                info: summary.total.toString(),
                 icon: <Layers className="size-5" />,
                 iconColor: "bg-primary/10",
               },
               {
                 title: "Em Andamento",
-                info: emAndamentoCount.toString(),
+                info: summary.emAndamento.toString(),
                 icon: <Clock className="size-5" />,
                 iconColor: "bg-info/10",
               },
               {
                 title: "Aprovados",
-                info: aprovadosCount.toString(),
+                info: summary.aprovados.toString(),
                 icon: <CheckCircle2 className="size-5" />,
                 iconColor: "bg-success/10",
               },
@@ -359,7 +375,7 @@ export default async function TriagensPage(props: TriagensPageProps) {
 
             <ViewToggle />
 
-            {filteredTriagens.length === 0 ? (
+            {triagensPage.items.length === 0 ? (
               <DataEmptyState
                 title={"Nenhuma triagem encontrada"}
                 description={
@@ -375,17 +391,46 @@ export default async function TriagensPage(props: TriagensPageProps) {
                 }
               />
             ) : currentView === "pipeline" ? (
-              <TriagemPipelineBoard items={filteredTriagens} />
+              <TriagemPipelineBoard items={triagensPage.items} />
             ) : (
-              <DataTable
-                columns={columns}
-                rows={filteredTriagens}
-                className="block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs"
-              />
+              <div className="flex flex-col gap-4">
+                <DataTable
+                  columns={columns}
+                  rows={triagensPage.items}
+                  className="block rounded-xl border border-border/60 bg-card overflow-hidden shadow-xs"
+                />
+                <TablePagination
+                  pathname="/triagens"
+                  searchParams={searchParams}
+                  page={page}
+                  pageSize={DEFAULT_PAGE_SIZE}
+                  total={triagensPage.total}
+                  itemLabel="triagens"
+                />
+              </div>
             )}
           </div>
         </>
       )}
     </div>
+  );
+}
+
+export default async function TriagensPage(props: TriagensPageProps) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+
+  return (
+    <React.Suspense
+      key={JSON.stringify(searchParams)}
+      fallback={
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 p-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-80 w-full" />
+        </div>
+      }
+    >
+      <TriagensContent searchParams={searchParams} />
+    </React.Suspense>
   );
 }

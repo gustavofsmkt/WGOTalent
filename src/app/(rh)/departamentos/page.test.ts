@@ -36,15 +36,18 @@ describe("DepartamentosPage - Server Component Logic", () => {
 
     vi.spyOn(
       departamentoRepository,
-      "findAllWithActiveCargosCount",
-    ).mockResolvedValueOnce(mockDepartamentos);
+      "findPageWithActiveCargosCount",
+    ).mockResolvedValueOnce({ items: mockDepartamentos, total: 2 });
 
-    const result = await departamentoRepository.findAllWithActiveCargosCount();
-    expect(result).toHaveLength(2);
-    expect(result[0]?.nome).toBe("Tecnologia");
-    expect(result[0]?.activeCargosCount).toBe(5);
-    expect(result[1]?.nome).toBe("Recursos Humanos");
-    expect(result[1]?.activeCargosCount).toBe(2);
+    const result = await departamentoRepository.findPageWithActiveCargosCount(
+      {},
+      { page: 1, pageSize: 10 },
+    );
+    expect(result.total).toBe(2);
+    expect(result.items[0]?.nome).toBe("Tecnologia");
+    expect(result.items[0]?.activeCargosCount).toBe(5);
+    expect(result.items[1]?.nome).toBe("Recursos Humanos");
+    expect(result.items[1]?.activeCargosCount).toBe(2);
   });
 
   it("filters departments by search query in name or description", () => {
@@ -104,16 +107,20 @@ describe("DepartamentosPage - Server Component Logic", () => {
     vi.spyOn(departamentoRepository, "findById").mockResolvedValueOnce(
       mockDept,
     );
-    vi.spyOn(departamentoRepository, "findActiveCargos").mockResolvedValueOnce(
-      mockCargos,
-    );
+    vi.spyOn(
+      departamentoRepository,
+      "findActiveCargosPage",
+    ).mockResolvedValueOnce({ items: mockCargos, total: 1 });
 
     const dept = await departamentoRepository.findById("dept-1");
-    const cargos = await departamentoRepository.findActiveCargos("dept-1");
+    const cargos = await departamentoRepository.findActiveCargosPage("dept-1", {
+      page: 1,
+      pageSize: 10,
+    });
 
     expect(dept?.nome).toBe("Engenharia");
-    expect(cargos).toHaveLength(1);
-    expect(cargos[0]?.titulo).toBe("Desenvolvedor Backend");
+    expect(cargos.total).toBe(1);
+    expect(cargos.items[0]?.titulo).toBe("Desenvolvedor Backend");
   });
 
   it("returns null when department is not found or soft-deleted", async () => {

@@ -98,6 +98,7 @@ export const cidades = createTable(
 
 export type Cidade = typeof cidades.$inferSelect;
 export type NovaCidade = typeof cidades.$inferInsert;
+export type CidadeRef = Pick<Cidade, "id" | "nome" | "uf">;
 
 export const departamentos = createTable("departamentos", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -568,7 +569,7 @@ export interface CandidatoCompleto extends Candidato {
 }
 
 export interface VagaCompleta extends Vaga {
-  cidades: Cidade[];
+  cidades: CidadeRef[];
   cargo: Cargo & { departamento: Departamento };
 }
 

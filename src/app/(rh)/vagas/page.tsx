@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Plus,
   Briefcase,
@@ -13,12 +14,19 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import { Card, CardContent } from "~/components/ui/card";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { DeleteVagaButton } from "./_components/delete-vaga-button";
 import { PageFilter } from "~/components/page-filter";
 import MetricCardsSummary from "~/components/metric-cards-summary";
 import { DataTable, type ColumnDef } from "~/components/data-table";
+import { TablePagination } from "~/components/table-pagination";
+import { statusVagaEnum } from "~/server/db/schema";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 const STATUS_OPTIONS = [
   { value: "todas", label: "Todos os status" },
@@ -32,38 +40,35 @@ const STATUS_OPTIONS = [
 export const dynamic = "force-dynamic";
 
 interface VagasPageProps {
-  searchParams?: Promise<{ q?: string; status?: string }>;
+  searchParams?: Promise<{ q?: string; status?: string; page?: string }>;
 }
 
 export default async function VagasPage(props: VagasPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim().toLowerCase();
+  const query = (searchParams.q ?? "").trim();
   const statusFilter = (searchParams.status ?? "").trim().toLowerCase();
-
-  const allVagas = await vagaRepository.findAllWithCargoAndDepartamento();
-
-  const totalAbertas = allVagas.filter((v) => v.status === "aberta").length;
-  const totalPosicoes = allVagas.reduce(
-    (acc, v) => acc + (v.posicoesDisponiveis || 0),
-    0,
+  const page = parsePage(searchParams.page);
+  const status = statusVagaEnum.enumValues.find(
+    (value) => value === statusFilter,
   );
 
-  const filteredVagas = allVagas.filter((vaga) => {
-    const matchesQuery =
-      !query ||
-      vaga.cargo.titulo.toLowerCase().includes(query) ||
-      vaga.cargo.departamento.nome.toLowerCase().includes(query) ||
-      vaga.cidades.some(
-        (c) =>
-          c.nome.toLowerCase().includes(query) ||
-          c.uf.toLowerCase().includes(query),
-      );
-
-    const matchesStatus =
-      !statusFilter || statusFilter === "todas" || vaga.status === statusFilter;
-
-    return matchesQuery && matchesStatus;
-  });
+  const [vagasPage, summary] = await Promise.all([
+    vagaRepository.findPageWithCargoAndDepartamento(
+      { query, status },
+      { page, pageSize: DEFAULT_PAGE_SIZE },
+    ),
+    vagaRepository.getListSummary(),
+  ]);
+  const totalPages = getTotalPages(vagasPage.total, DEFAULT_PAGE_SIZE);
+  if (vagasPage.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: "/vagas",
+        searchParams,
+        page: totalPages,
+      }),
+    );
+  }
 
   const formatCurrency = (value?: string | null) => {
     if (!value) return "A combinar";
@@ -85,7 +90,7 @@ export default async function VagasPage(props: VagasPageProps) {
     }
   };
 
-  type Vaga = (typeof allVagas)[number];
+  type Vaga = (typeof vagasPage.items)[number];
 
   const columns: ColumnDef<Vaga>[] = [
     {
@@ -183,7 +188,7 @@ export default async function VagasPage(props: VagasPageProps) {
         }
       />
 
-      {allVagas.length === 0 ? (
+      {summary.total === 0 ? (
         <DataEmptyState
           icon={Briefcase}
           title="Nenhuma vaga cadastrada"
@@ -204,19 +209,19 @@ export default async function VagasPage(props: VagasPageProps) {
             cards={[
               {
                 title: "Total de Vagas",
-                info: allVagas.length.toString(),
+                info: summary.total.toString(),
                 icon: <Briefcase className="size-5" />,
                 iconColor: "bg-primary/10",
               },
               {
                 title: "Vagas Abertas",
-                info: totalAbertas.toString(),
+                info: summary.abertas.toString(),
                 icon: <Building2 className="size-5" />,
                 iconColor: "bg-emerald-500/10",
               },
               {
                 title: "Posições Totais",
-                info: totalPosicoes.toString(),
+                info: summary.posicoes.toString(),
                 icon: <Users className="size-5" />,
                 iconColor: "bg-blue-500/10",
               },
@@ -238,7 +243,7 @@ export default async function VagasPage(props: VagasPageProps) {
             }}
           />
 
-          {filteredVagas.length === 0 ? (
+          {vagasPage.items.length === 0 ? (
             <DataEmptyState
               title="Nenhuma vaga encontrada"
               description={`Nenhum resultado corresponde aos filtros aplicados.`}
@@ -253,11 +258,11 @@ export default async function VagasPage(props: VagasPageProps) {
             />
           ) : (
             <>
-              <DataTable columns={columns} rows={filteredVagas} />
+              <DataTable columns={columns} rows={vagasPage.items} />
 
               {/* Mobile View */}
               <div className="md:hidden space-y-2">
-                {filteredVagas.map((vaga) => (
+                {vagasPage.items.map((vaga) => (
                   <div
                     key={vaga.id}
                     className="flex flex-col p-4 bg-card rounded-xl border border-border/60 shadow-xs gap-4"
@@ -282,7 +287,9 @@ export default async function VagasPage(props: VagasPageProps) {
                       <div className="flex items-center gap-2">
                         <MapPin className="size-3.5 text-muted-foreground" />
                         <span>
-                          {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
+                          {vaga.cidades
+                            .map((c) => `${c.nome} - ${c.uf}`)
+                            .join(", ")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -326,6 +333,14 @@ export default async function VagasPage(props: VagasPageProps) {
                   </div>
                 ))}
               </div>
+              <TablePagination
+                pathname="/vagas"
+                searchParams={searchParams}
+                page={page}
+                pageSize={DEFAULT_PAGE_SIZE}
+                total={vagasPage.total}
+                itemLabel="vagas"
+              />
             </>
           )}
         </div>

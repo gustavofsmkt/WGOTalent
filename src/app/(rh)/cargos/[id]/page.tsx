@@ -1,5 +1,5 @@
 import * as React from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   Pencil,
@@ -26,20 +26,44 @@ import {
 } from "~/components/ui/table";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "../_components/delete-cargo-button";
+import { TablePagination } from "~/components/table-pagination";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 interface CargoDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ page?: string }>;
 }
 
 export default async function CargoDetailPage(props: CargoDetailPageProps) {
   const params = await props.params;
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const page = parsePage(searchParams.page);
   const cargo = await cargoRepository.findByIdWithDepartamento(params.id);
 
   if (!cargo) {
     notFound();
   }
 
-  const vagasDoCargo = await cargoRepository.findActiveVagas(params.id);
+  const vagasDoCargo = await cargoRepository.findActiveVagasPage(params.id, {
+    page,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+  const totalPages = getTotalPages(vagasDoCargo.total, DEFAULT_PAGE_SIZE);
+  if (vagasDoCargo.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: `/cargos/${params.id}`,
+        searchParams,
+        page: totalPages,
+        hash: "vagas-do-cargo",
+      }),
+    );
+  }
 
   const formatCurrency = (value?: string | null) => {
     if (!value) return "Não informada";
@@ -213,18 +237,21 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
         </div>
       </div>
 
-      <Card className="shadow-xs border-border/60">
+      <Card
+        id="vagas-do-cargo"
+        className="shadow-xs border-border/60 scroll-mt-4"
+      >
         <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Briefcase className="size-4 text-primary" />
             Vagas deste Cargo
             <span className="text-sm font-normal text-muted-foreground">
-              ({vagasDoCargo.length})
+              ({vagasDoCargo.total})
             </span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {vagasDoCargo.length === 0 ? (
+          {vagasDoCargo.total === 0 ? (
             <div className="p-4">
               <DataEmptyState
                 icon={Briefcase}
@@ -245,56 +272,70 @@ export default async function CargoDetailPage(props: CargoDetailPageProps) {
               />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/20 hover:bg-muted/20">
-                  <TableHead className="pl-4">Localização</TableHead>
-                  <TableHead>Posições</TableHead>
-                  <TableHead>Remuneração</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criada em</TableHead>
-                  <TableHead className="pr-4 text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vagasDoCargo.map((vaga) => (
-                  <TableRow key={vaga.id}>
-                    <TableCell className="pl-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="size-3.5 text-muted-foreground" />
-                        {vaga.cidades.map((c) => `${c.nome} - ${c.uf}`).join(", ")}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="size-3.5 text-muted-foreground" />
-                        {vaga.posicoesDisponiveis}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatCurrency(vaga.remuneracaoOferecida)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={vaga.status} />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(vaga.createdAt)}
-                    </TableCell>
-                    <TableCell className="pr-4 text-right">
-                      <Link
-                        href={`/vagas/${vaga.id}`}
-                        className={buttonVariants({
-                          variant: "outline",
-                          size: "sm",
-                        })}
-                      >
-                        Ver
-                      </Link>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableHead className="pl-4">Localização</TableHead>
+                    <TableHead>Posições</TableHead>
+                    <TableHead>Remuneração</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criada em</TableHead>
+                    <TableHead className="pr-4 text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {vagasDoCargo.items.map((vaga) => (
+                    <TableRow key={vaga.id}>
+                      <TableCell className="pl-4">
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="size-3.5 text-muted-foreground" />
+                          {vaga.cidades
+                            .map((c) => `${c.nome} - ${c.uf}`)
+                            .join(", ")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Users className="size-3.5 text-muted-foreground" />
+                          {vaga.posicoesDisponiveis}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatCurrency(vaga.remuneracaoOferecida)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={vaga.status} />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(vaga.createdAt)}
+                      </TableCell>
+                      <TableCell className="pr-4 text-right">
+                        <Link
+                          href={`/vagas/${vaga.id}`}
+                          className={buttonVariants({
+                            variant: "outline",
+                            size: "sm",
+                          })}
+                        >
+                          Ver
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <TablePagination
+                pathname={`/cargos/${params.id}`}
+                searchParams={searchParams}
+                page={page}
+                pageSize={DEFAULT_PAGE_SIZE}
+                total={vagasDoCargo.total}
+                itemLabel="vagas"
+                hash="vagas-do-cargo"
+                className="border-t px-4 py-3"
+              />
+            </>
           )}
         </CardContent>
       </Card>

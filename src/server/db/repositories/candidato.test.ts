@@ -175,6 +175,13 @@ describe("mergeScalarFields", () => {
   });
 });
 
+describe("candidatoRepository pagination", () => {
+  it("exposes paginated list and summary queries", () => {
+    expect(typeof candidatoRepository.findPageActiveSummary).toBe("function");
+    expect(typeof candidatoRepository.getListSummary).toBe("function");
+  });
+});
+
 describe("candidatoRepository.softDelete (cascade)", () => {
   /**
    * Builds a fake transaction that records every `.update(table)` call so

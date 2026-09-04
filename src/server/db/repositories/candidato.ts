@@ -1,4 +1,15 @@
-import { eq, desc, asc, and, isNull, inArray } from "drizzle-orm";
+import {
+  eq,
+  desc,
+  asc,
+  and,
+  isNull,
+  inArray,
+  ilike,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   candidatos,
@@ -12,13 +23,15 @@ import {
   vagas,
   type Candidato,
   type CandidatoCompleto,
-  type CandidatoFormacao,
-  type CandidatoExperiencia,
-  type CandidatoCertificacao,
   type Triagem,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { type CandidatoAgregadoOutput } from "~/lib/validation/candidato";
+import {
+  getPaginationOffset,
+  type PaginatedResult,
+  type PaginationInput,
+} from "~/lib/pagination";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -169,6 +182,18 @@ export interface CandidatoSummary {
   createdAt: string;
 }
 
+export interface CandidatoListFilters {
+  query?: string;
+  origem?: Candidato["origem"];
+  emBancoTalentos?: boolean;
+}
+
+export interface CandidatoListSummary {
+  total: number;
+  email: number;
+  manual: number;
+}
+
 export interface CandidatoDetailCompleto extends CandidatoCompleto {
   triagens: (Triagem & {
     vaga: { id: string; cargo: { titulo: string } };
@@ -196,41 +221,107 @@ export interface CargoOption {
   };
 }
 
+function buildCandidatoListConditions(filters: CandidatoListFilters): SQL[] {
+  const conditions: (SQL | undefined)[] = [];
+  const query = filters.query?.trim();
+
+  if (query) {
+    const pattern = `%${query}%`;
+    conditions.push(
+      or(
+        ilike(candidatos.nome, pattern),
+        ilike(candidatos.email, pattern),
+        ilike(candidatos.cidade, pattern),
+        ilike(candidatos.uf, pattern),
+        ilike(cargos.titulo, pattern),
+      ),
+    );
+  }
+
+  if (filters.origem) conditions.push(eq(candidatos.origem, filters.origem));
+  if (filters.emBancoTalentos) {
+    conditions.push(eq(candidatos.emBancoTalentos, true));
+  }
+
+  return conditions.filter((condition): condition is SQL => Boolean(condition));
+}
+
 export const candidatoRepository = {
-  findAllActiveSummary: async (
+  findPageActiveSummary: async (
+    filters: CandidatoListFilters,
+    pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<CandidatoSummary[]> => {
+  ): Promise<PaginatedResult<CandidatoSummary>> => {
+    const conditions = buildCandidatoListConditions(filters);
+    const [rows, totalRows] = await Promise.all([
+      notDeleted(
+        dbOrTx
+          .select({
+            id: candidatos.id,
+            nome: candidatos.nome,
+            email: candidatos.email,
+            celular: candidatos.celular,
+            cidade: candidatos.cidade,
+            uf: candidatos.uf,
+            origem: candidatos.origem,
+            emBancoTalentos: candidatos.emBancoTalentos,
+            createdAt: candidatos.createdAt,
+            cargoInteresseTitulo: cargos.titulo,
+          })
+          .from(candidatos)
+          .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id)),
+        candidatos,
+        ...conditions,
+      )
+        .orderBy(desc(candidatos.createdAt), desc(candidatos.id))
+        .limit(pagination.pageSize)
+        .offset(getPaginationOffset(pagination)),
+      notDeleted(
+        dbOrTx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(candidatos)
+          .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id)),
+        candidatos,
+        ...conditions,
+      ),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        nome: row.nome,
+        email: row.email,
+        celular: row.celular,
+        cidade: row.cidade,
+        uf: row.uf,
+        origem: row.origem,
+        emBancoTalentos: row.emBancoTalentos,
+        createdAt: row.createdAt,
+        cargoInteresse: row.cargoInteresseTitulo,
+      })),
+      total: Number(totalRows[0]?.count ?? 0),
+    };
+  },
+
+  getListSummary: async (
+    dbOrTx: DbOrTx = db,
+  ): Promise<CandidatoListSummary> => {
     const rows = await notDeleted(
       dbOrTx
         .select({
-          id: candidatos.id,
-          nome: candidatos.nome,
-          email: candidatos.email,
-          celular: candidatos.celular,
-          cidade: candidatos.cidade,
-          uf: candidatos.uf,
-          origem: candidatos.origem,
-          emBancoTalentos: candidatos.emBancoTalentos,
-          createdAt: candidatos.createdAt,
-          cargoInteresseTitulo: cargos.titulo,
+          total: sql<number>`count(*)::int`,
+          email: sql<number>`count(*) filter (where ${candidatos.origem} = 'email')::int`,
+          manual: sql<number>`count(*) filter (where ${candidatos.origem} = 'manual')::int`,
         })
-        .from(candidatos)
-        .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id)),
+        .from(candidatos),
       candidatos,
-    ).orderBy(desc(candidatos.createdAt));
+    );
 
-    return rows.map((r) => ({
-      id: r.id,
-      nome: r.nome,
-      email: r.email,
-      celular: r.celular,
-      cidade: r.cidade,
-      uf: r.uf,
-      origem: r.origem,
-      emBancoTalentos: r.emBancoTalentos,
-      createdAt: r.createdAt,
-      cargoInteresse: r.cargoInteresseTitulo,
-    }));
+    return {
+      total: Number(rows[0]?.total ?? 0),
+      email: Number(rows[0]?.email ?? 0),
+      manual: Number(rows[0]?.manual ?? 0),
+    };
   },
 
   findById: async (

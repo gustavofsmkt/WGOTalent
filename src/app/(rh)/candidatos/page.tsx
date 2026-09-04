@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Plus,
   Users,
@@ -22,6 +23,14 @@ import { PageFilter } from "~/components/page-filter";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
 import MetricCardsSummary from "~/components/metric-cards-summary";
 import { DataTable, type ColumnDef } from "~/components/data-table";
+import { TablePagination } from "~/components/table-pagination";
+import { origemEnum } from "~/server/db/schema";
+import {
+  buildPageHref,
+  DEFAULT_PAGE_SIZE,
+  getTotalPages,
+  parsePage,
+} from "~/lib/pagination";
 
 const ORIGEM_OPTIONS = [
   { value: "todas", label: "Todas as origens" },
@@ -38,40 +47,43 @@ const POOL_OPTIONS = [
 export const dynamic = "force-dynamic";
 
 interface CandidatosPageProps {
-  searchParams?: Promise<{ q?: string; origem?: string; pool?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    origem?: string;
+    pool?: string;
+    page?: string;
+  }>;
 }
 
 export default async function CandidatosPage(props: CandidatosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim().toLowerCase();
+  const query = (searchParams.q ?? "").trim();
   const origemFilter = (searchParams.origem ?? "").trim().toLowerCase();
   const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
+  const page = parsePage(searchParams.page);
+  const origem = origemEnum.enumValues.find((value) => value === origemFilter);
 
-  const allCandidatos = await candidatoRepository.findAllActiveSummary();
-
-  const manualCount = allCandidatos.filter((c) => c.origem === "manual").length;
-  const emailCount = allCandidatos.filter((c) => c.origem === "email").length;
-
-  const filteredCandidatos = allCandidatos.filter((candidato) => {
-    const matchesQuery =
-      !query ||
-      candidato.nome.toLowerCase().includes(query) ||
-      (candidato.email?.toLowerCase().includes(query) ?? false) ||
-      candidato.cidade.toLowerCase().includes(query) ||
-      candidato.uf.toLowerCase().includes(query) ||
-      (candidato.cargoInteresse &&
-        candidato.cargoInteresse.toLowerCase().includes(query));
-
-    const matchesOrigem =
-      !origemFilter ||
-      origemFilter === "todas" ||
-      candidato.origem === origemFilter;
-
-    const matchesPool =
-      !poolFilter || poolFilter === "todos" || candidato.emBancoTalentos;
-
-    return matchesQuery && matchesOrigem && matchesPool;
-  });
+  const [candidatosPage, summary] = await Promise.all([
+    candidatoRepository.findPageActiveSummary(
+      {
+        query,
+        origem,
+        emBancoTalentos: poolFilter === "banco_talentos",
+      },
+      { page, pageSize: DEFAULT_PAGE_SIZE },
+    ),
+    candidatoRepository.getListSummary(),
+  ]);
+  const totalPages = getTotalPages(candidatosPage.total, DEFAULT_PAGE_SIZE);
+  if (candidatosPage.total > 0 && page > totalPages) {
+    redirect(
+      buildPageHref({
+        pathname: "/candidatos",
+        searchParams,
+        page: totalPages,
+      }),
+    );
+  }
 
   const formatDate = (date: Date | string) => {
     try {
@@ -106,7 +118,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     }
   };
 
-  type Candidato = (typeof allCandidatos)[number];
+  type Candidato = (typeof candidatosPage.items)[number];
 
   const columns: ColumnDef<Candidato>[] = [
     {
@@ -234,7 +246,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         }
       />
 
-      {allCandidatos.length === 0 ? (
+      {summary.total === 0 ? (
         <DataEmptyState
           icon={Users}
           title="Nenhum candidato cadastrado"
@@ -255,19 +267,19 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             cards={[
               {
                 title: "Total de Candidatos",
-                info: allCandidatos.length.toString(),
+                info: summary.total.toString(),
                 icon: <Users className="size-5" />,
                 iconColor: "bg-primary/10",
               },
               {
                 title: "Via E-mail / IA",
-                info: emailCount.toString(),
+                info: summary.email.toString(),
                 icon: <Mail className="size-5" />,
                 iconColor: "bg-info/10",
               },
               {
                 title: "Cadastro Manual / RH",
-                info: manualCount.toString(),
+                info: summary.manual.toString(),
                 icon: <UserCheck className="size-5" />,
                 iconColor: "bg-muted",
               },
@@ -295,7 +307,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             }}
           />
 
-          {filteredCandidatos.length === 0 ? (
+          {candidatosPage.items.length === 0 ? (
             <DataEmptyState
               title="Nenhum candidato encontrado"
               description={`Nenhum resultado corresponde aos filtros aplicados.`}
@@ -310,11 +322,11 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             />
           ) : (
             <>
-              <DataTable columns={columns} rows={filteredCandidatos} />
+              <DataTable columns={columns} rows={candidatosPage.items} />
 
               {/* Mobile card list */}
               <div className="grid grid-cols-1 gap-4 md:hidden">
-                {filteredCandidatos.map((candidato) => {
+                {candidatosPage.items.map((candidato) => {
                   const origemConfig = getOrigemBadge(candidato.origem);
                   return (
                     <Card
@@ -405,6 +417,14 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                   );
                 })}
               </div>
+              <TablePagination
+                pathname="/candidatos"
+                searchParams={searchParams}
+                page={page}
+                pageSize={DEFAULT_PAGE_SIZE}
+                total={candidatosPage.total}
+                itemLabel="candidatos"
+              />
             </>
           )}
         </div>
