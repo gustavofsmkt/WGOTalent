@@ -32,6 +32,7 @@ const UploadProgressPopup = dynamic(() =>
     (m) => m.UploadProgressPopup,
   ),
 );
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -41,7 +42,7 @@ export default function RootLayout({
         <UploadProgressProvider>
           <div className="min-h-screen w-full bg-muted/40 flex flex-col md:flex-row">
             {/* Mobile Header & Nav */}
-            <header className="md:hidden flex items-center justify-between p-4 border-b bg-background shrink-0">
+            <header className="md:hidden sticky top-0 z-50 flex items-center justify-between p-4 border-b bg-background shrink-0">
               <div className="font-bold text-lg tracking-tight text-primary">
                 <Link href="/">WGOTalent</Link>
               </div>
@@ -65,19 +66,17 @@ export default function RootLayout({
             </header>
 
             {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-64 flex-col border-r bg-background shrink-0 shadow-sm">
+            <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-64 flex-col border-r bg-background shrink-0 shadow-sm">
               <div className="p-4 border-b">
                 <div className="font-bold text-2xl tracking-tight text-primary">
                   <Link href="/">WGOTalent</Link>
                 </div>
               </div>
-              <NavLinks className="p-4 flex-1" />
+              <NavLinks className="p-4 flex-1 overflow-y-auto" />
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-h-0 overflow-auto">
-              {children}
-            </main>
+            <main className="flex-1 flex flex-col min-h-0">{children}</main>
           </div>
           <UploadProgressPopup />
         </UploadProgressProvider>
