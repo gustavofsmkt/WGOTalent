@@ -23,7 +23,19 @@ export interface SelectConfig {
 export interface CheckboxConfig {
   paramKey: string;
   trueValue?: string;
+  falseValue?: string;
+  defaultChecked?: boolean;
   label: string;
+}
+
+export interface NumberInputConfig {
+  paramKey: string;
+  label: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  suffix?: string;
 }
 
 export interface PageFilterProps {
@@ -32,6 +44,7 @@ export interface PageFilterProps {
   pageParam?: string;
   filterBar?: {
     selects?: SelectConfig[];
+    numberInputs?: NumberInputConfig[];
     checkbox?: CheckboxConfig;
   };
 }
@@ -41,6 +54,28 @@ const URL_SYNC_OPTIONS = {
   dontUpdateMeta: true,
   dontValidate: true,
 } as const;
+
+function getCheckboxChecked(
+  searchParams: Pick<URLSearchParams, "get">,
+  config: CheckboxConfig,
+) {
+  const value = searchParams.get(config.paramKey);
+  if (value === (config.trueValue ?? "1")) return true;
+  if (value === (config.falseValue ?? "0")) return false;
+  return config.defaultChecked ?? false;
+}
+
+function normalizeNumberInput(value: string, config: NumberInputConfig) {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return null;
+
+  const parsedValue = Number(trimmedValue);
+  if (!Number.isFinite(parsedValue)) return null;
+
+  const minimum = config.min ?? Number.NEGATIVE_INFINITY;
+  const maximum = config.max ?? Number.POSITIVE_INFINITY;
+  return String(Math.min(maximum, Math.max(minimum, parsedValue)));
+}
 
 export function PageFilter({
   searchPlaceholder,
@@ -65,7 +100,10 @@ export function PageFilter({
         params.set(key, value);
       }
     }
-    startTransition(() => router.replace(`${pathname}?${params.toString()}`));
+    const query = params.toString();
+    startTransition(() =>
+      router.replace(query ? `${pathname}?${query}` : pathname),
+    );
   };
 
   const form = useAppForm({
@@ -77,6 +115,12 @@ export function PageFilter({
           searchParams.get(cfg.paramKey) ?? cfg.defaultValue,
         ]),
       ),
+      ...Object.fromEntries(
+        (filterBar?.numberInputs ?? []).map((cfg) => [
+          cfg.paramKey,
+          searchParams.get(cfg.paramKey) ?? "",
+        ]),
+      ),
     } as Record<string, string>,
     onSubmit: ({ value }) => {
       applyParams({ q: value.q?.trim() || null });
@@ -85,6 +129,8 @@ export function PageFilter({
 
   const filterSelectsRef = React.useRef(filterBar?.selects);
   filterSelectsRef.current = filterBar?.selects;
+  const filterNumberInputsRef = React.useRef(filterBar?.numberInputs);
+  filterNumberInputsRef.current = filterBar?.numberInputs;
 
   React.useEffect(() => {
     form.setFieldValue("q", currentQuery, URL_SYNC_OPTIONS);
@@ -95,10 +141,25 @@ export function PageFilter({
         URL_SYNC_OPTIONS,
       );
     }
+    for (const cfg of filterNumberInputsRef.current ?? []) {
+      form.setFieldValue(
+        cfg.paramKey,
+        searchParams.get(cfg.paramKey) ?? "",
+        URL_SYNC_OPTIONS,
+      );
+    }
   }, [currentQuery, searchParams, form]);
 
   const handleCheckboxChange = (cfg: CheckboxConfig, checked: boolean) => {
-    applyParams({ [cfg.paramKey]: checked ? (cfg.trueValue ?? "1") : null });
+    const defaultChecked = cfg.defaultChecked ?? false;
+    applyParams({
+      [cfg.paramKey]:
+        checked === defaultChecked
+          ? null
+          : checked
+            ? (cfg.trueValue ?? "1")
+            : (cfg.falseValue ?? "0"),
+    });
   };
 
   const handleClearAll = () => {
@@ -112,6 +173,10 @@ export function PageFilter({
       );
       updates[select.paramKey] = null;
     }
+    for (const input of filterBar?.numberInputs ?? []) {
+      form.setFieldValue(input.paramKey, "", URL_SYNC_OPTIONS);
+      updates[input.paramKey] = null;
+    }
     if (filterBar?.checkbox) {
       updates[filterBar.checkbox.paramKey] = null;
     }
@@ -124,16 +189,21 @@ export function PageFilter({
       const current = searchParams.get(cfg.paramKey) ?? cfg.defaultValue;
       if (current !== cfg.defaultValue) return true;
     }
+    for (const cfg of filterBar?.numberInputs ?? []) {
+      if (searchParams.get(cfg.paramKey)?.trim()) return true;
+    }
     if (filterBar?.checkbox) {
-      const trueValue = filterBar.checkbox.trueValue ?? "1";
-      if (searchParams.get(filterBar.checkbox.paramKey) === trueValue)
-        return true;
+      const checked = getCheckboxChecked(searchParams, filterBar.checkbox);
+      if (checked !== (filterBar.checkbox.defaultChecked ?? false)) return true;
     }
     return false;
   }, [currentQuery, filterBar, searchParams]);
 
   const hasFilterBar =
-    !!filterBar && (!!filterBar.selects?.length || !!filterBar.checkbox);
+    !!filterBar &&
+    (!!filterBar.selects?.length ||
+      !!filterBar.numberInputs?.length ||
+      !!filterBar.checkbox);
 
   return (
     <div className="flex flex-col gap-2 w-full">
@@ -209,6 +279,55 @@ export function PageFilter({
             </form.AppField>
           ))}
 
+          {filterBar!.numberInputs?.map((cfg) => (
+            <form.Field key={cfg.paramKey} name={cfg.paramKey}>
+              {(field) => (
+                <div className="grid gap-1.5">
+                  <label
+                    htmlFor={`filter-number-${cfg.paramKey}`}
+                    className="ml-0.5 text-xs font-medium text-nowrap"
+                  >
+                    {cfg.label}
+                  </label>
+                  <div className="relative w-32">
+                    <Input
+                      id={`filter-number-${cfg.paramKey}`}
+                      type="number"
+                      inputMode="numeric"
+                      min={cfg.min}
+                      max={cfg.max}
+                      step={cfg.step}
+                      placeholder={cfg.placeholder}
+                      value={field.state.value}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.currentTarget.blur();
+                      }}
+                      onBlur={() => {
+                        field.handleBlur();
+                        const normalizedValue = normalizeNumberInput(
+                          field.state.value,
+                          cfg,
+                        );
+                        field.handleChange(normalizedValue ?? "");
+                        applyParams({ [cfg.paramKey]: normalizedValue });
+                      }}
+                      className={cfg.suffix ? "pr-8" : undefined}
+                      aria-label={cfg.label}
+                    />
+                    {cfg.suffix && (
+                      <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-muted-foreground">
+                        {cfg.suffix}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </form.Field>
+          ))}
+
           {filterBar!.checkbox && (
             <label
               htmlFor={`filter-cb-${filterBar!.checkbox.paramKey}`}
@@ -216,10 +335,7 @@ export function PageFilter({
             >
               <Checkbox
                 id={`filter-cb-${filterBar!.checkbox.paramKey}`}
-                checked={
-                  searchParams.get(filterBar!.checkbox.paramKey) ===
-                  (filterBar!.checkbox.trueValue ?? "1")
-                }
+                checked={getCheckboxChecked(searchParams, filterBar!.checkbox)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange(filterBar!.checkbox!, checked === true)
                 }

@@ -15,6 +15,7 @@ import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
 import { vagaRepository } from "~/server/db/repositories/vaga";
+import { cidadeRepository } from "~/server/db/repositories/cidade";
 import { DeleteVagaButton } from "./_components/delete-vaga-button";
 import { PageFilter } from "~/components/page-filter";
 import MetricCardsSummary from "~/components/metric-cards-summary";
@@ -40,24 +41,36 @@ const STATUS_OPTIONS = [
 export const dynamic = "force-dynamic";
 
 interface VagasPageProps {
-  searchParams?: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    status?: string;
+    cidade?: string;
+    page?: string;
+  }>;
 }
 
 export default async function VagasPage(props: VagasPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const query = (searchParams.q ?? "").trim();
   const statusFilter = (searchParams.status ?? "").trim().toLowerCase();
+  const cidadeFilter = (searchParams.cidade ?? "").trim();
   const page = parsePage(searchParams.page);
   const status = statusVagaEnum.enumValues.find(
     (value) => value === statusFilter,
   );
 
-  const [vagasPage, summary] = await Promise.all([
+  const [vagasPage, summary, cidadeOptions] = await Promise.all([
     vagaRepository.findPageWithCargoAndDepartamento(
-      { query, status },
+      {
+        query,
+        status,
+        cidadeId:
+          cidadeFilter && cidadeFilter !== "todas" ? cidadeFilter : undefined,
+      },
       { page, pageSize: DEFAULT_PAGE_SIZE },
     ),
     vagaRepository.getListSummary(),
+    cidadeRepository.findAll(),
   ]);
   const totalPages = getTotalPages(vagasPage.total, DEFAULT_PAGE_SIZE);
   if (vagasPage.total > 0 && page > totalPages) {
@@ -150,7 +163,7 @@ export default async function VagasPage(props: VagasPageProps) {
       header: "Ações",
       headerClassName: "w-[60px]",
       cell: (vaga) => (
-        <div className="flex items-centergap-1">
+        <div className="flex items-center gap-1">
           <Link
             href={`/vagas/${vaga.id}`}
             className={buttonVariants({
@@ -238,6 +251,18 @@ export default async function VagasPage(props: VagasPageProps) {
                   defaultValue: "todas",
                   placeholder: "Status",
                   options: STATUS_OPTIONS,
+                },
+                {
+                  paramKey: "cidade",
+                  defaultValue: "todas",
+                  placeholder: "Cidade",
+                  options: [
+                    { value: "todas", label: "Todas as cidades" },
+                    ...cidadeOptions.map((cidade) => ({
+                      value: cidade.id,
+                      label: `${cidade.nome}/${cidade.uf}`,
+                    })),
+                  ],
                 },
               ],
             }}

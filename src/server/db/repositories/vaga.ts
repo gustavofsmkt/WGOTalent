@@ -23,6 +23,7 @@ import {
 import {
   activeCitiesForVaga,
   matchesActiveVagaCity,
+  matchesActiveVagaCityId,
   matchesActiveVagaCityName,
   notDeleted,
 } from "~/server/db/query-helpers";
@@ -64,6 +65,7 @@ export interface CargoOption {
 export interface VagaListFilters {
   query?: string;
   status?: Vaga["status"];
+  cidadeId?: string;
 }
 
 export interface VagaListSummary {
@@ -163,6 +165,9 @@ function buildVagaListConditions(
   }
 
   if (filters.status) conditions.push(eq(vagas.status, filters.status));
+  if (filters.cidadeId) {
+    conditions.push(matchesActiveVagaCityId(dbOrTx, filters.cidadeId));
+  }
   return conditions.filter((condition): condition is SQL => Boolean(condition));
 }
 

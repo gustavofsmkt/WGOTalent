@@ -10,32 +10,31 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
-import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
 import { Separator } from "~/components/ui/separator";
 import { vagaRepository } from "~/server/db/repositories/vaga";
-import { triagemRepository } from "~/server/db/repositories/triagem";
-import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { DeleteVagaButton } from "../_components/delete-vaga-button";
+import { Skeleton } from "~/components/ui/skeleton";
+import { VagaTriagensSection } from "./_components/vaga-triagens-section";
+import type { TriagemListSearchParams } from "~/lib/triagem-list-filters";
 
 interface VagaDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<TriagemListSearchParams>;
 }
 
 export default async function VagaDetailPage(props: VagaDetailPageProps) {
-  const params = await props.params;
+  const [params, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams ?? Promise.resolve({}),
+  ]);
   const vaga = await vagaRepository.findByIdWithCargoAndDepartamento(params.id);
 
   if (!vaga) {
     notFound();
   }
-
-  const triagensAtivas = await triagemRepository.findAllWithJoins({
-    vagaId: vaga.id,
-    resultado: "em_andamento",
-  });
 
   const formatCurrency = (value?: string | null) => {
     if (!value) return "Não informada";
@@ -108,6 +107,19 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
           </div>
         }
       />
+
+      <React.Suspense
+        key={JSON.stringify(searchParams)}
+        fallback={
+          <div className="space-y-3" aria-label="Carregando candidatos da vaga">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-72 w-full" />
+          </div>
+        }
+      >
+        <VagaTriagensSection vagaId={vaga.id} searchParams={searchParams} />
+      </React.Suspense>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Main Content - 2 columns */}
@@ -274,24 +286,6 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Pipeline de Candidatos */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Users className="size-4 text-muted-foreground" />
-          <h2 className="text-lg font-semibold text-foreground">
-            Pipeline de Candidatos
-          </h2>
-        </div>
-        {triagensAtivas.length === 0 ? (
-          <DataEmptyState
-            title="Nenhuma triagem ativa"
-            description="Nenhuma triagem em andamento para esta vaga."
-          />
-        ) : (
-          <TriagemPipelineBoard items={triagensAtivas} />
-        )}
       </div>
     </div>
   );

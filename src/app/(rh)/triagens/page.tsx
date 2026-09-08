@@ -6,19 +6,11 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import {
-  triagemRepository,
-  type TriagemFiltros,
-} from "~/server/db/repositories/triagem";
-import {
-  triagemEtapaEnum,
-  triagemResultadoEnum,
-  triagemMotivoEnum,
-} from "~/server/db/schema";
+import { triagemRepository } from "~/server/db/repositories/triagem";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { MOTIVO_LABELS, getInitials, formatDate } from "~/lib/triagem-format";
-import { PageFilter } from "~/components/page-filter";
-import { ViewToggle } from "./_components/view-toggle";
+import { TriagemPageFilter } from "~/components/triagem-page-filter";
+import { TriagemViewToggle } from "~/components/triagem-view-toggle";
 import { DeleteTriagemButton } from "./_components/delete-triagem-button";
 import MetricCardsSummary from "~/components/metric-cards-summary";
 import { DataTable, type ColumnDef } from "~/components/data-table";
@@ -28,113 +20,29 @@ import {
   buildPageHref,
   DEFAULT_PAGE_SIZE,
   getTotalPages,
-  parsePage,
-  type SearchParamsRecord,
 } from "~/lib/pagination";
-
-const ETAPA_OPTIONS = [
-  { value: "todas", label: "Todas as Etapas" },
-  { value: "curriculo", label: "Currículo" },
-  { value: "testes", label: "Testes" },
-  { value: "entrevista_rh", label: "Entrevista RH" },
-  { value: "entrevista_gestor", label: "Entrevista Gestor" },
-  { value: "finalizado", label: "Finalizado" },
-];
-
-const RESULTADO_OPTIONS = [
-  { value: "todas", label: "Todos os Resultados" },
-  { value: "em_andamento", label: "Em andamento" },
-  { value: "aprovado", label: "Aprovado" },
-  { value: "reprovado", label: "Reprovado" },
-  { value: "desistente", label: "Desistente" },
-  { value: "banco_talentos", label: "Banco de Talentos" },
-];
-
-const MOTIVO_OPTIONS = [
-  { value: "todos", label: "Todos os Motivos" },
-  { value: "curriculo", label: "Reprovação: Currículo" },
-  { value: "fit_cultural", label: "Reprovação: Fit Cultural" },
-  { value: "testes", label: "Reprovação: Testes Técnicos" },
-  { value: "rh", label: "Reprovação: Avaliação RH" },
-  { value: "gestor", label: "Reprovação: Avaliação Gestor" },
-  {
-    value: "incompatibilidade_salarial",
-    label: "Desistência: Incompatibilidade Salarial",
-  },
-  { value: "aceitou_outra_proposta", label: "Desistência: Outra Proposta" },
-  { value: "nao_atendeu_contato", label: "Desistência: Não Atendeu Contato" },
-  { value: "motivos_pessoais", label: "Desistência: Motivos Pessoais" },
-];
+import {
+  parseTriagemListFilters,
+  type TriagemListSearchParams,
+} from "~/lib/triagem-list-filters";
 
 export const dynamic = "force-dynamic";
 
-function isEnumValue<T extends string>(
-  values: readonly T[],
-  value: string,
-): value is T {
-  return (values as readonly string[]).includes(value);
-}
-
-interface TriagensSearchParams extends SearchParamsRecord {
-  etapa?: string;
-  resultado?: string;
-  motivo?: string;
-  q?: string;
-  view?: string;
-  vagaAtiva?: string;
-  vaga?: string;
-  page?: string;
-}
-
 interface TriagensPageProps {
-  searchParams?: Promise<TriagensSearchParams>;
+  searchParams?: Promise<TriagemListSearchParams>;
 }
 
 async function TriagensContent({
   searchParams,
 }: {
-  searchParams: TriagensSearchParams;
+  searchParams: TriagemListSearchParams;
 }) {
-  const query = (searchParams.q ?? "").trim();
-  const etapaFilter = (searchParams.etapa ?? "").trim().toLowerCase();
-  const resultadoFilter = (searchParams.resultado ?? "").trim().toLowerCase();
-  const motivoFilter = (searchParams.motivo ?? "").trim().toLowerCase();
-  const currentView = searchParams.view === "pipeline" ? "pipeline" : "lista";
-  const vagaAtivaFilter = searchParams.vagaAtiva === "1";
-  const vagaFilter = (searchParams.vaga ?? "").trim();
-  const page = parsePage(searchParams.page);
-
-  const dbFilter: TriagemFiltros = {};
-  if (
-    etapaFilter &&
-    etapaFilter !== "todas" &&
-    isEnumValue(triagemEtapaEnum.enumValues, etapaFilter)
-  ) {
-    dbFilter.etapa = etapaFilter;
-  }
-  if (
-    resultadoFilter &&
-    resultadoFilter !== "todas" &&
-    isEnumValue(triagemResultadoEnum.enumValues, resultadoFilter)
-  ) {
-    dbFilter.resultado = resultadoFilter;
-  }
-  if (
-    motivoFilter &&
-    motivoFilter !== "todos" &&
-    isEnumValue(triagemMotivoEnum.enumValues, motivoFilter)
-  ) {
-    dbFilter.motivo = motivoFilter;
-  }
-  if (vagaAtivaFilter) {
-    dbFilter.vagaAtiva = true;
-  }
-  if (vagaFilter && vagaFilter !== "todas") {
-    dbFilter.vagaId = vagaFilter;
-  }
-  if (query) {
-    dbFilter.query = query;
-  }
+  const {
+    filters: dbFilter,
+    currentView,
+    page,
+    hasActiveFilters,
+  } = parseTriagemListFilters(searchParams);
 
   const triagensPromise =
     currentView === "pipeline"
@@ -161,14 +69,6 @@ async function TriagensContent({
       }),
     );
   }
-
-  const hasActiveFilters =
-    Boolean(query) ||
-    (etapaFilter && etapaFilter !== "todas") ||
-    (resultadoFilter && resultadoFilter !== "todas") ||
-    (motivoFilter && motivoFilter !== "todos") ||
-    vagaAtivaFilter ||
-    Boolean(vagaFilter && vagaFilter !== "todas");
 
   type Triagem = (typeof triagensPage.items)[number];
 
@@ -329,51 +229,9 @@ async function TriagensContent({
           />
 
           <div className="space-y-2">
-            <PageFilter
-              searchPlaceholder="Buscar por candidato, cargo, departamento..."
-              searchAriaLabel="Buscar triagem por candidato, cargo ou departamento"
-              filterBar={{
-                selects: [
-                  {
-                    paramKey: "vaga",
-                    defaultValue: "todas",
-                    placeholder: "Vaga",
-                    options: [
-                      { value: "todas", label: "Todas as Vagas" },
-                      ...vagaOptions.map((v) => ({
-                        value: v.id,
-                        label: `${v.cargo.titulo} — ${v.cidades.map((c) => `${c.nome}/${c.uf}`).join(", ")}`,
-                      })),
-                    ],
-                  },
-                  {
-                    paramKey: "etapa",
-                    defaultValue: "todas",
-                    placeholder: "Etapa",
-                    options: ETAPA_OPTIONS,
-                  },
-                  {
-                    paramKey: "resultado",
-                    defaultValue: "todas",
-                    placeholder: "Resultado",
-                    options: RESULTADO_OPTIONS,
-                  },
-                  {
-                    paramKey: "motivo",
-                    defaultValue: "todos",
-                    placeholder: "Motivo",
-                    options: MOTIVO_OPTIONS,
-                  },
-                ],
-                checkbox: {
-                  paramKey: "vagaAtiva",
-                  trueValue: "1",
-                  label: "Somente ativas",
-                },
-              }}
-            />
+            <TriagemPageFilter vagaOptions={vagaOptions} />
 
-            <ViewToggle />
+            <TriagemViewToggle />
 
             {triagensPage.items.length === 0 ? (
               <DataEmptyState

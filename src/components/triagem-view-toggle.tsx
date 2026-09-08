@@ -1,31 +1,31 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Kanban, List } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
-export function ViewToggle() {
+export function TriagemViewToggle() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = React.useTransition();
-
   const currentView = searchParams.get("view") ?? "lista";
 
-  const setView = (view: string) => {
+  const setView = (view: "lista" | "pipeline") => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("page");
-    if (view !== "lista") {
-      params.set("view", view);
-    } else {
-      params.delete("view");
-    }
-    startTransition(() => router.replace(`${pathname}?${params.toString()}`));
+    if (view === "pipeline") params.set("view", view);
+    else params.delete("view");
+
+    const query = params.toString();
+    startTransition(() =>
+      router.replace(query ? `${pathname}?${query}` : pathname),
+    );
   };
 
   return (
-    <div className="flex items-center gap-2 bg-muted/70 p-1 rounded-lg border border-border justify-end">
+    <div className="flex items-center justify-end gap-2 rounded-lg border border-border bg-muted/70 p-1">
       <Button
         type="button"
         variant={currentView === "lista" ? "default" : "ghost"}
@@ -34,7 +34,7 @@ export function ViewToggle() {
         className="h-7 px-2 text-xs font-medium"
         aria-pressed={currentView === "lista"}
       >
-        <List className="size-3.5 mr-2" />
+        <List className="mr-2 size-3.5" aria-hidden="true" />
         Lista
       </Button>
       <Button
@@ -45,7 +45,7 @@ export function ViewToggle() {
         className="h-7 px-2 text-xs font-medium"
         aria-pressed={currentView === "pipeline"}
       >
-        <Kanban className="size-3.5 mr-2" />
+        <Kanban className="mr-2 size-3.5" aria-hidden="true" />
         Pipeline
       </Button>
     </div>

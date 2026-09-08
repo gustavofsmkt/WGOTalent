@@ -32,6 +32,10 @@ export interface ProcessamentoIaFluxoSummary {
   falhasReprocessaveis: number;
 }
 
+export interface ProcessamentoIaPageFilters {
+  somenteFalhas?: boolean;
+}
+
 const MAX_RETRIES_EM_LOTE = 15;
 
 function falhaReprocessavel(fluxo: Fluxo) {
@@ -126,14 +130,16 @@ export const processamentoIaRepository = {
   findPageByFluxo: async (
     fluxo: Fluxo,
     pagination: PaginationInput,
+    filters: ProcessamentoIaPageFilters = {},
     dbOrTx: DbOrTx = db,
   ): Promise<PaginatedResult<ProcessamentoIaListItem>> => {
+    const listCondition = and(
+      eq(processamentosIa.fluxo, fluxo),
+      filters.somenteFalhas ? eq(processamentosIa.status, "falha") : undefined,
+    );
+
     const [rows, totalRows] = await Promise.all([
-      notDeleted(
-        withContextSelect(dbOrTx),
-        processamentosIa,
-        eq(processamentosIa.fluxo, fluxo),
-      )
+      notDeleted(withContextSelect(dbOrTx), processamentosIa, listCondition)
         .orderBy(desc(processamentosIa.createdAt), desc(processamentosIa.id))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
@@ -142,7 +148,7 @@ export const processamentoIaRepository = {
           .select({ count: sql<number>`count(*)::int` })
           .from(processamentosIa),
         processamentosIa,
-        eq(processamentosIa.fluxo, fluxo),
+        listCondition,
       ),
     ]);
 

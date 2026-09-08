@@ -104,3 +104,19 @@ export function matchesActiveVagaCityName(
     ),
   );
 }
+
+/** Matches an outer `vagas` row by an exact active city ID. */
+export function matchesActiveVagaCityId(dbOrTx: QueryDb, cityId: string): SQL {
+  return exists(
+    notDeleted(
+      dbOrTx
+        .select({ id: vagaCidades.id })
+        .from(vagaCidades)
+        .innerJoin(cidades, eq(vagaCidades.cidadeId, cidades.id)),
+      vagaCidades,
+      eq(vagaCidades.vagaId, vagas.id),
+      isNull(cidades.deletedAt),
+      eq(cidades.id, cityId),
+    ),
+  );
+}

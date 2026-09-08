@@ -13,7 +13,7 @@ import { vi } from "vitest";
 import { triagemRepository, type DbOrTx } from "./triagem";
 import { triagens, vagas, avaliacaoIA } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gte, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -86,6 +86,27 @@ describe("triagemRepository", () => {
     expect(sql).toContain('"wgotalent_vagas"."status" =');
   });
 
+  it("filters screenings by minimum active AI score", () => {
+    const qb = notDeleted(
+      mockDb
+        .select({ id: triagens.id })
+        .from(triagens)
+        .leftJoin(
+          avaliacaoIA,
+          and(
+            eq(triagens.id, avaliacaoIA.triagemId),
+            isNull(avaliacaoIA.deletedAt),
+          ),
+        ),
+      triagens,
+      gte(avaliacaoIA.scoreIa, "70"),
+    );
+    const sql = qb.toSQL().sql;
+
+    expect(sql).toContain('"wgotalent_avaliacao_ia"."score_ia" >=');
+    expect(sql).toContain('"wgotalent_avaliacao_ia"."deleted_at" is null');
+  });
+
   it("hydrates only active AI evaluations", () => {
     const qb = notDeleted(
       mockDb
@@ -153,5 +174,25 @@ describe("triagemRepository", () => {
     await triagemRepository.getListSummary({ vagaAtiva: true }, fakeDb);
 
     expect(builder.innerJoin).toHaveBeenCalledTimes(1);
+  });
+
+  it("joins AI evaluations when the summary filters by minimum score", async () => {
+    const builder = {
+      from: vi.fn(),
+      leftJoin: vi.fn(),
+      where: vi.fn(),
+    };
+    builder.from.mockReturnValue(builder);
+    builder.leftJoin.mockReturnValue(builder);
+    builder.where.mockResolvedValue([
+      { total: 2, emAndamento: 1, aprovados: 1 },
+    ]);
+    const fakeDb = {
+      select: vi.fn(() => builder),
+    } as unknown as DbOrTx;
+
+    await triagemRepository.getListSummary({ scoreIaMinimo: 70 }, fakeDb);
+
+    expect(builder.leftJoin).toHaveBeenCalledTimes(1);
   });
 });

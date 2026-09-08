@@ -7,6 +7,7 @@ import {
   or,
   and,
   isNull,
+  gte,
   type SQL,
 } from "drizzle-orm";
 import { db } from "~/server/db";
@@ -52,6 +53,7 @@ export interface TriagemFiltros {
   motivo?: (typeof triagemMotivoEnum.enumValues)[number];
   vagaId?: string;
   vagaAtiva?: boolean;
+  scoreIaMinimo?: number;
   query?: string;
 }
 
@@ -116,6 +118,9 @@ function buildTriagemConditions(
   if (filtros?.motivo) conditions.push(eq(triagens.motivo, filtros.motivo));
   if (filtros?.vagaId) conditions.push(eq(triagens.vagaId, filtros.vagaId));
   if (filtros?.vagaAtiva) conditions.push(eq(vagas.status, "aberta"));
+  if (filtros?.scoreIaMinimo !== undefined) {
+    conditions.push(gte(avaliacaoIA.scoreIa, String(filtros.scoreIaMinimo)));
+  }
 
   const query = filtros?.query?.trim();
   if (query) {
@@ -229,10 +234,8 @@ export const triagemRepository = {
           .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
           .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
           .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-          .innerJoin(
-            departamentos,
-            eq(cargos.departamentoId, departamentos.id),
-          ),
+          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+          .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
         triagens,
         ...conditions,
       ),
@@ -294,10 +297,18 @@ export const triagemRepository = {
           .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
           .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
           .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-          .innerJoin(
-            departamentos,
-            eq(cargos.departamentoId, departamentos.id),
-          ),
+          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
+          .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
+        triagens,
+        ...conditions,
+      );
+    } else if (filtros.vagaAtiva && filtros.scoreIaMinimo !== undefined) {
+      rows = await notDeleted(
+        dbOrTx
+          .select(projection)
+          .from(triagens)
+          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+          .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
         triagens,
         ...conditions,
       );
@@ -307,6 +318,15 @@ export const triagemRepository = {
           .select(projection)
           .from(triagens)
           .innerJoin(vagas, eq(triagens.vagaId, vagas.id)),
+        triagens,
+        ...conditions,
+      );
+    } else if (filtros.scoreIaMinimo !== undefined) {
+      rows = await notDeleted(
+        dbOrTx
+          .select(projection)
+          .from(triagens)
+          .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
         triagens,
         ...conditions,
       );

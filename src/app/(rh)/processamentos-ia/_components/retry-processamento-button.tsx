@@ -40,16 +40,16 @@ export function RetryProcessamentoButton({
     <Button
       type="button"
       variant="outline"
-      size="sm"
+      size="icon-sm"
       disabled={isPending}
       onClick={handleRetry}
+      aria-label={isPending ? "Tentando novamente" : "Tentar novamente"}
+      title={isPending ? "Tentando novamente" : "Tentar novamente"}
     >
-      {isPending ? (
-        <Spinner data-icon="inline-start" />
-      ) : (
-        <RefreshCw data-icon="inline-start" />
-      )}
-      {isPending ? "Tentando novamente…" : "Tentar novamente"}
+      {isPending ? <Spinner /> : <RefreshCw aria-hidden="true" />}
+      <span className="sr-only">
+        {isPending ? "Tentando novamente" : "Tentar novamente"}
+      </span>
     </Button>
   );
 }

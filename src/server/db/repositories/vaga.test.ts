@@ -11,7 +11,11 @@ vi.mock("~/env", () => ({
 
 import { vagaRepository } from "./vaga";
 import { vagas, cargos, departamentos } from "~/server/db/schema";
-import { notDeleted } from "~/server/db/query-helpers";
+import {
+  matchesActiveVagaCityId,
+  notDeleted,
+  type QueryDb,
+} from "~/server/db/query-helpers";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -64,6 +68,23 @@ describe("vagaRepository", () => {
     );
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
+  });
+
+  it("filters vagas by an active city ID", () => {
+    const qb = notDeleted(
+      mockDb.select({ id: vagas.id }).from(vagas),
+      vagas,
+      matchesActiveVagaCityId(
+        mockDb as unknown as QueryDb,
+        "11111111-1111-1111-1111-111111111111",
+      ),
+    );
+    const sql = qb.toSQL().sql;
+
+    expect(sql).toContain("exists");
+    expect(sql).toContain('"wgotalent_cidades"."id" =');
+    expect(sql).toContain('"wgotalent_vaga_cidades"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_cidades"."deleted_at" is null');
   });
 
   it("builds query with notDeleted and id condition for findById", () => {

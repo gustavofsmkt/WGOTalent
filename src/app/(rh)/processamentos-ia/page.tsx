@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Eye, FileText } from "lucide-react";
+import { ClipboardCheck, Download, UserRound } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
@@ -18,12 +18,17 @@ import {
   DEFAULT_PAGE_SIZE,
   getTotalPages,
   parsePage,
-  type SearchParamsRecord,
 } from "~/lib/pagination";
+import {
+  parseSomenteFalhas,
+  type ProcessamentoIaSearchParams,
+} from "~/lib/processamento-ia-filters";
 import { processamentoIaFluxoSchema } from "~/lib/validation/processamento-ia";
+import { getCurriculoDownloadUrl } from "./_components/curriculo-download";
 import { FluxoTabs, type ProcessamentoFluxo } from "./_components/fluxo-tabs";
 import { RetryProcessamentoButton } from "./_components/retry-processamento-button";
 import { RetryUltimasFalhasButton } from "./_components/retry-ultimas-falhas-button";
+import { SomenteFalhasCheckbox } from "./_components/somente-falhas-checkbox";
 
 export const dynamic = "force-dynamic";
 
@@ -66,13 +71,8 @@ function descricaoEntidades(item: ProcessamentoIaListItem): string {
     : (item.vagaTitulo ?? "Vaga não identificada");
 }
 
-interface ProcessamentosSearchParams extends SearchParamsRecord {
-  fluxo?: string;
-  page?: string;
-}
-
 interface ProcessamentosPageProps {
-  searchParams?: Promise<ProcessamentosSearchParams>;
+  searchParams?: Promise<ProcessamentoIaSearchParams>;
 }
 
 function AcoesCell({ item }: { item: ProcessamentoIaListItem }) {
@@ -81,10 +81,28 @@ function AcoesCell({ item }: { item: ProcessamentoIaListItem }) {
     // falhas determinísticas (sem e-mail/celular) descartam o arquivo.
     const podeReprocessar =
       item.fluxo !== "ingestao_curriculo" || item.arquivoKey !== null;
-    return podeReprocessar ? (
-      <RetryProcessamentoButton processamentoId={item.id} />
-    ) : (
-      <span className="text-xs text-muted-foreground">Sem reprocessamento</span>
+    const curriculoDownloadUrl = getCurriculoDownloadUrl(item);
+
+    if (!podeReprocessar) {
+      return <span className="text-xs text-muted-foreground">—</span>;
+    }
+
+    return (
+      <div className="flex items-center justify-end gap-1">
+        <RetryProcessamentoButton processamentoId={item.id} />
+        {curriculoDownloadUrl ? (
+          <a
+            href={curriculoDownloadUrl}
+            download
+            className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+            aria-label="Baixar currículo"
+            title="Baixar currículo"
+          >
+            <Download aria-hidden="true" />
+            <span className="sr-only">Baixar currículo</span>
+          </a>
+        ) : null}
+      </div>
     );
   }
 
@@ -96,11 +114,12 @@ function AcoesCell({ item }: { item: ProcessamentoIaListItem }) {
       return (
         <Link
           href={`/candidatos/${item.candidatoId}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={buttonVariants({ variant: "outline", size: "icon-sm" })}
           title="Ver candidato"
+          aria-label="Ver candidato"
         >
-          <Eye data-icon="inline-start" />
-          Ver candidato
+          <UserRound aria-hidden="true" />
+          <span className="sr-only">Ver candidato</span>
         </Link>
       );
     }
@@ -108,11 +127,12 @@ function AcoesCell({ item }: { item: ProcessamentoIaListItem }) {
       return (
         <Link
           href={`/triagens/${item.triagemId}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={buttonVariants({ variant: "outline", size: "icon-sm" })}
           title="Ver triagem"
+          aria-label="Ver triagem"
         >
-          <FileText data-icon="inline-start" />
-          Ver triagem
+          <ClipboardCheck aria-hidden="true" />
+          <span className="sr-only">Ver triagem</span>
         </Link>
       );
     }
@@ -184,19 +204,24 @@ function buildColumns(): ColumnDef<ProcessamentoIaListItem>[] {
 async function ProcessamentosIaContent({
   searchParams,
 }: {
-  searchParams: ProcessamentosSearchParams;
+  searchParams: ProcessamentoIaSearchParams;
 }) {
   const parsedFluxo = processamentoIaFluxoSchema.safeParse(searchParams.fluxo);
   const fluxo: ProcessamentoFluxo = parsedFluxo.success
     ? parsedFluxo.data
     : "candidato_vagas";
   const page = parsePage(searchParams.page);
+  const somenteFalhas = parseSomenteFalhas(searchParams.somenteFalhas);
 
   const [pageResult, summary] = await Promise.all([
-    processamentoIaRepository.findPageByFluxo(fluxo, {
-      page,
-      pageSize: DEFAULT_PAGE_SIZE,
-    }),
+    processamentoIaRepository.findPageByFluxo(
+      fluxo,
+      {
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
+      { somenteFalhas },
+    ),
     processamentoIaRepository.getFluxoSummary(fluxo),
   ]);
 
@@ -221,16 +246,27 @@ async function ProcessamentosIaContent({
           tone={summary.falhas > 0 ? "destructive" : "neutral"}
           label={`${summary.falhas} falhas`}
         />
-        <RetryUltimasFalhasButton
-          fluxo={fluxo}
-          falhasDisponiveis={summary.falhasReprocessaveis}
-        />
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <RetryUltimasFalhasButton
+            fluxo={fluxo}
+            falhasDisponiveis={summary.falhasReprocessaveis}
+          />
+          <SomenteFalhasCheckbox checked={somenteFalhas} />
+        </div>
       </div>
 
       {pageResult.items.length === 0 ? (
         <DataEmptyState
-          title="Nenhuma execução registrada"
-          description="Os próximos processamentos deste fluxo aparecerão aqui."
+          title={
+            somenteFalhas
+              ? "Nenhuma falha registrada"
+              : "Nenhuma execução registrada"
+          }
+          description={
+            somenteFalhas
+              ? "Não há processamentos com falha neste fluxo."
+              : "Os próximos processamentos deste fluxo aparecerão aqui."
+          }
           className="py-8"
         />
       ) : (

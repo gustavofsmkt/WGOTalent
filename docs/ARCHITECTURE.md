@@ -51,13 +51,13 @@ src/
         page.tsx
         [id]/page.tsx
       vagas/
-        page.tsx
-        [id]/page.tsx
+        page.tsx                   # lista paginada com filtros de busca, status e cidade
+        [id]/page.tsx              # detalhes e triagens da vaga em lista ou pipeline, com filtros próprios
       candidatos/
         page.tsx
         [id]/page.tsx              # includes formacoes, experiencias, certificacoes, triagens
       triagens/
-        page.tsx                   # pipeline view, filterable by etapa/resultado/motivo
+        page.tsx                   # pipeline/lista, com filtros por vaga, etapa, resultado, motivo e score mínimo da IA
         [id]/page.tsx               # triagem detail + linked avaliacao_ia (1:1, shown inline, not a separate CRUD)
     api/
       files/
