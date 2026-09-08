@@ -24,6 +24,7 @@ Plataforma de RH para gestão de departamentos, cargos, vagas, candidatos e
 triagem de candidatos com apoio de IA (ver [PRODUCT.md](PRODUCT.md)).
 
 Capacidades entregues:
+
 - CRUD completo (criar/ver/editar/soft-delete) de Departamento, Cargo, Vaga,
   Candidato e Triagem.
 - Pipeline de triagem com `etapa`/`resultado`/`motivo` como campos distintos,
@@ -42,10 +43,12 @@ Capacidades entregues:
   cadastro fica marcado e visível ao RH, voltando a ficar ativo assim que
   surge um par aprovado (ADR-0013).
 - Dashboard com KPIs, funil por etapa, desfechos e atividade recente.
+- Login obrigatório com sessão stateless, conta inicial `admin`, gestão de
+  usuários e perfil com troca de senha (ADR-0012).
 
-Fora de escopo (decisão de produto, não pendência): autenticação/autorização,
-storage em nuvem, UI com modais/rotas paralelas/interceptadas, hard deletes,
-escrita direta de serviços externos no banco. Ver
+Fora de escopo (decisão de produto, não pendência): autorização granular/RBAC,
+storage em nuvem, UI com rotas paralelas/interceptadas, hard deletes, escrita
+direta de serviços externos no banco. Ver
 ["Fora de Escopo" em PRODUCT.md](PRODUCT.md#fora-de-escopo-mvp).
 
 ## Arquitetura
@@ -166,15 +169,15 @@ oficial do shadcn sobre MCP.
 
 ## Limitações conhecidas (aceitas para o MVP, não pendências esquecidas)
 
-- **Sem autenticação/autorização** — sistema totalmente aberto, incluindo
-  `/admin/agentes` e `/admin/credenciais`; não deve ser exposto em rede
-  pública ([SECURITY.md](SECURITY.md#ausência-de-autenticação-no-mvp)).
+- **Sem autorização granular** — qualquer usuário autenticado pode acessar
+  `/admin`, gerenciar usuários e operar todos os dados da plataforma
+  ([SECURITY.md](SECURITY.md#autenticação-e-sessão)).
 - **Soft delete não é anonimização** — dado de candidato soft-deletado
   permanece integralmente no banco e o currículo permanece em disco; não
   atende sozinho a um pedido de expurgo (ex. LGPD).
-- **Rota de arquivos sem verificação de autorização** — `GET
-  /api/files/[...path]` isola o caminho em disco mas não valida quem pode
-  acessar (dependente da ausência de auth acima).
+- **Rota de arquivos sem autorização por recurso** — `GET
+/api/files/[...path]` exige autenticação, mas qualquer usuário autenticado
+  pode acessar um currículo cuja chave conheça.
 - **Sem scan de conteúdo no upload** — `StorageProvider.save()` não valida
   tipo real, tamanho ou malware; responsabilidade de quem chama.
 - **Rotação de chave de cifragem é destrutiva sem replano** —
@@ -184,9 +187,8 @@ oficial do shadcn sobre MCP.
   e 8 vulnerabilidades de `npm audit` (4 moderate, 4 high) em árvores de
   dependências de terceiros — nenhuma bloqueante, fora do escopo desta
   task de fechamento.
-- **2 TODOs prospectivos no código** —
-  `src/app/api/files/[...path]/route.ts:50` (autenticação futura) e
-  `src/app/admin/layout.tsx:1` (RBAC futuro).
+- **RBAC futuro** — autenticação foi implementada transversalmente, mas papéis
+  e permissões por recurso continuam deliberadamente fora deste marco.
 
 ## Comandos de reprodução
 

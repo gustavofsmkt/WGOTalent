@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "~/components/page-header";
 import { Card, CardContent } from "~/components/ui/card";
-import { Button, buttonVariants } from "~/components/ui/button";
+import { buttonVariants } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
@@ -70,9 +70,12 @@ export default async function AdminPage() {
                       · {agente.ativo ? "ativo" : "inativo"}
                     </div>
                   </div>
-                  <Button variant="outline">
-                    <Link href={`/admin/agentes/${agente.slot}`}>Editar</Link>
-                  </Button>
+                  <Link
+                    href={`/admin/agentes/${agente.slot}`}
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Editar
+                  </Link>
                 </CardContent>
               </Card>
             ))}
@@ -154,9 +157,28 @@ export default async function AdminPage() {
                     Cidades disponíveis para seleção no cadastro de vagas.
                   </div>
                 </div>
-                <Button variant="outline">
-                  <Link href="/admin/configuracoes/cidades">Editar</Link>
-                </Button>
+                <Link
+                  href="/admin/configuracoes/cidades"
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Editar
+                </Link>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <div className="font-medium">Usuários</div>
+                  <div className="text-sm text-muted-foreground">
+                    Contas com acesso à plataforma e redefinição de senhas.
+                  </div>
+                </div>
+                <Link
+                  href="/admin/configuracoes/usuarios"
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Editar
+                </Link>
               </CardContent>
             </Card>
           </div>

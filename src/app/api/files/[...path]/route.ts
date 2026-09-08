@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { storage } from "~/lib/storage";
+import { getCurrentUser } from "~/lib/auth/dal";
 
 function getMimeType(key: string): string {
   const ext = key.split(".").pop()?.toLowerCase();
@@ -55,7 +56,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
-  // TODO: Implement authentication check here in the future
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
 
   try {
     const { path } = await params;

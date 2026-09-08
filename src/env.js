@@ -13,6 +13,7 @@ export const env = createEnv({
       .default("development"),
     STORAGE_ROOT: z.string().min(1),
     AGENT_CREDENTIALS_ENCRYPTION_KEY: z.string().min(32),
+    SESSION_SECRET: z.string().min(32),
     EMAIL_CAPTURA_INTERVALO_MS: z.coerce
       .number()
       .int()
@@ -37,6 +38,7 @@ export const env = createEnv({
     STORAGE_ROOT: process.env.STORAGE_ROOT,
     AGENT_CREDENTIALS_ENCRYPTION_KEY:
       process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY,
+    SESSION_SECRET: process.env.SESSION_SECRET,
     EMAIL_CAPTURA_INTERVALO_MS: process.env.EMAIL_CAPTURA_INTERVALO_MS,
   },
   /**

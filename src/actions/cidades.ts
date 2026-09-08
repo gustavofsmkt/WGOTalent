@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import postgres from "postgres";
 import { cidadeRepository } from "~/server/db/repositories/cidade";
 import { createCidadeSchema } from "~/lib/validation/cidade";
@@ -10,6 +11,7 @@ import type { ActionState } from "~/lib/action-utils";
 export async function createCidade(
   data: unknown,
 ): Promise<ActionState<Cidade>> {
+  await requireAuthenticatedUser();
   const parsed = createCidadeSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -37,6 +39,7 @@ export async function createCidade(
 }
 
 export async function deleteCidade(id: string): Promise<ActionState> {
+  await requireAuthenticatedUser();
   try {
     const cidade = await cidadeRepository.softDelete(id);
     if (!cidade) return { success: false, message: "Cidade não encontrada." };

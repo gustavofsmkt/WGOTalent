@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { createCargoSchema, updateCargoSchema } from "~/lib/validation/cargo";
@@ -8,6 +9,7 @@ import type { Cargo } from "~/server/db/schema";
 import type { ActionState } from "~/lib/action-utils";
 
 export async function createCargo(data: unknown): Promise<ActionState<Cargo>> {
+  await requireAuthenticatedUser();
   const parsed = createCargoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -58,6 +60,7 @@ export async function updateCargo(
   id: string,
   data: unknown,
 ): Promise<ActionState<Cargo>> {
+  await requireAuthenticatedUser();
   const parsed = updateCargoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -103,6 +106,7 @@ export async function updateCargo(
 }
 
 export async function deleteCargo(id: string): Promise<ActionState> {
+  await requireAuthenticatedUser();
   try {
     const hasActiveVagas = await cargoRepository.hasActiveVagas(id);
 

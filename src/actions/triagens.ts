@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import postgres from "postgres";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
@@ -14,6 +15,7 @@ const createTriagemSchema = triagemSchema;
 export async function createTriagem(
   data: unknown,
 ): Promise<ActionState<Triagem>> {
+  await requireAuthenticatedUser();
   const parsed = createTriagemSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -87,6 +89,7 @@ export async function updateTriagem(
   id: string,
   data: unknown,
 ): Promise<ActionState<Triagem>> {
+  await requireAuthenticatedUser();
   const parsed = updateTriagemSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -153,6 +156,7 @@ export async function updateTriagem(
 }
 
 export async function deleteTriagem(id: string): Promise<ActionState> {
+  await requireAuthenticatedUser();
   try {
     const existingTriagem = await triagemRepository.findByIdWithJoins(id);
     if (!existingTriagem) {

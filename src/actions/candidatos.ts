@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import {
   candidatoRepository,
   type CandidatoDetailCompleto,
@@ -95,6 +96,7 @@ async function resetTriagensEmCurriculo(candidatoId: string): Promise<void> {
 export async function createCandidato(
   payload: unknown,
 ): Promise<ActionState<Candidato>> {
+  await requireAuthenticatedUser();
   const { data, file, error } = parsePayload(payload);
 
   if (error) {
@@ -229,6 +231,7 @@ export async function updateCandidato(
   id: string,
   payload: unknown,
 ): Promise<ActionState<CandidatoDetailCompleto>> {
+  await requireAuthenticatedUser();
   const { data, file, error } = parsePayload(payload);
 
   if (error) {
@@ -373,7 +376,7 @@ const CONCORRENCIA_LOTE = 3;
  * merge para `processarCurriculoRecebido`, compartilhada com a captação por
  * e-mail — só muda `origem` ("manual" aqui, "email" lá).
  */
-export async function processarItemLote(
+async function processarItemLoteInterno(
   itemId: string,
   file: File,
 ): Promise<void> {
@@ -413,6 +416,14 @@ export async function processarItemLote(
   // navegação), então a revalidação nem é necessária neste caminho.
 }
 
+export async function processarItemLote(
+  itemId: string,
+  file: File,
+): Promise<void> {
+  await requireAuthenticatedUser();
+  return processarItemLoteInterno(itemId, file);
+}
+
 /**
  * Cria os registros do lote e retorna imediatamente — o processamento roda
  * solto no processo Node (sem await), então nem um F5 nem a navegação do
@@ -421,6 +432,7 @@ export async function processarItemLote(
 export async function iniciarUploadLote(
   formData: FormData,
 ): Promise<ActionState<UploadLoteItem[]>> {
+  await requireAuthenticatedUser();
   const files = formData
     .getAll("files")
     .filter((f): f is File => f instanceof File && f.size > 0);
@@ -447,7 +459,7 @@ export async function iniciarUploadLote(
   runWithLimit(
     itens.map((item, i) => ({ item, file: files[i]! })),
     CONCORRENCIA_LOTE,
-    ({ item, file }) => processarItemLote(item.id, file),
+    ({ item, file }) => processarItemLoteInterno(item.id, file),
   ).catch((err) =>
     console.error(
       "[iniciarUploadLote] Falha inesperada no processamento do lote:",
@@ -460,10 +472,12 @@ export async function iniciarUploadLote(
 
 /** Itens de lote não limpos (inclui em andamento e erros) — usado pelo popup para rehidratar a UI ao montar/reabrir a tela. */
 export async function getUploadLoteAtivo(): Promise<UploadLoteItem[]> {
+  await requireAuthenticatedUser();
   return uploadLoteItemRepository.findAtivos();
 }
 
 export async function limparUploadLoteFinalizados(): Promise<void> {
+  await requireAuthenticatedUser();
   await uploadLoteItemRepository.softDeleteFinalizados();
 }
 
@@ -471,6 +485,7 @@ export async function updateObservacoesRhCandidato(
   candidatoId: string,
   observacoesRh: string | null,
 ): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     const existing = await candidatoRepository.findById(candidatoId);
     if (!existing) {
@@ -486,6 +501,7 @@ export async function updateObservacoesRhCandidato(
 }
 
 export async function deleteCandidato(id: string): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     const existingCandidato = await candidatoRepository.findById(id);
     if (!existingCandidato) {

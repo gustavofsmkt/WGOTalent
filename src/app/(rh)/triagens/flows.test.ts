@@ -31,8 +31,7 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
       {
         id: "vaga-1",
         status: "aberta",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
         cargo: {
           titulo: "Desenvolvedor Frontend",
           departamento: { nome: "Tecnologia" },
@@ -108,6 +107,7 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
         curriculoArquivoKey: null,
         textoCurriculoExtraido: null,
         dadosPendentes: null,
+        observacoesRh: null,
         createdAt: "2025-01-01T00:00:00.000Z",
         updatedAt: "2025-01-01T00:00:00.000Z",
         deletedAt: null,
@@ -119,8 +119,7 @@ describe("Triagens Create & Edit flows - Server Component logic", () => {
         posicoesDisponiveis: 2,
         notaCorte: "65.00",
         remuneracaoOferecida: "7000.00",
-        cidade: "São Paulo",
-        uf: "SP",
+        cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
         createdAt: "2025-01-01T00:00:00.000Z",
         updatedAt: "2025-01-01T00:00:00.000Z",
         deletedAt: null,

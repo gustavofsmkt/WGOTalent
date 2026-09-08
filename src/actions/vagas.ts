@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import type { ActionState } from "~/lib/action-utils";
@@ -9,6 +10,7 @@ import type { Vaga } from "~/server/db/schema";
 import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
 
 export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
+  await requireAuthenticatedUser();
   const parsed = createVagaSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -74,6 +76,7 @@ export async function updateVaga(
   id: string,
   data: unknown,
 ): Promise<ActionState<Vaga>> {
+  await requireAuthenticatedUser();
   const parsed = updateVagaSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -120,6 +123,7 @@ export async function updateVaga(
 }
 
 export async function deleteVaga(id: string): Promise<ActionState> {
+  await requireAuthenticatedUser();
   try {
     const vaga = await vagaRepository.softDelete(id);
 

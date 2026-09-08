@@ -34,6 +34,8 @@ e campos em branco por valores reais de produção:
   uma porta livre na VPS se 3000 já estiver em uso
 - `AGENT_CREDENTIALS_ENCRYPTION_KEY` — `openssl rand -base64 32`, e nunca
   a perca (as credenciais LLM cifradas ficam ilegíveis sem ela)
+- `SESSION_SECRET` — `openssl rand -base64 32`; trocar essa chave encerra
+  todas as sessões autenticadas
 - `BACKUP_RCLONE_REMOTE` — remote rclone configurado (ex.: `b2:wgotalent-backups`);
   o cron de backup usa este valor para enviar os dumps off-host e aplicar
   retenção remota. Configure antes de colocar em produção.

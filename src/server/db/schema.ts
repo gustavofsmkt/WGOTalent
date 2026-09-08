@@ -540,6 +540,23 @@ export const emailCredenciais = createTable("email_credenciais", {
 export type EmailCredencial = typeof emailCredenciais.$inferSelect;
 export type NovaEmailCredencial = typeof emailCredenciais.$inferInsert;
 
+// ---------------------------------------------------------------------------
+// Autenticação — usuários persistidos; as sessões são stateless e não possuem
+// tabela própria. `passwordVersion` invalida tokens emitidos antes de uma troca
+// ou redefinição de senha.
+// ---------------------------------------------------------------------------
+
+export const usuarios = createTable("usuarios", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  username: varchar("username", { length: 80 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  passwordVersion: integer("password_version").default(1).notNull(),
+  ...timestamps,
+});
+
+export type Usuario = typeof usuarios.$inferSelect;
+export type NovoUsuario = typeof usuarios.$inferInsert;
+
 export const departamentosRelations = relations(departamentos, ({ many }) => ({
   cargos: many(cargos),
 }));

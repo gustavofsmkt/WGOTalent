@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("~/lib/auth/dal", () => ({
+  requireAuthenticatedUser: vi.fn().mockResolvedValue({
+    id: "user-1",
+    username: "admin",
+  }),
+}));
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));

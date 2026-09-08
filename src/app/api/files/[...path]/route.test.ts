@@ -3,6 +3,16 @@ import { GET } from "./route";
 import type { NextRequest } from "next/server";
 import { storage } from "~/lib/storage";
 
+const { getCurrentUserMock } = vi.hoisted(() => ({
+  getCurrentUserMock: vi.fn().mockResolvedValue({
+    id: "user-1",
+    username: "admin",
+  }),
+}));
+
+vi.mock("server-only", () => ({}));
+vi.mock("~/lib/auth/dal", () => ({ getCurrentUser: getCurrentUserMock }));
+
 // Mock the storage singleton
 vi.mock("~/lib/storage", () => ({
   storage: {
@@ -13,9 +23,24 @@ vi.mock("~/lib/storage", () => ({
 describe("GET /api/files/[...path]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getCurrentUserMock.mockResolvedValue({
+      id: "user-1",
+      username: "admin",
+    });
   });
 
   const mockRequest = {} as NextRequest;
+
+  it("should return 401 when the request is unauthenticated", async () => {
+    getCurrentUserMock.mockResolvedValueOnce(null);
+
+    const response = await GET(mockRequest, {
+      params: Promise.resolve({ path: ["resume.pdf"] }),
+    });
+
+    expect(response.status).toBe(401);
+    expect(storage.read).not.toHaveBeenCalled();
+  });
 
   it("should return 400 if path is invalid or empty", async () => {
     const response = await GET(mockRequest, {

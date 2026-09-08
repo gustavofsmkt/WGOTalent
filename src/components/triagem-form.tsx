@@ -9,6 +9,10 @@ import {
 } from "~/lib/validation/triagem";
 import { createTriagem } from "~/actions/triagens";
 import type { Triagem } from "~/server/db/schema";
+import type {
+  CandidatoOption,
+  VagaOption,
+} from "~/server/db/repositories/triagem";
 import {
   etapaLabels,
   resultadoLabels,
@@ -27,24 +31,10 @@ import { toastActionPromise } from "~/lib/toast-promise";
 import { useAppForm } from "~/hooks/form";
 import { cn } from "~/lib/utils";
 
-export interface CandidatoOption {
-  id: string;
-  nome: string;
-  email: string | null;
-}
-
-export interface VagaOption {
-  id: string;
-  status: string;
-  cidade: string;
-  uf: string;
-  cargo: {
-    titulo: string;
-    departamento: {
-      nome: string;
-    };
-  };
-}
+export type {
+  CandidatoOption,
+  VagaOption,
+} from "~/server/db/repositories/triagem";
 
 export interface TriagemFormProps {
   candidatoOptions?: CandidatoOption[];
@@ -149,7 +139,7 @@ export function TriagemForm({
                     description="Vaga de destino para a candidatura."
                     options={vagaOptions.map((v) => ({
                       value: v.id,
-                      label: `${v.cargo.titulo} — ${v.cargo.departamento.nome} (${v.cidade}/${v.uf})`,
+                      label: `${v.cargo.titulo} — ${v.cargo.departamento.nome} (${v.cidades.map((cidade) => `${cidade.nome}/${cidade.uf}`).join(", ")})`,
                     }))}
                   />
                 )}

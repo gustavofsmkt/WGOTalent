@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { encryptCredential } from "~/lib/agents/crypto";
 import { credencialCreateSchema } from "~/lib/validation/credencial";
@@ -19,6 +20,7 @@ export interface CredencialSummary {
 export async function createCredencial(
   payload: unknown,
 ): Promise<ActionState<CredencialSummary>> {
+  await requireAuthenticatedUser();
   const parsed = credencialCreateSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -70,6 +72,7 @@ export async function createCredencial(
 export async function deactivateCredencial(
   id: string,
 ): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     await llmCredencialRepository.deactivate(id);
     revalidatePath("/admin");
@@ -88,6 +91,7 @@ export async function deactivateCredencial(
 }
 
 export async function deleteCredencial(id: string): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     const credencial = await llmCredencialRepository.findById(id);
     if (!credencial) {

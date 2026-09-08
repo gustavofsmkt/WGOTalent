@@ -1,8 +1,8 @@
 # Postura de Segurança e Privacidade
 
 Este documento descreve como o WGOTalent trata segredos, credenciais e dados
-pessoais (PII) de candidatos no estado atual do projeto (MVP, greenfield, sem
-autenticação — ver [docs/PRODUCT.md](PRODUCT.md)). Não duplica o modelo de
+pessoais (PII) de candidatos no estado atual do projeto (MVP, greenfield, com
+autenticação e sem autorização granular — ver [ADR-0012](decisions/0012-autenticacao-autorizacao.md)). Não duplica o modelo de
 dados ([docs/db_triagem_proposta.ts](db_triagem_proposta.ts)) nem as decisões
 já registradas em ADR — linka para elas.
 
@@ -51,10 +51,10 @@ endereço completo, data de nascimento, estado civil, CNH, e o campo `pcd`
 (arquivo + texto extraído) e o parecer/avaliação de IA, que podem conter
 informações adicionais inferidas do candidato.
 
-Como o MVP roda **sem autenticação** (próxima seção), qualquer PII persistida
-é acessível a quem tiver acesso à rede/instância — trate o ambiente como
-"segredo é a borda de rede", não a aplicação. Não exponha uma instância deste
-projeto na internet pública nesta fase.
+O MVP exige autenticação para acessar a aplicação, mas ainda não implementa
+autorização granular: qualquer conta autenticada pode consultar e alterar PII.
+Limite a criação e distribuição de contas a pessoas autorizadas e mantenha a
+instância em uma rede compatível com a sensibilidade desses dados.
 
 Na captação de currículo por e-mail, o corpo e o assunto da mensagem
 **nunca são persistidos nem logados** — o ciclo de captura
@@ -68,9 +68,9 @@ upload manual.
 - Formatos aceitos: PDF, DOCX (via `mammoth`), PNG, JPEG (ver
   [ADR-0007](decisions/0007-encerramento-integracao-n8n.md)).
 - Arquivos nunca ficam em `public/`; são servidos via
-  `src/app/api/files/[...path]/route.ts`, que hoje só isola o caminho do
-  disco público — **não há verificação de autorização** nessa rota, porque
-  não há autenticação no MVP (mesma ressalva da seção anterior).
+  `src/app/api/files/[...path]/route.ts`, que exige uma sessão autenticada e
+  isola o caminho do disco público. Não há autorização por currículo: qualquer
+  usuário autenticado pode abrir um arquivo cuja chave conheça.
 - `StorageProvider` explicitamente **não** faz validação de tipo de conteúdo,
   scan de malware ou limite de tamanho — isso é responsabilidade de quem
   chama `save()` (ver contrato em
@@ -126,27 +126,35 @@ upload manual.
   `process.env.*` diretamente em código de servidor. Isso garante fail-fast
   se uma variável obrigatória (como a chave de cifragem) estiver ausente.
 
-## Ausência de autenticação no MVP
+## Autenticação e sessão
 
-É uma decisão de produto explícita, não uma lacuna esquecida (ver
-[docs/PRODUCT.md](PRODUCT.md), "Fora de Escopo"): o sistema roda
-**totalmente aberto** — sem login, sem perfis, sem autorização — incluindo as
-rotas `/admin/agentes` e `/admin/credenciais`, onde ficam os prompts do motor
-de IA e o cadastro de credenciais de LLM.
-
-Consequências práticas:
-
-- Qualquer pessoa com acesso de rede à instância pode ler/editar PII de
-  candidatos, currículos, e (se a UI não estiver devidamente restrita) o
-  fluxo de cadastro de credenciais.
-- **Não exponha uma instância deste MVP em rede pública ou compartilhada.**
-  Rode apenas em ambiente local/confiável até que autenticação e autorização
-  sejam implementadas.
-- O código já é estruturado para que auth possa ser adicionada depois sem
-  reescrita (Server Actions e Route Handlers como única fronteira de
-  mutação) — mas até lá, não adicione autenticação "de remendo" (ex: uma
-  checagem de senha hardcoded numa única rota); trate como uma mudança
-  transversal planejada, não um patch local.
+- Todas as páginas exigem login; `/login` e `/api/health` são as únicas rotas
+  públicas. Server Actions e a rota de currículos repetem a checagem no ponto
+  sensível, sem depender exclusivamente do middleware.
+- Senhas são armazenadas como hashes `scrypt` com salt aleatório. A senha
+  inicial da conta `admin` é apenas um bootstrap; recomenda-se trocá-la no
+  primeiro acesso pela página **Perfil**. A troca não é forçada porque esse
+  fluxo não faz parte do requisito atual.
+- A sessão stateless é um cookie assinado com HMAC-SHA-256, `HttpOnly`,
+  `SameSite=Lax`, `Secure` em produção e validade de sete dias. A chave
+  `SESSION_SECRET` nunca deve ser commitada; sua rotação invalida todas as
+  sessões.
+- Trocas e redefinições incrementam `password_version`, revogando cookies
+  anteriores. Senhas geradas são exibidas uma única vez e nunca persistidas em
+  texto puro.
+- Após cinco tentativas, o login bloqueia apenas o par endereço/usuário durante
+  quinze minutos. O bloqueio geral do endereço exige cinquenta falhas na mesma
+  janela, reduzindo lockouts coletivos para equipes atrás do mesmo NAT sem
+  remover a proteção contra pulverização de usernames. O endereço considerado
+  é o último valor de `X-Forwarded-For`, acrescentado pelo Nginx Proxy Manager;
+  por isso o app de produção deve continuar exposto apenas em `127.0.0.1`. Se
+  nenhum header confiável estiver presente, o login falha antes de consultar o
+  banco em produção; desenvolvimento/teste usa um bucket local explícito. O
+  contador vive no único processo da aplicação e é zerado em reinícios, uma
+  limitação aceita para este deploy sem réplicas.
+- Não há papéis nem autorização granular. Inclusive gestão de usuários,
+  configurações de agentes e credenciais administrativas ficam disponíveis a
+  qualquer usuário autenticado; esse risco é aceito apenas para o escopo atual.
 
 ## Soft delete não é anonimização
 

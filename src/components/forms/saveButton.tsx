@@ -5,13 +5,12 @@ export default function SaveButton({ label = "Salvar" }: { label?: string }) {
   const form = useFormContext();
 
   return (
-    <form.Subscribe
-      selector={(state) => [state.canSubmit, state.isSubmitting]}
-      children={([canSubmit, isSubmitting]) => (
+    <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+      {([canSubmit, isSubmitting]) => (
         <Button type="submit" disabled={!canSubmit}>
           {isSubmitting ? "..." : label}
         </Button>
       )}
-    />
+    </form.Subscribe>
   );
 }

@@ -3,7 +3,8 @@
 Este documento mantém o registro factual e objetivo das funcionalidades implementadas, refatorações concluídas e marcos estruturais (milestones) atingidos durante o desenvolvimento.
 
 ## Marco: TASK-019 — Criação da Fundação Mínima com Create T3 App
-*Data: 2026-08-11*
+
+_Data: 2026-08-11_
 
 - Scaffold gerado utilizando `create-t3-app` como ferramental de inicialização (**somente como scaffolder**).
 - Selecionadas as opções: Next.js App Router, TypeScript, Tailwind CSS, Drizzle ORM, PostgreSQL (npm).
@@ -13,7 +14,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Validados os scripts de verificação de tipos (`typecheck`) e compilação de produção (`next build`), obtendo sucesso sem erros.
 
 ## Marco: Validação do Greenfield Agent Harness
-*Data: 2026-08-11*
+
+_Data: 2026-08-11_
 
 - Realizada auditoria completa de instruções, agents, prompts, skills, docs e specs.
 - Pesquisadas e sanadas eventuais contradições sobre o uso estrito do **Create T3 App apenas como scaffolder**.
@@ -22,7 +24,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Ajustadas referências no `implementer.agent.md` e em skills fornecidas para alinhar-se à arquitetura pretendida.
 
 ## Marco: TASK-024 — Instalação do TanStack Form e Consolidação do Zod
-*Data: 2026-08-12*
+
+_Data: 2026-08-12_
 
 - Instalado `@tanstack/react-form` (`1.33.5`) para gerenciamento de formulários no lado do cliente.
 - Mantido o `zod` (`3.24.2`) como validador único, aproveitando o suporte nativo ao protocolo Standard Schema (`~standard`).
@@ -30,7 +33,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Criado o documento `docs/FORM_STACK.md` registrando as versões, decisões e padrões de integração client/server com Server Actions.
 
 ## Marco: TASK-026 — Extensão do Ambiente Tipado do T3
-*Data: 2026-08-12*
+
+_Data: 2026-08-12_
 
 - Estendida a validação tipada em `src/env.js` com as variáveis server-side `WEBHOOK_N8N_SECRET` e `STORAGE_ROOT`.
 - Preservada `DATABASE_URL` e mantido `src/env.js` como única fonte de validação de variáveis de ambiente.
@@ -39,7 +43,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Adicionados testes automatizados em `src/env.test.ts` para verificar o parsing, tratamento de falhas e garantir que segredos não sejam expostos em mensagens de erro.
 
 ## Marco: TASK-053 — Aplicação de Migrações em Banco Vazio
-*Data: 2026-08-14*
+
+_Data: 2026-08-14_
 
 - Inicializado container PostgreSQL descartável via Docker Compose com volume limpo/recreado (`wgotalent-postgres`).
 - Executado e validado `npm run db:smoke` no banco zerado, confirmando conectividade e suporte à extensão `unaccent`.
@@ -49,7 +54,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Inspecionadas todas as 9 tabelas criadas no schema `public` (`wgotalent_departamentos`, `wgotalent_cargos`, `wgotalent_vagas`, `wgotalent_candidatos`, `wgotalent_candidato_formacoes`, `wgotalent_candidato_experiencias`, `wgotalent_candidato_certificacoes`, `wgotalent_triagens`, `wgotalent_avaliacao_ia`), confirmando a criação de 104 constraints (PKs, FKs, Uniques, Checks) e 22 índices.
 
 ## Marco: TASK-075 — Validação e Limpeza do Domínio Departamento
-*Data: 2026-08-18*
+
+_Data: 2026-08-18_
 
 - Revisão completa do domínio `Departamento`: repository (`departamentoRepository`), Server Actions (`createDepartamento`, `updateDepartamento`, `deleteDepartamento`), validação Zod (`departamentoSchema`), formulário compartilhado (`DepartamentoForm`) e páginas de listagem, criação, detalhe e edição.
 - Validação e cobertura de testes para Server Actions em `src/actions/departamentos.test.ts`, confirmando criação, edição, tratamento de erro de unicidade (código 23505) e bloqueio de exclusão quando o departamento possui cargos ativos vinculados (`hasActiveCargos`).
@@ -58,7 +64,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Sucesso nos quality gates: 15 arquivos de teste e 162 testes passando no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e `next build` executado com sucesso.
 
 ## Marco: TASK-080 — Validação e Limpeza de Cargo
-*Data: 2026-08-19*
+
+_Data: 2026-08-19_
 
 - Validado o CRUD completo de Cargos utilizando o Drizzle ORM e Server Actions.
 - Confirmada a ausência de APIs internas (`src/app/api/cargos/` não existe), centralizando operações em `src/actions/cargos.ts`.
@@ -67,15 +74,18 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Executadas com sucesso as etapas de verificação de tipos (`typecheck`), testes (`test:run`) e compilação de produção (`build`).
 
 ## Marco: TASK-085 � Valida��o e limpeza de Vaga
-*Data: 2026-08-19*
+
+_Data: 2026-08-19_
 
 - Validado CRUD, status, constraints e regras de soft delete de Vaga.
 - Verificado e confirmado atrav�s de testes (src/actions/vagas.test.ts) que o soft delete da Vaga preserva o hist�rico (ex. Triagens) n�o causando soft delete em cascata.
 - Qualidade garantida com lint, typecheck, todos os testes (Vitest) passando e build Next.js bem sucedido.
 - Realizada verifica��o com Get-ChildItem procurando por arquivos �rf�os (example, demo, placeholder) retornando limpo.
 - Confirmada aus�ncia de chamadas e APIs CRUD rest em favor de Server Actions e Server Components.
+
 ## Marco: TASK-098 — Validação e Limpeza do Domínio Candidato
-*Data: 2026-08-19*
+
+_Data: 2026-08-19_
 
 - Validado todo o domínio `Candidato`: listagem, detalhe completo (com preferências, experiências, formações, certificações, triagens), formulário agregado e views de criação/edição.
 - Confirmado o soft delete em cascata (`deleteCandidato`) propagando corretamente a data de exclusão para formações, experiências, certificações, triagens e avaliações de IA filhas.
@@ -85,7 +95,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Sucesso nos quality gates: testes, linting, build Next.js com Server Actions funcionais. Nenhuma API CRUD paralela criada.
 
 ## Marco: TASK-105 — Validação e Limpeza de Triagem
-*Data: 2026-08-20*
+
+_Data: 2026-08-20_
 
 - Validado o fluxo completo de pipeline de Triagens (listagem, filtros, detalhes com/sem IA, criação e edição).
 - Testada a regra de `partial unique`, onde um candidato não pode ter mais de uma triagem `em_andamento` para a mesma vaga.
@@ -95,7 +106,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Sucesso em todas as etapas de build, verificação de tipos (`typecheck`) e nos 293 testes do repositório (Vitest).
 
 ## Marco: TASK-137 a TASK-153 — Motor de Agentes IA e Upload em Lote
-*Data: 2026-08-20*
+
+_Data: 2026-08-20_
 
 - Implementado o motor de agentes nativo (ADR-0007) com provedor Gemini via Google AI Studio (`@google/genai`): tabelas `llm_credenciais` e `agente_config` (3 slots fixos, seed idempotente), cifra de credenciais em repouso (AES-256-GCM), cliente Gemini com saída estruturada e resolvedor de template `{{variavel}}`.
 - Implementados os 3 agentes: `extracao_curriculo` (multimodal PDF/PNG/JPEG, conversão de texto via `mammoth` para DOCX), `classificador_aderencia` (fase 1, pontuação em lote com chunking de até 25 itens, direction-agnostic), `avaliador_triagem` (fase 2, grava `avaliacao_ia`).
@@ -110,7 +122,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Fora de escopo, deliberadamente: canal de e-mail (Zimbra/M365/Google Workspace) e autenticação/autorização.
 
 ## Marco: TASK-115 — Queries do Dashboard
-*Data: 2026-08-20*
+
+_Data: 2026-08-20_
 
 - Criado `dashboardRepository` em `src/server/db/repositories/dashboard.ts` com queries sumarizadas para as métricas do Dashboard.
 - Métricas semânticas implementadas com proteção de soft delete (`notDeleted()` / `isNull(deletedAt)`):
@@ -127,7 +140,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Cobertura de testes unitários e estruturais em `src/server/db/repositories/dashboard.test.ts`. Todos os 45 arquivos de teste e 355 testes do Vitest passando com sucesso.
 
 ## Marco: TASK-116 — Dashboard WGOTalent
-*Data: 2026-08-20*
+
+_Data: 2026-08-20_
 
 - Implementada a interface do Dashboard como Server Component em `src/app/(rh)/dashboard/page.tsx`, consumindo `dashboardRepository.getDashboardSummary()`.
 - Substituído o placeholder anterior pela visão geral completa aderente a `docs/DESIGN.md` e referências mapeadas em `docs/UI_REFERENCE_MAP.md`.
@@ -144,7 +158,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Validados todos os 46 arquivos de teste e 359 testes no Vitest, typecheck estrito (`tsc --noEmit`) sem erros e build de produção Next.js executado com sucesso.
 
 ## Marco: Restauração e Mesclagem de Candidato Duplicado (ADR-0008)
-*Data: 2026-08-20*
+
+_Data: 2026-08-20_
 
 - Substituída a rejeição por conflito de e-mail (ADR-0002) por restauração/mesclagem: cadastro manual ou upload em lote com e-mail já existente agora restaura o candidato se ele estiver soft-deleted, ou mescla os dados novos/diferentes se estiver ativo, devolvendo-o ao fluxo de triagem quando aplicável.
 - Implementados `restoreAggregate`/`mergeAggregate` em `candidatoRepository`, com mesclagem aditiva de campos escalares e de filhos (nunca sobrescreve dado já preenchido com vazio).
@@ -153,7 +168,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - ADR-0008 registrada e substitui a ADR-0002.
 
 ## Marco: TASK-117 a TASK-120 — Auditorias de Produto (Design, Performance, Formulários, Soft Delete)
-*Data: 2026-08-22 a 2026-08-23*
+
+_Data: 2026-08-22 a 2026-08-23_
 
 - **TASK-117 (design/Impeccable):** padronizado o cabeçalho de páginas de detalhe (`vagas/[id]`, `cargos/[id]`, `triagens/[id]`) para `PageHeader` + botão de voltar com `ArrowLeft`, substituindo cabeçalhos custom e `ChevronRight` como breadcrumb; estados vazios migrados para `DataEmptyState`; removidos imports não utilizados.
 - **TASK-118 (performance React/Next):** eliminado round-trip redundante de banco em `vagas/[id]` (campo `descricao` incorporado à projeção existente); paralelizadas buscas independentes em `vagas/[id]/editar` e `candidatos/[id]/editar` via `Promise.all`; `TriagemDetailEditor` dividido para reduzir o payload RSC serializado (cartões de contato e avaliação de IA passam a ser Server Components); troca do dirty-check por `JSON.stringify` (rodava a cada tecla) por comparação campo a campo; `UploadProgressPopup` convertido para `next/dynamic`; adicionado `(rh)/loading.tsx`.
@@ -162,7 +178,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Falha/correção comum às quatro auditorias: nenhuma regressão funcional introduzida; todas as correções foram desvios objetivos encontrados durante a auditoria, não features novas.
 
 ## Marco: TASK-121 a TASK-126 — Limpeza Final e Documentação Operacional
-*Data: 2026-08-23*
+
+_Data: 2026-08-23_
 
 - **TASK-121:** removidos componentes shadcn sem uso (`skeleton.tsx`, `toast.tsx`, 247 linhas).
 - **TASK-122:** auditoria completa do repositório versionado; removido `WGOTalent_ROTEIRO_CORRECAO_MIGRACAO_IA.md` (CORR-01 a CORR-14 já executados e superseded pela ADR-0007); consolidado `docs/DESIGN_DECISIONS.md` na sequência canônica de ADRs como `docs/decisions/0009-icon-system-lucide-react.md`, eliminando uma fonte de verdade duplicada; corrigido `.github/instructions/integrations.instructions.md`, que ainda descrevia o motor de agentes nativo como baseado no Vercel AI SDK com placeholders `TODO` — a Fase 14 (TASK-137 a TASK-153) já estava implementada usando `@google/genai` diretamente.
@@ -173,7 +190,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Falha/correção: nenhuma pendência bloqueadora restante; os únicos "erros" corrigidos nesta fase foram os 99 achados do ESLint recém-introduzido (TASK-123), tratados como dívida técnica pré-existente e sanados na mesma tarefa.
 
 ## Marco: Captação Automática de Currículo por E-mail (ADR-0010)
-*Data: 2026-08-24*
+
+_Data: 2026-08-24_
 
 - Antecipada do roadmap pós-MVP para dentro do MVP atual por ser puramente aditiva — não toca em código já validado do motor de agentes ou dos CRUDs.
 - Implementado cliente IMAP genérico (`imapflow` + `mailparser`, únicas dependências novas do bloco) cobrindo Zimbra/Google Workspace/M365 sem SDK proprietário por provedor.
@@ -188,7 +206,8 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - `RELEASE_SUMMARY.md` e `SECURITY.md` atualizados no mesmo bloco; `README.md` recebeu a seção "Captação de Currículo via E-mail".
 
 ## Marco: Segundo Provedor de LLM — OpenAI (ADR-0011)
-*Data: 2026-08-25*
+
+_Data: 2026-08-25_
 
 - Extraído contrato comum (`GerarRespostaEstruturadaInput<T>`), retry com backoff exponencial e parse+validação Zod da resposta de `gemini-client.ts` para `src/lib/agents/shared.ts`, compartilhado agora pelos dois clients de provedor.
 - Adicionado `src/lib/agents/openai-client.ts`, chamando a Responses API da OpenAI (`/v1/responses`) via `fetch` nativo — sem SDK, sem dependência nova.
@@ -199,13 +218,15 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - ADR-0011, que descrevia esta extensão como roadmap pós-MVP ("quando esta fase for iniciada"), teve o `Status` corrigido para `Aceita` e recebeu uma nota de implementação apontando para os arquivos reais.
 
 ## Marco: Correção de normalização de CEP
-*Data: 2026-08-25*
+
+_Data: 2026-08-25_
 
 - Corrigido bug real de produção: currículos frequentemente grafam o CEP com ponto de milhar (ex. `"75.709-400"`, 10 caracteres) em vez do formato padrão (`"75709-400"`, 9) — o agente de extração transcreve o texto-fonte fielmente, incluindo o ponto, e o schema (`.max(9)`) rejeitava a extração inteira a cada tentativa, já que não era uma falha transiente.
 - `cepSchema` passou a fazer preprocessamento (remove tudo que não for dígito ou hífen antes de validar), no mesmo padrão já usado por `optionalUrlSchema` para normalizar URLs sem esquema — normalização em vez de rejeição.
 
 ## Marco: Banco de Talentos Automático (ADR-0013)
-*Data: 2026-08-25*
+
+_Data: 2026-08-25_
 
 - Nova coluna booleana `candidatos.em_banco_talentos` (default `false`, migration `0019`): "banco de talentos" geral passou a ser propriedade do candidato, não da triagem — o enum `triagem_resultado` já tinha o valor `"banco_talentos"`, mas só se aplica a uma triagem já existente (`vaga_id` `NOT NULL`), não cobrindo o candidato que nunca teve nenhuma vaga compatível.
 - Dois gatilhos automáticos dentro de `orquestrarParaCandidatoNovo` (antes retornava em silêncio nesses casos): nenhuma vaga aberta na cidade do candidato, ou vagas existem mas nenhuma passa no threshold do classificador.
@@ -215,13 +236,14 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 - Não reavalia retroativamente candidatos cujas triagens antigas terminaram em reprovado/desistente sem vaga alternativa — só entram no banco se passarem de novo por `orquestrarParaCandidatoNovo` (ex. reprocessamento por duplicidade) ou tiverem sido capturados depois desta decisão; aceito para o escopo pedido, podendo virar job de reavaliação periódica no futuro.
 
 ## Marco: Endurecimento do Motor Multi-Provedor + Claude (ADR-0011)
-*Data: 2026-08-27*
+
+_Data: 2026-08-27_
 
 - **Bug corrigido:** o motor "multi-provedor" da ADR-0011 não era operável na prática. Com o `classificador_aderencia` apontado para OpenAI pela tela de admin, toda chamada retornava HTTP 400 (`schema must be a JSON Schema of 'type: "object"', got 'type: "array"'`) — o schema de resposta do classificador tinha raiz `array`, que só o Gemini aceita. O erro era engolido por `runWithLimit` + `flatMap` (virava `[]`), a orquestração lia isso como "nenhuma vaga aderente" e **todo candidato caía no banco de talentos**.
 - **Contrato formalizado:** `LlmAdapter` em `src/lib/agents/shared.ts` é o contrato único; `agent-client.ts` virou um registry `provider -> LlmAdapter` (`getLlmAdapter`, `providerSuportado`) no lugar do `switch`.
 - **Invariante de raiz objeto:** novo `src/lib/agents/schema-dialect.ts` com `objetoComLista(prop, itemSchema)` (o classificador agora devolve `{ itens: [{ id, score }] }` e desembrulha no código) e `assertRaizObjeto(schema, contexto)`, chamado pelos adapters OpenAI e Anthropic para falhar rápido com mensagem acionável em vez de um 400 opaco do provedor.
 - **Semântica de erro:** `executarClassificadorAderencia` passou a devolver um resultado discriminado — `{ ok: true, scores }` ou `{ ok: false, motivo: "falha_provedor" }` quando **todas** as chamadas falham (sucesso parcial continua tolerado). `orquestrarParaCandidatoNovo`/`orquestrarParaVagaNova` só mandam ao banco de talentos quando o classificador respondeu e nenhum score passou do threshold; falha de infra mantém o candidato ativo para reprocessamento.
-- **Terceiro provedor: Claude.** Novo `src/lib/agents/anthropic-client.ts` — Messages API (`/v1/messages`) via `fetch` nativo (sem dependência nova, mesmo padrão do openai-client), saída estruturada por *tool* forçada (`tool_choice`), PDF/imagem como blocos `document`/`image` base64, detecção de quota (HTTP 429/529, `rate_limit_error`/`overloaded_error`). Entrada `anthropic` adicionada ao `provider-catalog.ts`.
+- **Terceiro provedor: Claude.** Novo `src/lib/agents/anthropic-client.ts` — Messages API (`/v1/messages`) via `fetch` nativo (sem dependência nova, mesmo padrão do openai-client), saída estruturada por _tool_ forçada (`tool_choice`), PDF/imagem como blocos `document`/`image` base64, detecção de quota (HTTP 429/529, `rate_limit_error`/`overloaded_error`). Entrada `anthropic` adicionada ao `provider-catalog.ts`.
 - **Parâmetros por slot:** `agente_config.params` (jsonb, já existia e estava sem uso) passa a carregar `temperature` / `maxOutputTokens` / `topP` (nomes canônicos), editáveis na tela do agente (`AgenteConfigForm`) e mapeados por cada adapter para os nomes da sua API. `parseLlmParams` (em `lib/validation/agente-config.ts`) lê o jsonb com tolerância — valor inválido vira `undefined`, não derruba o agente.
 - **Validação de config:** `agenteConfigUpdateSchema` valida `provider ∈ catálogo` e `model ∈ provider` (`superRefine`); `updateAgenteConfig` recusa **ativar** um slot sem credencial ativa para o provedor, com mensagem apontando para Administração › Credenciais. `provider-catalog.ts` ganhou `ProviderCapabilities` (`multimodalPdf`/`multimodalImage`) e o formulário só oferece provedores multimodais para o slot `extracao_curriculo`.
 - **Refactor de `shared.ts`:** `parseRespostaEstruturada` (texto → JSON → Zod) foi dividido — `validarRespostaEstruturada` (só a parte Zod) é reusado pelo anthropic-client, que já recebe o objeto parseado de `tool_use.input`.
@@ -230,9 +252,20 @@ Este documento mantém o registro factual e objetivo das funcionalidades impleme
 
 ## Marco: Nota de Corte de Aderência por Vaga (ADR-0014)
 
-*Data: 2026-09-03*
+_Data: 2026-09-03_
 
 - A nota de corte deixou a configuração administrativa do `classificador_aderencia` e passou a ser configurada nos formulários de criação e edição de cada vaga.
 - A orquestração candidato→vagas aplica a nota da vaga correspondente a cada score; a orquestração vaga→candidatos aplica a nota da vaga que iniciou o processamento.
 - A migration `0023_move_nota_corte_to_vagas` preserva o limite global anterior nas vagas existentes antes de remover a coluna obsoleta de `agente_config`; novas vagas usam 65 por padrão.
 - Adicionadas validação e constraint de banco para o intervalo de 0 a 100, exibição na tela de detalhes da vaga e testes de regressão do filtro por vaga.
+
+## Marco: Autenticação Stateless (ADR-0012)
+
+_Data: 2026-09-08_
+
+- Implementado login obrigatório sem biblioteca de autenticação, com senha local em hash `scrypt` e sessão stateless assinada por HMAC-SHA-256 em cookie seguro.
+- `middleware.ts` protege todas as páginas e APIs, exceto `/login` e `/api/health`; DAL, Server Actions e a rota de currículos repetem a validação nos pontos sensíveis.
+- Migration `0028_create_usuarios` cria a tabela com soft delete e a conta inicial `admin`/`admin`; `password_version` revoga sessões anteriores após qualquer troca ou redefinição.
+- Administração ganhou Configurações Gerais › Usuários, com listagem, criação por username e redefinição confirmada; ambas exibem uma senha numérica aleatória de oito dígitos uma única vez.
+- Criada a página `/perfil`, com dados da conta e troca de senha, além do acesso fixado no rodapé da navegação.
+- Autorização/RBAC permanece fora do escopo: todas as contas autenticadas têm as mesmas capacidades.

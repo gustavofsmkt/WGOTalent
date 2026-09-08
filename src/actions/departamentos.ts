@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import postgres from "postgres";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import {
@@ -13,6 +14,7 @@ import type { ActionState } from "~/lib/action-utils";
 export async function createDepartamento(
   data: unknown,
 ): Promise<ActionState<Departamento>> {
+  await requireAuthenticatedUser();
   const parsed = createDepartamentoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -52,6 +54,7 @@ export async function updateDepartamento(
   id: string,
   data: unknown,
 ): Promise<ActionState<Departamento>> {
+  await requireAuthenticatedUser();
   const parsed = updateDepartamentoSchema.safeParse(data);
 
   if (!parsed.success) {
@@ -94,6 +97,7 @@ export async function updateDepartamento(
 }
 
 export async function deleteDepartamento(id: string): Promise<ActionState> {
+  await requireAuthenticatedUser();
   try {
     const hasActiveCargos = await departamentoRepository.hasActiveCargos(id);
 

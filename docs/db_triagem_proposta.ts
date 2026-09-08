@@ -5,6 +5,22 @@
 // precisa ser feito na camada de aplicação (ou trigger) que também seta `deleted_at` nas filhas.
  
 // ---------------------------------------------------------------------------
+// usuarios — identidade local para autenticação. Sessões não são persistidas:
+// ficam em cookie assinado e são invalidadas por password_version.
+// ---------------------------------------------------------------------------
+
+export interface Usuario {
+  id: string;                         // uuid, PK
+  created_at: string;                 // TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at: string;                 // TIMESTAMPTZ NOT NULL DEFAULT now()
+  deleted_at: string | null;          // TIMESTAMPTZ, NULL = ativo
+
+  username: string;                   // VARCHAR(80) UNIQUE NOT NULL, lowercase
+  password_hash: string;              // TEXT NOT NULL, scrypt + salt individual
+  password_version: number;           // INTEGER NOT NULL DEFAULT 1
+}
+
+// ---------------------------------------------------------------------------
 // departamentos
 // ---------------------------------------------------------------------------
  

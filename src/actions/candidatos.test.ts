@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("~/lib/auth/dal", () => ({
+  requireAuthenticatedUser: vi.fn().mockResolvedValue({
+    id: "user-1",
+    username: "admin",
+  }),
+}));
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -677,6 +683,7 @@ describe("candidatos server actions", () => {
       expect(updateStatusSpy).toHaveBeenLastCalledWith("item-1", {
         status: "erro",
         mensagem: expect.stringMatching(/sem e-mail e sem celular/i),
+        errorType: null,
       });
       expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
     });

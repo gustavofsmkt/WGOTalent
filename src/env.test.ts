@@ -6,6 +6,12 @@ describe("T3 Typed Environment Validation", () => {
   beforeEach(() => {
     vi.resetModules();
     process.env = { ...originalEnv };
+    process.env.DATABASE_URL =
+      "postgresql://postgres:password@localhost:5432/wgotalent";
+    process.env.STORAGE_ROOT = "./storage";
+    process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = "a".repeat(32);
+    process.env.SESSION_SECRET = "s".repeat(32);
+    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
   });
 
   afterEach(() => {
@@ -16,15 +22,13 @@ describe("T3 Typed Environment Validation", () => {
     process.env.DATABASE_URL =
       "postgresql://postgres:password@localhost:5432/wgotalent";
     process.env.STORAGE_ROOT = "./storage";
-    process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = "a".repeat(32);
-    (process.env as Record<string, string | undefined>).NODE_ENV = "test";
-
     const { env } = await import("~/env");
 
     expect(env.DATABASE_URL).toBe(
       "postgresql://postgres:password@localhost:5432/wgotalent",
     );
     expect(env.STORAGE_ROOT).toBe("./storage");
+    expect(env.SESSION_SECRET).toBe("s".repeat(32));
     expect(env.NODE_ENV).toBe("test");
   });
 
@@ -39,6 +43,12 @@ describe("T3 Typed Environment Validation", () => {
     process.env.DATABASE_URL =
       "postgresql://postgres:password@localhost:5432/wgotalent";
     delete process.env.STORAGE_ROOT;
+
+    await expect(import("~/env")).rejects.toThrow();
+  });
+
+  it("fails validation when SESSION_SECRET is missing", async () => {
+    delete process.env.SESSION_SECRET;
 
     await expect(import("~/env")).rejects.toThrow();
   });

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { type AgenteConfig } from "~/server/db/schema";
@@ -14,6 +15,7 @@ export async function updateAgenteConfig(
   slot: AgenteConfig["slot"],
   payload: unknown,
 ): Promise<ActionState<AgenteConfig>> {
+  await requireAuthenticatedUser();
   const parsed = agenteConfigUpdateSchema.safeParse(payload);
 
   if (!parsed.success) {

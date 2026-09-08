@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { emailCredencialRepository } from "~/server/db/repositories/email-credencial";
 import { encryptCredential } from "~/lib/agents/crypto";
 import { emailCredencialCreateSchema } from "~/lib/validation/email-credencial";
@@ -19,6 +20,7 @@ export interface EmailCredencialSummary {
 export async function createEmailCredencial(
   payload: unknown,
 ): Promise<ActionState<EmailCredencialSummary>> {
+  await requireAuthenticatedUser();
   const parsed = emailCredencialCreateSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -86,6 +88,7 @@ export async function createEmailCredencial(
 export async function deactivateEmailCredencial(
   id: string,
 ): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     await emailCredencialRepository.deactivate(id);
     revalidatePath("/admin");
@@ -107,6 +110,7 @@ export async function deactivateEmailCredencial(
 export async function deleteEmailCredencial(
   id: string,
 ): Promise<ActionState<void>> {
+  await requireAuthenticatedUser();
   try {
     const credencial = await emailCredencialRepository.findById(id);
     if (!credencial) {

@@ -23,6 +23,7 @@ para a validação de ponta a ponta contra banco vazio.
 - **ORM**: Drizzle ORM 0.41.0 (`drizzle-kit` 0.30.5)
 - **Validação de Env & Dados**: Zod 3.24.2 + `@t3-oss/env-nextjs` 0.12.0
 - **Formulários**: TanStack Form 1.33.5 (`@tanstack/react-form`)
+- **Autenticação**: identidade local, `scrypt` e cookie stateless assinado com HMAC-SHA-256; sem biblioteca de auth e sem RBAC
 
 ## Arquitetura Resumida
 
@@ -33,6 +34,7 @@ A arquitetura é focada em convenções estritas do **Next.js App Router**:
 - **Rotas de Arquivos & API**: Route Handlers (`src/app/api/`) são usados estritamente para servir o streaming controlado dos currículos hospedados no disco e eventuais endpoints de integração.
 - **Integridade de Deleção (Soft Delete)**: O uso do `ON DELETE CASCADE` nativo do Postgres é proibido. Exclusões em cascata ocorrem integralmente via camada da aplicação rodando múltiplas atualizações em uma única transação no DB.
 - **Armazenamento**: O armazenamento abstrato (`StorageProvider`) lida com os arquivos em File System de forma a não encher os diretórios públicos (`public/`).
+- **Autenticação**: `middleware.ts`, no runtime Node.js, valida a sessão e o usuário persistido em toda navegação protegida; a identidade validada é encaminhada internamente para que DAL, Server Actions e Route Handlers repitam o gate sem uma segunda query idêntica. Trocas de senha revogam tokens anteriores via `password_version` (ADR-0012).
 
 ## Triagem de IA
 

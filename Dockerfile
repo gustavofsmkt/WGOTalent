@@ -22,7 +22,7 @@ RUN npm ci
 #     da imagem.
 #
 #   * Vars server-side (DATABASE_URL, AGENT_CREDENTIALS_ENCRYPTION_KEY,
-#     STORAGE_ROOT, EMAIL_CAPTURA_INTERVALO_MS) são lidas em RUNTIME por
+#     SESSION_SECRET, STORAGE_ROOT, EMAIL_CAPTURA_INTERVALO_MS) são lidas em RUNTIME por
 #     src/env.js. Elas NÃO devem existir no build: SKIP_ENV_VALIDATION=1
 #     faz o env.js pular a validação, o build não precisa de nenhum
 #     segredo e, portanto, nenhum segredo entra em layer de imagem.

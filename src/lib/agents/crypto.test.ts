@@ -12,6 +12,7 @@ describe("Credential encryption (AES-256-GCM)", () => {
     process.env.AGENT_CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString(
       "base64",
     );
+    process.env.SESSION_SECRET = "s".repeat(32);
   });
 
   afterEach(() => {

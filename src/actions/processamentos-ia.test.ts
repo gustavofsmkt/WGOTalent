@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+vi.mock("~/lib/auth/dal", () => ({
+  requireAuthenticatedUser: vi.fn().mockResolvedValue({
+    id: "user-1",
+    username: "admin",
+  }),
+}));
+
 const {
   claimRetryMock,
   claimLatestFailuresMock,
@@ -164,7 +172,11 @@ describe("retryUltimasFalhasIa", () => {
 
     const result = await retryUltimasFalhasIa("candidato_vagas");
 
-    expect(claimLatestFailuresMock).toHaveBeenCalledWith("candidato_vagas", 15);
+    expect(claimLatestFailuresMock).toHaveBeenCalledWith(
+      "candidato_vagas",
+      15,
+      "admin",
+    );
     expect(result).toMatchObject({
       success: true,
       data: { agendados: 15 },

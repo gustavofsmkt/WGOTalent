@@ -66,10 +66,13 @@ interna de domínio — hoje só `src/app/api/files/[...path]/route.ts`, que
 serve os arquivos de currículo a partir do `StorageProvider` (seção 5),
 mantendo-os fora de `public/` e atrás de um ponto único de acesso.
 
-Essa separação é o motivo pelo qual o MVP consegue rodar **sem
-autenticação** hoje e adicionar auth depois sem reescrever nada: Server
-Actions e Route Handlers já são o único portão de mutação/acesso — um
-middleware de auth entra ali, e não espalhado pelos Server Components.
+Essa separação permitiu adicionar autenticação sem reescrever o domínio:
+`middleware.ts`, no runtime Node.js, valida o cookie assinado e o usuário no
+banco em toda navegação protegida. A identidade validada segue em um header
+interno sobrescrito pelo middleware, permitindo que a DAL, Server Actions e
+Route Handlers repitam o gate nos pontos sensíveis sem duplicar a mesma query
+na request. A sessão é stateless e trocas de senha revogam tokens antigos por
+`password_version` (ADR-0012).
 
 ---
 
@@ -150,7 +153,8 @@ S3/Blob depois sem tocar em quem consome a interface. O único consumidor de
 aplicação usa a interface, importada como `storage` a partir de
 `~/lib/storage`. Leitura é servida via
 `src/app/api/files/[...path]/route.ts`, o único Route Handler de leitura do
-projeto — ponto único onde um gate de autorização pode ser adicionado depois.
+projeto. A rota já exige autenticação; autorização por currículo pode ser
+adicionada nesse ponto único no futuro.
 
 ---
 
@@ -227,11 +231,11 @@ de saída de cada slot é fixo em código**; o que é editável via admin
 (`src/app/admin/agentes/[slot]/page.tsx` → `src/actions/agente-config.ts`) é
 só prompt de sistema, prompt de usuário, provedor/modelo e parâmetros:
 
-| Slot | Papel | Módulo |
-|---|---|---|
-| `extracao_curriculo` | Lê o currículo (PDF/imagem multimodal ou DOCX via `mammoth`) e devolve dados estruturados — nunca um id, candidato/vaga ainda não existem no banco nesse ponto | [src/server/agents/extracao-curriculo.ts](src/server/agents/extracao-curriculo.ts) |
-| `classificador_aderencia` | Recebe 1 item ("candidato" ou "vaga") + N itens de comparação, devolve `{id, score}` por item — pontuação efêmera, nunca persistida | [src/server/agents/classificador-aderencia.ts](src/server/agents/classificador-aderencia.ts) |
-| `avaliador_triagem` | Roda por par candidato-vaga já aprovado, grava a avaliação completa (`avaliacao_ia`) | [src/server/agents/avaliador-triagem.ts](src/server/agents/avaliador-triagem.ts) |
+| Slot                      | Papel                                                                                                                                                          | Módulo                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `extracao_curriculo`      | Lê o currículo (PDF/imagem multimodal ou DOCX via `mammoth`) e devolve dados estruturados — nunca um id, candidato/vaga ainda não existem no banco nesse ponto | [src/server/agents/extracao-curriculo.ts](src/server/agents/extracao-curriculo.ts)           |
+| `classificador_aderencia` | Recebe 1 item ("candidato" ou "vaga") + N itens de comparação, devolve `{id, score}` por item — pontuação efêmera, nunca persistida                            | [src/server/agents/classificador-aderencia.ts](src/server/agents/classificador-aderencia.ts) |
+| `avaliador_triagem`       | Roda por par candidato-vaga já aprovado, grava a avaliação completa (`avaliacao_ia`)                                                                           | [src/server/agents/avaliador-triagem.ts](src/server/agents/avaliador-triagem.ts)             |
 
 Peças de suporte, todas em `src/lib/agents/`:
 
@@ -350,8 +354,7 @@ implementação):
 ## 10. Captação automática de currículo por e-mail (ADR-0010)
 
 A captação por e-mail entrou no MVP depois do congelamento original —
-antecipada do roadmap pós-MVP porque, ao contrário de autenticação ou
-múltiplos provedores de LLM, é puramente aditiva: não toca em nenhum código
+antecipada do roadmap pós-MVP por ser puramente aditiva: não toca em nenhum código
 já validado do motor de agentes ou dos CRUDs (ver
 [ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md)).
 
@@ -359,7 +362,7 @@ já validado do motor de agentes ou dos CRUDs (ver
   todos falam IMAP — construir contra o protocolo em vez de 3 integrações
   proprietárias cobre os três com um client só
   ([src/lib/email/imap-client.ts](src/lib/email/imap-client.ts), `imapflow`
-  + `mailparser`, as únicas dependências novas deste bloco).
+  - `mailparser`, as únicas dependências novas deste bloco).
 - **Loop em processo, não cron externo.** `src/instrumentation.ts` (hook
   oficial do Next.js, roda uma vez por processo) inicia o loop
   ([src/server/email/captura-curriculos-loop.ts](src/server/email/captura-curriculos-loop.ts)),
@@ -422,17 +425,17 @@ projeto):
 
 ## 12. Resumo — decisões e onde ler mais
 
-| Decisão | Motivo resumido | Onde aprofundar |
-|---|---|---|
-| T3 só como scaffolder | Aproveitar `src/env.js` tipado e convenções de diretório sem herdar tRPC/Prisma/Auth.js | `docs/DEVLOG.md` (TASK-019), README.md |
-| Server Actions como única mutação interna | Ponto único de gate para auth futura, sem reescrever Server Components | `docs/ARCHITECTURE.md` |
-| Drizzle schema-first | TypeScript puro, sem DSL/client proprietário; Postgres MCP proibido | `docs/HARNESS.md` §4.2 |
-| Soft delete + `notDeleted()` obrigatório | Nunca perder histórico; cascata é responsabilidade da aplicação | `src/server/db/query-helpers.ts` |
-| `StorageProvider` | Trocar disco por S3/Blob sem tocar consumidores | `src/lib/storage/storage.ts` |
-| Zod único + TanStack Form | Standard Schema nativo elimina adapters | `docs/FORM_STACK.md` |
-| shadcn via CLI, não MCP | CLI resolve direto; menos ferramenta para manter | `docs/HARNESS.md` §4.3 |
-| Motor de agentes nativo (não n8n) | 3 fluxos n8n eram pipelines simples; configurabilidade via admin sem redeploy | [ADR-0007](docs/decisions/0007-encerramento-integracao-n8n.md) |
-| Fase 1 em lote / Fase 2 por par | Custo de comparação N-a-N baixo; avaliação rica só nos pares aprovados | `src/server/agents/orquestracao.ts` |
-| Dispatcher por provedor (`agent-client.ts`) | Saída estruturada não é portável entre provedores; um contrato comum evita `if/else` triplicado nos 3 agentes | [ADR-0011](docs/decisions/0011-multiplos-provedores-llm.md) |
-| Captação por e-mail via IMAP genérico + loop em processo | Cobre Zimbra/Workspace/M365 sem SDK proprietário; sem cron externo | [ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md) |
-| Banco de talentos como coluna do Candidato, não Triagem sintética | Candidato sem vaga compatível não tem processo seletivo para anexar um resultado | [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md) |
+| Decisão                                                           | Motivo resumido                                                                                               | Onde aprofundar                                                 |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| T3 só como scaffolder                                             | Aproveitar `src/env.js` tipado e convenções de diretório sem herdar tRPC/Prisma/Auth.js                       | `docs/DEVLOG.md` (TASK-019), README.md                          |
+| Server Actions como única mutação interna                         | Ponto único de gate para auth futura, sem reescrever Server Components                                        | `docs/ARCHITECTURE.md`                                          |
+| Drizzle schema-first                                              | TypeScript puro, sem DSL/client proprietário; Postgres MCP proibido                                           | `docs/HARNESS.md` §4.2                                          |
+| Soft delete + `notDeleted()` obrigatório                          | Nunca perder histórico; cascata é responsabilidade da aplicação                                               | `src/server/db/query-helpers.ts`                                |
+| `StorageProvider`                                                 | Trocar disco por S3/Blob sem tocar consumidores                                                               | `src/lib/storage/storage.ts`                                    |
+| Zod único + TanStack Form                                         | Standard Schema nativo elimina adapters                                                                       | `docs/FORM_STACK.md`                                            |
+| shadcn via CLI, não MCP                                           | CLI resolve direto; menos ferramenta para manter                                                              | `docs/HARNESS.md` §4.3                                          |
+| Motor de agentes nativo (não n8n)                                 | 3 fluxos n8n eram pipelines simples; configurabilidade via admin sem redeploy                                 | [ADR-0007](docs/decisions/0007-encerramento-integracao-n8n.md)  |
+| Fase 1 em lote / Fase 2 por par                                   | Custo de comparação N-a-N baixo; avaliação rica só nos pares aprovados                                        | `src/server/agents/orquestracao.ts`                             |
+| Dispatcher por provedor (`agent-client.ts`)                       | Saída estruturada não é portável entre provedores; um contrato comum evita `if/else` triplicado nos 3 agentes | [ADR-0011](docs/decisions/0011-multiplos-provedores-llm.md)     |
+| Captação por e-mail via IMAP genérico + loop em processo          | Cobre Zimbra/Workspace/M365 sem SDK proprietário; sem cron externo                                            | [ADR-0010](docs/decisions/0010-captacao-curriculo-via-email.md) |
+| Banco de talentos como coluna do Candidato, não Triagem sintética | Candidato sem vaga compatível não tem processo seletivo para anexar um resultado                              | [ADR-0013](docs/decisions/0013-banco-de-talentos-automatico.md) |

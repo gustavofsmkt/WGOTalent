@@ -48,13 +48,14 @@ diretamente em código de servidor, sempre importe `env` de `~/env`.
 
 2. Preencha:
 
-   | Variável | Descrição |
-   |---|---|
-   | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | Credenciais usadas pelo `docker-compose.yml` para subir o Postgres local. |
-   | `DATABASE_URL` | String de conexão do Postgres, consumida pelo Drizzle. Deve casar com as variáveis `POSTGRES_*` acima. |
-   | `STORAGE_ROOT` | Caminho absoluto (ou relativo ao cwd) do diretório de armazenamento local de arquivos (currículos). |
-   | `AGENT_CREDENTIALS_ENCRYPTION_KEY` | Chave mestra (mín. 32 chars) usada para cifrar/decifrar em repouso (AES-256-GCM) as credenciais de provedor de LLM **e** de e-mail (IMAP) cadastradas via admin. Gere uma vez com `openssl rand -base64 32` — **nunca rotacione sem um plano de re-cifragem** das credenciais já salvas (ver comentário em [.env.example](.env.example)). |
-   | `EMAIL_CAPTURA_INTERVALO_MS` | Opcional (default `60000`). Intervalo em ms entre ciclos do loop de captação de currículo por e-mail — ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail). |
+   | Variável                                                                | Descrição                                                                                                                                                                                                                                                                                                                                 |
+   | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | Credenciais usadas pelo `docker-compose.yml` para subir o Postgres local.                                                                                                                                                                                                                                                                 |
+   | `DATABASE_URL`                                                          | String de conexão do Postgres, consumida pelo Drizzle. Deve casar com as variáveis `POSTGRES_*` acima.                                                                                                                                                                                                                                    |
+   | `STORAGE_ROOT`                                                          | Caminho absoluto (ou relativo ao cwd) do diretório de armazenamento local de arquivos (currículos).                                                                                                                                                                                                                                       |
+   | `AGENT_CREDENTIALS_ENCRYPTION_KEY`                                      | Chave mestra (mín. 32 chars) usada para cifrar/decifrar em repouso (AES-256-GCM) as credenciais de provedor de LLM **e** de e-mail (IMAP) cadastradas via admin. Gere uma vez com `openssl rand -base64 32` — **nunca rotacione sem um plano de re-cifragem** das credenciais já salvas (ver comentário em [.env.example](.env.example)). |
+   | `SESSION_SECRET`                                                        | Chave de no mínimo 32 caracteres usada para assinar cookies de sessão. Gere com `openssl rand -base64 32`; trocar a chave encerra todas as sessões existentes.                                                                                                                                                                            |
+   | `EMAIL_CAPTURA_INTERVALO_MS`                                            | Opcional (default `60000`). Intervalo em ms entre ciclos do loop de captação de currículo por e-mail — ver [Captação de Currículo via E-mail](#captação-de-currículo-via-e-mail).                                                                                                                                                         |
 
    Detalhes adicionais de cada variável: [docs/specs/environment.md](docs/specs/environment.md).
 
@@ -94,6 +95,20 @@ npm run db:studio     # abre o Drizzle Studio para inspecionar o banco
 
 Migrations geradas ficam em [drizzle/](drizzle/) e são versionadas — não edite
 uma migration já commitada, gere uma nova.
+
+## Autenticação
+
+Depois de aplicar as migrations, entre em `/login` com a conta inicial:
+
+```text
+usuário: admin
+senha: admin
+```
+
+Troque essa senha em **Perfil** no primeiro acesso. Todas as páginas exigem
+login. A sessão fica em cookie stateless assinado por `SESSION_SECRET`; não há
+papéis nem autorização granular. Usuários adicionais e redefinições de senha
+ficam em **Administração → Configurações Gerais → Usuários**.
 
 ## Seed
 
@@ -245,19 +260,19 @@ actions, captação de e-mail e páginas.
 
 ## Quality gates (npm scripts)
 
-| Script | O que faz |
-|---|---|
-| `npm run lint` | ESLint (`next/core-web-vitals` + `next/typescript`) sobre todo o projeto. |
-| `npm run typecheck` | `tsc --noEmit`. |
-| `npm test` | Vitest em modo watch. |
-| `npm run test:run` | Vitest single-run (usado por `check`). Não depende de Postgres real. |
-| `npm run build` | Build de produção do Next.js. |
-| `npm run db:generate` | Gera migrations do Drizzle a partir do schema. |
-| `npm run db:migrate` | Aplica migrations pendentes no Postgres apontado por `DATABASE_URL`. |
-| `npm run db:seed` | Popula o banco com dados de exemplo (limpa antes de inserir). |
-| `npm run db:smoke` | Smoke test de conectividade (`SELECT 1`, extensão `unaccent`). |
-| `npm run db:studio` | Abre o Drizzle Studio. |
-| `npm run check` | Gate local: `lint && test:run && build`. Não precisa de Postgres rodando. |
+| Script                      | O que faz                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm run lint`              | ESLint (`next/core-web-vitals` + `next/typescript`) sobre todo o projeto.                                          |
+| `npm run typecheck`         | `tsc --noEmit`.                                                                                                    |
+| `npm test`                  | Vitest em modo watch.                                                                                              |
+| `npm run test:run`          | Vitest single-run (usado por `check`). Não depende de Postgres real.                                               |
+| `npm run build`             | Build de produção do Next.js.                                                                                      |
+| `npm run db:generate`       | Gera migrations do Drizzle a partir do schema.                                                                     |
+| `npm run db:migrate`        | Aplica migrations pendentes no Postgres apontado por `DATABASE_URL`.                                               |
+| `npm run db:seed`           | Popula o banco com dados de exemplo (limpa antes de inserir).                                                      |
+| `npm run db:smoke`          | Smoke test de conectividade (`SELECT 1`, extensão `unaccent`).                                                     |
+| `npm run db:studio`         | Abre o Drizzle Studio.                                                                                             |
+| `npm run check`             | Gate local: `lint && test:run && build`. Não precisa de Postgres rodando.                                          |
 | `npm run check:integration` | Gate de banco: `db:migrate && db:smoke`. Precisa de um Postgres real em `DATABASE_URL` (ver `docker-compose.yml`). |
 
 `check` é o gate padrão antes de commit/PR. `check:integration` roda à parte
@@ -321,8 +336,8 @@ backup/restore e rollback: [`scripts/deploy-tutorial.md`](scripts/deploy-tutoria
 
 ## Fora de escopo (MVP)
 
-- Autenticação, perfis de acesso e autorização — o sistema opera de forma
-  aberta inicialmente.
+- Perfis de acesso e autorização granular — todos os usuários autenticados
+  possuem as mesmas capacidades.
 - Integração nativa com storage em nuvem (S3/Azure Blob).
 - UI complexa (modais avançados, rotas interceptadas/paralelas).
 - Deleções físicas (hard delete) — tudo é soft delete via `deleted_at`.

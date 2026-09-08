@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import type { ActionState } from "~/lib/action-utils";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import { uuidSchema } from "~/lib/validation/common";
@@ -42,6 +43,7 @@ function agendarRetries(processamentos: ProcessamentoIa[]): void {
 export async function retryProcessamentoIa(
   id: unknown,
 ): Promise<ActionState<ProcessamentoIa>> {
+  const currentUser = await requireAuthenticatedUser();
   const parsed = uuidSchema.safeParse(id);
   if (!parsed.success) {
     return { success: false, message: "Processamento inválido." };
@@ -50,9 +52,10 @@ export async function retryProcessamentoIa(
   let claimed: ProcessamentoIa | null = null;
 
   try {
-    // Ainda não há autenticação no MVP. Quando ela existir, o identificador do
-    // usuário entra no segundo argumento de claimRetry.
-    claimed = await processamentoIaRepository.claimRetry(parsed.data);
+    claimed = await processamentoIaRepository.claimRetry(
+      parsed.data,
+      currentUser.username,
+    );
     if (!claimed) {
       const atual = await processamentoIaRepository.findById(parsed.data);
       if (!atual) {
@@ -99,6 +102,7 @@ export async function retryProcessamentoIa(
 export async function retryUltimasFalhasIa(
   fluxo: unknown,
 ): Promise<ActionState<{ agendados: number }>> {
+  const currentUser = await requireAuthenticatedUser();
   const parsed = processamentoIaFluxoSchema.safeParse(fluxo);
   if (!parsed.success) {
     return { success: false, message: "Fluxo de IA inválido." };
@@ -107,11 +111,10 @@ export async function retryUltimasFalhasIa(
   let claimed: ProcessamentoIa[] = [];
 
   try {
-    // Ainda não há autenticação no MVP. Quando ela existir, o identificador do
-    // usuário entra no terceiro argumento de claimLatestFailures.
     claimed = await processamentoIaRepository.claimLatestFailures(
       parsed.data,
       MAX_RETRIES_POR_CLIQUE,
+      currentUser.username,
     );
 
     if (claimed.length === 0) {
