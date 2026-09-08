@@ -94,14 +94,28 @@ describe("buscarMensagensNovas", () => {
     expect(criteria).not.toHaveProperty("since");
   });
 
-  it("starts from the mailbox's current uidNext when never captured before — skips history instead of scanning it", async () => {
+  it("starts from the mailbox's current uidNext when never captured before — skips history without even scanning it", async () => {
     mailboxRef.current = { uidNext: 5000 };
-    searchMock.mockResolvedValueOnce([]);
 
     const result = await buscarMensagensNovas({ ...params, desdeUid: null });
 
-    expect(searchMock).toHaveBeenCalledWith({ uid: "5000:*" }, { uid: true });
-    expect(result.uidReferencia).toBe(4999);
+    // primeiroUid (5000) === uidNext: nada a buscar, então evitamos o SEARCH
+    // `N:*` que devolveria a última mensagem por causa do quirk do IMAP.
+    expect(searchMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ mensagens: [], uidReferencia: 4999 });
+  });
+
+  it("does not scan or reprocess once the watermark has caught up to the newest message", async () => {
+    // Cenário do bug: watermark = maior UID existente (uidNext - 1). O SEARCH
+    // `N:*` devolveria a última mensagem repetidamente; o guard evita isso.
+    mailboxRef.current = { uidNext: 100 };
+
+    const result = await buscarMensagensNovas({ ...params, desdeUid: 99 });
+
+    expect(searchMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ mensagens: [], uidReferencia: 99 });
   });
 
   it("returns uidReferencia even with zero messages, so the watermark can advance without any new mail", async () => {

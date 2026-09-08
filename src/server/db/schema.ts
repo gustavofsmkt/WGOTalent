@@ -13,6 +13,7 @@ import {
   bigint,
   char,
   date,
+  jsonb,
   check,
   index,
   uniqueIndex,
@@ -71,6 +72,24 @@ export const triagemResultadoEnum = pgEnum("triagem_resultado", [
   "reprovado",
   "desistente",
   "banco_talentos",
+]);
+
+export const processamentoIaFluxoEnum = pgEnum("processamento_ia_fluxo", [
+  "candidato_vagas",
+  "vaga_candidatos",
+  "ingestao_curriculo",
+]);
+
+export const processamentoIaEtapaEnum = pgEnum("processamento_ia_etapa", [
+  "classificador",
+  "avaliador",
+  "extracao",
+]);
+
+export const processamentoIaStatusEnum = pgEnum("processamento_ia_status", [
+  "processando",
+  "sucesso",
+  "falha",
 ]);
 
 export const triagemMotivoEnum = pgEnum("triagem_motivo", [
@@ -406,6 +425,65 @@ export const avaliacaoIA = createTable(
 export type AvaliacaoIA = typeof avaliacaoIA.$inferSelect;
 export type NovaAvaliacaoIA = typeof avaliacaoIA.$inferInsert;
 
+/**
+ * Histórico operacional dos fluxos de IA (ingestão de currículo por e-mail e as
+ * duas direções de matching). Um registro representa uma execução de uma etapa
+ * (extração, classificador ou avaliador) e também funciona como unidade
+ * idempotente de retry.
+ */
+export const processamentosIa = createTable(
+  "processamentos_ia",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    fluxo: processamentoIaFluxoEnum("fluxo").notNull(),
+    etapa: processamentoIaEtapaEnum("etapa").notNull(),
+    status: processamentoIaStatusEnum("status")
+      .default("processando")
+      .notNull(),
+    candidatoId: uuid("candidato_id").references(() => candidatos.id),
+    vagaId: uuid("vaga_id").references(() => vagas.id),
+    triagemId: uuid("triagem_id").references(() => triagens.id),
+    // Chave do currículo retido no storage para reprocessar a extração
+    // (fluxo ingestao_curriculo). Nulo quando a falha não é reprocessável ou
+    // quando o arquivo já pertence a um candidato criado.
+    arquivoKey: text("arquivo_key"),
+    itensPendentes: jsonb("itens_pendentes")
+      .$type<string[]>()
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
+    mensagem: text("mensagem"),
+    tentativas: smallint("tentativas").default(1).notNull(),
+    iniciadoEm: timestamp("iniciado_em", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .defaultNow()
+      .notNull(),
+    finalizadoEm: timestamp("finalizado_em", {
+      withTimezone: true,
+      mode: "string",
+    }),
+    retrySolicitadoEm: timestamp("retry_solicitado_em", {
+      withTimezone: true,
+      mode: "string",
+    }),
+    retryPor: varchar("retry_por", { length: 150 }),
+    ...timestamps,
+  },
+  (table) => [
+    index("processamentos_ia_fluxo_created_idx").on(
+      table.fluxo,
+      table.createdAt,
+    ),
+    index("processamentos_ia_status_idx").on(table.status),
+    index("processamentos_ia_triagem_id_idx").on(table.triagemId),
+    check("processamentos_ia_tentativas_check", sql`${table.tentativas} > 0`),
+  ],
+);
+
+export type ProcessamentoIa = typeof processamentosIa.$inferSelect;
+export type NovoProcessamentoIa = typeof processamentosIa.$inferInsert;
+
 // ---------------------------------------------------------------------------
 // Motor de Agentes IA (ADR-0007) — config e credenciais, não fazem parte do
 // domínio de negócio de 9 entidades em docs/db_triagem_proposta.ts.
@@ -557,6 +635,24 @@ export const avaliacaoIARelations = relations(avaliacaoIA, ({ one }) => ({
     references: [triagens.id],
   }),
 }));
+
+export const processamentosIaRelations = relations(
+  processamentosIa,
+  ({ one }) => ({
+    candidato: one(candidatos, {
+      fields: [processamentosIa.candidatoId],
+      references: [candidatos.id],
+    }),
+    vaga: one(vagas, {
+      fields: [processamentosIa.vagaId],
+      references: [vagas.id],
+    }),
+    triagem: one(triagens, {
+      fields: [processamentosIa.triagemId],
+      references: [triagens.id],
+    }),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // Agregados hidratados (Hydrated Types)

@@ -459,26 +459,68 @@ export const triagemRepository = {
       .where(eq(triagens.id, id));
   },
 
-  /**
-   * O índice único triagens_candidato_vaga_idx (schema.ts) agora é parcial
-   * por resultado='em_andamento' E deleted_at IS NULL, então uma triagem
-   * soft-deleted não ocupa mais a vaga no índice — este check usa
-   * notDeleted() para não bloquear a recriação de um par cuja única
-   * triagem anterior já foi excluída (ex.: candidato restaurado, ou
-   * mesclado com novo dado e reenviado pelo fluxo de triagem).
-   */
-  existsForPar: async (
+  findForParComAvaliacao: async (
     candidatoId: string,
     vagaId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<{ triagemId: string; avaliacaoId: string | null } | null> => {
+    // Pode haver mais de uma triagem não-deletada para o mesmo par (o índice
+    // único é parcial em resultado='em_andamento'), então ordenamos pela mais
+    // recente para que um retry resuma sempre na triagem atual, e não em uma
+    // arbitrária escolhida pelo Postgres.
+    const rows = await notDeleted(
+      dbOrTx
+        .select({
+          triagemId: triagens.id,
+          avaliacaoId: avaliacaoIA.id,
+        })
+        .from(triagens)
+        .leftJoin(avaliacaoIA, avaliacaoAtivaJoin),
+      triagens,
+      eq(triagens.candidatoId, candidatoId),
+      eq(triagens.vagaId, vagaId),
+    )
+      .orderBy(desc(triagens.createdAt), desc(triagens.id))
+      .limit(1);
+    return rows[0] ?? null;
+  },
+
+  /**
+   * Confirma que uma triagem específica ainda está ativa (não soft-deleted).
+   * Usada no retry do avaliador para não vincular/avaliar uma triagem que foi
+   * excluída depois que o processamento fixou o triagemId.
+   */
+  isAtiva: async (id: string, dbOrTx: DbOrTx = db): Promise<boolean> => {
+    const rows = await notDeleted(
+      dbOrTx.select({ id: triagens.id }).from(triagens),
+      triagens,
+      eq(triagens.id, id),
+    ).limit(1);
+    return rows.length > 0;
+  },
+
+  hasAnyActiveForCandidato: async (
+    candidatoId: string,
     dbOrTx: DbOrTx = db,
   ): Promise<boolean> => {
     const rows = await notDeleted(
       dbOrTx.select({ id: triagens.id }).from(triagens),
       triagens,
       eq(triagens.candidatoId, candidatoId),
-      eq(triagens.vagaId, vagaId),
     ).limit(1);
     return rows.length > 0;
+  },
+
+  findAvaliacaoAtivaPorTriagemId: async (
+    triagemId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<AvaliacaoIA | null> => {
+    const rows = await notDeleted(
+      dbOrTx.select().from(avaliacaoIA),
+      avaliacaoIA,
+      eq(avaliacaoIA.triagemId, triagemId),
+    ).limit(1);
+    return rows[0] ?? null;
   },
 
   /**

@@ -68,7 +68,11 @@ describe("executarClassificadorAderencia", () => {
       "vaga",
     );
 
-    expect(result).toEqual({ ok: true, scores: [{ id: "v0", score: 80 }] });
+    expect(result).toEqual({
+      ok: true,
+      scores: [{ id: "v0", score: 80 }],
+      idsComFalha: [],
+    });
     expect(gerarRespostaEstruturadaMock).toHaveBeenCalledTimes(1);
   });
 
@@ -110,7 +114,11 @@ describe("executarClassificadorAderencia", () => {
       "vaga",
     );
 
-    expect(result).toEqual({ ok: true, scores: [{ id: "v0", score: 80 }] });
+    expect(result).toEqual({
+      ok: true,
+      scores: [{ id: "v0", score: 80 }],
+      idsComFalha: [],
+    });
   });
 
   it("returns ok:false when every chunk fails at the provider", async () => {
@@ -125,7 +133,11 @@ describe("executarClassificadorAderencia", () => {
       "vaga",
     );
 
-    expect(result).toEqual({ ok: false, motivo: "falha_provedor" });
+    expect(result).toEqual({
+      ok: false,
+      motivo: "falha_provedor",
+      idsComFalha: itens(26).map((item) => item.id),
+    });
   });
 
   it("returns partial scores when only some chunks fail", async () => {
@@ -146,5 +158,6 @@ describe("executarClassificadorAderencia", () => {
 
     expect(result.ok).toBe(true);
     expect(result.ok && result.scores).toHaveLength(25);
+    expect(result.ok && result.idsComFalha).toEqual(["v25"]);
   });
 });

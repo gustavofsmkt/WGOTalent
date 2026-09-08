@@ -90,6 +90,15 @@ export async function buscarMensagensNovas(
       const primeiroUid =
         params.desdeUid === null ? uidNext : params.desdeUid + 1;
 
+      // Já processamos tudo que existe na caixa (o maior UID é `uidNext - 1`).
+      // Sem este guard, o IMAP dispara um quirk conhecido: num SEARCH `N:*`
+      // com `N` acima do maior UID, o `*` resolve para o maior UID e a faixa
+      // `N:*` normaliza para `maiorUid:N`, devolvendo SEMPRE a última mensagem
+      // da caixa — que seria rebuscada e reprocessada a cada ciclo.
+      if (primeiroUid >= uidNext) {
+        return { mensagens: [], uidReferencia: uidNext - 1 };
+      }
+
       const encontrados = (
         (await client.search(
           {
@@ -100,7 +109,10 @@ export async function buscarMensagensNovas(
         )) || []
       )
         .slice()
-        .sort((a, b) => a - b);
+        .sort((a, b) => a - b)
+        // Defesa extra contra o mesmo quirk `N:*`: descarta qualquer UID que o
+        // servidor devolva abaixo do piso pedido.
+        .filter((uid) => uid >= primeiroUid);
 
       if (encontrados.length === 0) {
         return { mensagens: [], uidReferencia: uidNext - 1 };

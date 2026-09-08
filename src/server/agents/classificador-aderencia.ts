@@ -23,8 +23,16 @@ export interface ItemAderencia {
  * configurado (ADR-0011, ADR-0013).
  */
 export type ClassificadorResultado =
-  | { ok: true; scores: { id: string; score: number }[] }
-  | { ok: false; motivo: "falha_provedor" };
+  | {
+      ok: true;
+      scores: { id: string; score: number }[];
+      idsComFalha: string[];
+    }
+  | {
+      ok: false;
+      motivo: "falha_provedor";
+      idsComFalha: string[];
+    };
 
 const scoreItemSchema = z.object({
   id: z.string(),
@@ -77,7 +85,9 @@ export async function executarClassificadorAderencia(
   for (let i = 0; i < itensComparacao.length; i += CHUNK_SIZE) {
     chunks.push(itensComparacao.slice(i, i + CHUNK_SIZE));
   }
-  if (chunks.length === 0) return { ok: true, scores: [] };
+  if (chunks.length === 0) {
+    return { ok: true, scores: [], idsComFalha: [] };
+  }
 
   const resultadosPorChunk = await runWithLimit(
     chunks,
@@ -107,24 +117,28 @@ export async function executarClassificadorAderencia(
     },
   );
 
-  const chunksComErro = resultadosPorChunk.filter(
-    (r): r is { ok: false; error: unknown } => !r.ok,
+  const chunksComErro = resultadosPorChunk.flatMap((resultado, index) =>
+    resultado.ok ? [] : [{ resultado, chunk: chunks[index] ?? [] }],
   );
-  for (const r of chunksComErro) {
+  for (const { resultado } of chunksComErro) {
     console.error(
       "[executarClassificadorAderencia] Falha em um chunk do classificador:",
-      r.error,
+      resultado.error,
     );
   }
 
+  const idsComFalha = chunksComErro.flatMap(({ chunk }) =>
+    chunk.map((item) => item.id),
+  );
+
   // Todos os chunks falharam -> falha de provedor, não ausência de aderência.
   if (chunksComErro.length === resultadosPorChunk.length) {
-    return { ok: false, motivo: "falha_provedor" };
+    return { ok: false, motivo: "falha_provedor", idsComFalha };
   }
 
   const scores = resultadosPorChunk
     .flatMap((r) => (r.ok ? r.value : []))
     .filter((item) => idsValidos.has(item.id));
 
-  return { ok: true, scores };
+  return { ok: true, scores, idsComFalha };
 }

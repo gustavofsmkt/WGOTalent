@@ -26,26 +26,23 @@ describe("triagemRepository", () => {
   it("exports a named repository object with required methods", () => {
     expect(typeof triagemRepository.findPageWithJoins).toBe("function");
     expect(typeof triagemRepository.getListSummary).toBe("function");
-    expect(typeof triagemRepository.existsForPar).toBe("function");
+    expect(typeof triagemRepository.isAtiva).toBe("function");
     expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe(
       "function",
     );
     expect(typeof triagemRepository.softDelete).toBe("function");
   });
 
-  it("existsForPar filters by deleted_at is null, unlike the old unfiltered check", () => {
-    const candidatoId = "11111111-1111-1111-1111-111111111111";
-    const vagaId = "22222222-2222-2222-2222-222222222222";
+  it("isAtiva filters by triagem id and deleted_at is null", () => {
+    const triagemId = "33333333-3333-3333-3333-333333333333";
     const qb = notDeleted(
       mockDb.select({ id: triagens.id }).from(triagens),
       triagens,
-      eq(triagens.candidatoId, candidatoId),
-      eq(triagens.vagaId, vagaId),
+      eq(triagens.id, triagemId),
     );
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
-    expect(sql).toContain('"wgotalent_triagens"."candidato_id" =');
-    expect(sql).toContain('"wgotalent_triagens"."vaga_id" =');
+    expect(sql).toContain('"wgotalent_triagens"."id" =');
   });
 
   it("findEmCurriculoPorCandidato filters by candidato, etapa='curriculo' and resultado='em_andamento'", () => {

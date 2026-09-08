@@ -245,7 +245,35 @@ export interface AvaliacaoIA {
 	score_ia: number;                  	// NUMERIC(5,2), CHECK (0 <= score_ia <= 100)
 	parecer_ia: string;                 // TEXT
 }
- 
+
+// ---------------------------------------------------------------------------
+// processamentos_ia — histórico operacional e unidade idempotente de retry
+// ---------------------------------------------------------------------------
+
+export interface ProcessamentoIA {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  fluxo: "candidato_vagas" | "vaga_candidatos" | "ingestao_curriculo";
+  etapa: "classificador" | "avaliador" | "extracao";
+  status: "processando" | "sucesso" | "falha";
+  candidato_id: string | null;
+  vaga_id: string | null;
+  triagem_id: string | null;
+  // Chave do currículo retido para reprocessar a extração (ingestao_curriculo);
+  // nulo quando a falha não é reprocessável ou o arquivo já é de um candidato.
+  arquivo_key: string | null;
+  itens_pendentes: string[];
+  mensagem: string | null;
+  tentativas: number;
+  iniciado_em: string;
+  finalizado_em: string | null;
+  retry_solicitado_em: string | null;
+  retry_por: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Agregados hidratados
 // ---------------------------------------------------------------------------

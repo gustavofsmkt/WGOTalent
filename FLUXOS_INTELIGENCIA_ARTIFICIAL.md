@@ -1,6 +1,6 @@
 # Mapeamento dos fluxos de Inteligência Artificial
 
-> Varredura estática realizada em 04/09/2026. Este documento descreve o
+> Varredura estática atualizada em 05/09/2026. Este documento descreve o
 > comportamento observado no código atual. Quando a documentação e a
 > implementação divergem, o comportamento executável é destacado.
 
@@ -166,7 +166,12 @@ backfill limitado por data.
 
 Falha de cota do provedor de IA impede o watermark de ultrapassar aquela
 mensagem, permitindo nova tentativa no ciclo seguinte. Outras falhas consomem a
-UID e não são tentadas novamente.
+UID e não são tentadas novamente automaticamente — mas cada anexo processado por
+e-mail passa a registrar uma execução `ingestao_curriculo`/`extracao` em
+`processamentos_ia`. Falhas reprocessáveis (cota, provedor, resposta inválida)
+conservam o arquivo no storage e podem ser reprocessadas manualmente em
+`/processamentos-ia`; falhas determinísticas (sem e-mail nem celular) descartam
+o arquivo e ficam sem retry.
 
 Fonte: `src/instrumentation.ts`, `src/server/email/captura-curriculos-loop.ts`,
 `src/server/email/captura-curriculos.ts` e `src/lib/email/imap-client.ts`.
@@ -190,8 +195,8 @@ Fonte: `src/actions/vagas.ts:45-57` e
 - criar uma triagem manual por `createTriagem()`;
 - avançar, reprovar, aprovar ou encerrar uma triagem;
 - iniciar a aplicação, fora o agendamento do loop de e-mail;
-- falha anterior do matching ou do avaliador: não existe job periódico geral de
-  reprocessamento.
+- falha anterior do matching ou do avaliador: não existe job periódico geral,
+  mas o RH pode reprocessá-la manualmente em `/processamentos-ia`.
 
 ## Pré-condições para cada chamada de IA
 
@@ -251,7 +256,9 @@ descartados.
 
 Se todos os blocos falharem, o resultado é tratado como falha de infraestrutura.
 Se somente alguns falharem, os scores dos blocos bem-sucedidos continuam sendo
-usados e os itens dos blocos com erro desaparecem daquela rodada.
+usados e os IDs dos blocos com erro são persistidos para retry seletivo. No
+sentido candidato → vagas, o candidato não é marcado no banco de talentos
+enquanto houver itens pendentes.
 
 ### Etapa 4 — Corte e criação da triagem
 
@@ -259,9 +266,10 @@ Cada score é comparado com a `nota_corte` da vaga correspondente, inclusive
 igualdade (`score >= notaCorte`). Para cada par aprovado:
 
 1. consulta se já existe alguma triagem não excluída para o mesmo par;
-2. se existir, ignora o par, qualquer que seja o resultado ou etapa anterior;
-3. desmarca `em_banco_talentos` do candidato;
-4. cria `triagem` com `etapa = curriculo` e `resultado = em_andamento`.
+2. se a triagem e sua avaliação já existirem, ignora o par;
+3. se a triagem existir sem avaliação, retoma diretamente no avaliador;
+4. se não existir, desmarca `em_banco_talentos` do candidato e cria `triagem`
+   com `etapa = curriculo` e `resultado = em_andamento`.
 
 O banco também impede duas triagens simultâneas `em_andamento` para o mesmo par
 por índice único parcial.
@@ -347,9 +355,11 @@ dessa ausência quando estiver preenchida.
 | Provedor       | 3 tentativas por chamada, sem limitador global de RPM/RPD/TPM |
 
 Os limites são locais a cada chamada. Múltiplos uploads, ciclos ou
-orquestrações podem somar concorrência acima desses números. Não existe fila
-durável, lock distribuído, tabela de job para matching/avaliação ou rate limiter
-global.
+orquestrações podem somar concorrência acima desses números. A ingestão de
+currículo por e-mail e as etapas de matching e avaliação são registradas em
+`processamentos_ia`; o retry manual usa uma troca atômica de `falha` para
+`processando`, impedindo duas novas tentativas para o mesmo registro. A tabela
+não é uma fila durável e ainda não existe rate limiter global.
 
 ## Pontos importantes encontrados
 
@@ -359,38 +369,29 @@ global.
    orquestrador e `orquestrarParaVagaNova()` não valida `status = aberta`. Isso
    contradiz o nome do fluxo e o teste chamado “without triggering classifier”,
    que não contém uma asserção sobre o disparo.
-2. **Falha do avaliador deixa uma triagem sem avaliação e sem recuperação.** A
-   triagem é criada antes da chamada do avaliador, sem transação conjunta. Se a
-   fase 2 falhar, `existsForPar()` passa a bloquear novas tentativas para aquele
-   par. O resultado individual de `runWithLimit()` também não é inspecionado
-   pelo orquestrador.
-3. **Fire-and-forget não é uma fila durável.** Criação de candidato, criação de
+2. **Fire-and-forget não é uma fila durável.** Criação de candidato, criação de
    vaga e processamento de lote retornam enquanto o trabalho continua apenas na
    memória do processo. Reinício, crash, scale-down ou múltiplas instâncias
-   podem perder, duplicar ou deixar itens em `pendente/processando`. Não há rotina
-   de retomada. A mensagem “mantido ativo para reprocessamento” após falha do
-   classificador não corresponde a um reprocessamento agendado existente.
-4. **Matching geográfico é frágil.** A comparação é textual, sensível a
+   podem interromper uma execução e deixá-la em `processando`. Há retry manual
+   para falhas concluídas, mas ainda não há recuperação automática de execuções
+   interrompidas.
+3. **Matching geográfico é frágil.** A comparação é textual, sensível a
    maiúsculas, acentos e grafia, e ignora UF. Isso pode produzir falso negativo
    (`Goiania` x `Goiânia`) ou falso positivo quando duas cidades de UFs
    diferentes têm o mesmo nome.
-5. **Sucesso parcial do classificador pode virar decisão incompleta.** Quando um
-   bloco falha e outro funciona, o resultado global é `ok: true`. Itens do bloco
-   falho são omitidos; no sentido candidato → vagas, isso pode inclusive levar o
-   candidato ao banco de talentos sem todas as vagas terem sido avaliadas.
 
 ### Segurança, auditoria e explicabilidade
 
-6. **PII pode ser escrita nos logs em resposta inválida.** O parser comum registra
+4. **PII pode ser escrita nos logs em resposta inválida.** O parser comum registra
    a resposta completa recebida quando o JSON ou o Zod falham. Na extração isso
    pode conter dados pessoais e a transcrição integral do currículo, contrariando
    a orientação do ADR-0001 de não registrar `texto_curriculo_extraido` em logs.
-7. **A decisão da fase 1 não é auditável.** Scores do classificador, motivo de
+5. **A decisão da fase 1 não é auditável.** Scores do classificador, motivo de
    exclusão, bloco processado, modelo, provedor, versão do prompt, tentativas,
    tokens, latência e custo não são persistidos. `avaliacao_ia` também não guarda
    a configuração que produziu o parecer. Alterar prompts/modelos afeta execuções
    futuras sem preservar proveniência das antigas.
-8. **A fase 1 usa um retrato muito reduzido do candidato.** Somente o resumo
+6. **A fase 1 usa um retrato muito reduzido do candidato.** Somente o resumo
    profissional participa do corte. Critérios eliminatórios estruturados como
    CNH, formação ou disponibilidade podem não estar no resumo. O avaliador recebe
    mais campos escalares e a transcrição, mas não as coleções normalizadas de
@@ -398,21 +399,21 @@ global.
 
 ### Robustez e manutenção
 
-9. **Há caminhos de arquivo órfão.** Se a extração retornar candidato sem e-mail
+7. **Há caminhos de arquivo órfão.** Se a extração retornar candidato sem e-mail
    e sem celular, a função retorna antes do cleanup do arquivo já salvo. Em
    mesclagens/restaurações, um novo currículo pode substituir a chave persistida
    sem remover o arquivo antigo. Nova tentativa de uma mensagem bloqueada por
    cota pode repetir anexos já bem-sucedidos do mesmo e-mail e ampliar esse
    efeito.
-10. **MIME e extensão são validados de formas diferentes.** A entrada aceita pelo
-    MIME é roteada pelo agente usando a extensão do nome. Um anexo com MIME
-    válido e nome ausente/incorreto pode ser salvo e depois rejeitado como
-    extensão não suportada.
-11. **Atualizações não reavaliam automaticamente.** Editar um candidato, abrir
-    uma vaga antes pausada ou alterar requisitos/nota de corte não dispara novo
-    matching. Também não existe varredura periódica dos candidatos contra vagas
-    atualizadas.
-12. **A saída `vagaFoiInferida` não significa que a plataforma escolheu uma vaga
+8. **MIME e extensão são validados de formas diferentes.** A entrada aceita pelo
+   MIME é roteada pelo agente usando a extensão do nome. Um anexo com MIME
+   válido e nome ausente/incorreto pode ser salvo e depois rejeitado como
+   extensão não suportada.
+9. **Atualizações não reavaliam automaticamente.** Editar um candidato, abrir
+   uma vaga antes pausada ou alterar requisitos/nota de corte não dispara novo
+   matching. Também não existe varredura periódica dos candidatos contra vagas
+   atualizadas.
+10. **A saída `vagaFoiInferida` não significa que a plataforma escolheu uma vaga
     por inferência.** A vaga já foi escolhida na fase 1; o campo indica apenas que
     o avaliador considerou os dados da vaga esparsos e inferiu parte do perfil.
 
@@ -442,6 +443,9 @@ global.
 - Filtros de candidatos/vagas: `src/server/db/repositories/candidato.ts` e
   `src/server/db/repositories/vaga.ts`
 - Triagem e avaliação persistida: `src/server/db/repositories/triagem.ts`
+- Histórico e lock de retry: `src/server/db/repositories/processamento-ia.ts`
+- Gestão das falhas: `src/app/(rh)/processamentos-ia/` e
+  `src/actions/processamentos-ia.ts`
 - Modelo persistente: `src/server/db/schema.ts`
 - Decisões: ADR-0007, ADR-0010, ADR-0011, ADR-0013 e ADR-0014 em
   `docs/decisions/`
@@ -467,30 +471,19 @@ global.
   absoluto configurável, além da política de rotação, retenção e tamanho máximo
   dos arquivos.
 
-### Histórico e gestão dos processamentos de IA
+### Histórico e gestão dos processamentos de IA — entregue
 
-- Persistir um histórico estruturado de todas as execuções dos fluxos de IA,
-  incluindo sucessos e falhas, com informações suficientes para identificar o
-  fluxo, a etapa, as entidades relacionadas, a mensagem sanitizada, as
-  tentativas realizadas, as datas e o estado atual do processamento.
-- Criar uma página que reúna todos os processos de IA registrados, tanto os
-  bem-sucedidos quanto os que falharam.
-- Exibir os processos dos fluxos `candidato_vagas` e `vaga_candidatos` em
-  grupos separados, cada um em um componente `Accordion`, permitindo expandir
-  os detalhes de cada execução.
-- Permitir, nessa página, tentar novamente o processamento associado a cada
-  falha.
-- O reprocessamento deve ser idempotente, retomar exatamente a etapa que falhou
-  e não duplicar candidatos, triagens ou avaliações.
-- Impedir tentativas simultâneas para a mesma falha. Registrar a solicitação, o
-  horário de início, o resultado e, quando houver identificação disponível, o
-  usuário responsável pelo reprocessamento.
-- Quando uma triagem já existir e apenas sua avaliação tiver falhado, executar
-  novamente somente o avaliador e a gravação de `avaliacao_ia`.
-- Quando apenas parte dos blocos do classificador falhar, registrar os blocos
-  afetados e permitir reprocessar somente esses blocos. No fluxo candidato para
-  vagas, não marcar o candidato no banco de talentos enquanto ainda houver
-  blocos sem avaliação.
+As execuções da ingestão de currículo por e-mail e dos dois fluxos de matching
+são persistidas em `processamentos_ia` e podem ser consultadas em
+`/processamentos-ia`, agrupadas por aba. Falhas concluídas oferecem retry
+idempotente na etapa exata; falhas parciais do classificador conservam os itens
+pendentes, falhas do avaliador retomam a triagem existente sem recriá-la e
+falhas reprocessáveis da extração conservam o arquivo (`arquivo_key`) para
+reexecutar a extração sem reenviar o anexo. Em cada aba, o retry em lote reserva
+as 15 falhas reprocessáveis mais recentes por clique e executa o trabalho em
+segundo plano, sem bloquear a navegação. Reservas atômicas impedem duas
+tentativas simultâneas para a mesma falha. O campo `retry_por` permanece nulo
+enquanto a autenticação estiver fora do MVP.
 
 ### Regra de permanência no banco de talentos
 

@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Target,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 
@@ -20,6 +21,7 @@ const navItems = [
   { name: "Vagas", href: "/vagas", icon: Target },
   { name: "Candidatos", href: "/candidatos", icon: Users },
   { name: "Triagens", href: "/triagens", icon: ClipboardCheck },
+  { name: "Processamentos IA", href: "/processamentos-ia", icon: Sparkles },
   { name: "Administração", href: "/admin", icon: Bot },
 ];
 
