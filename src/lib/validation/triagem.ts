@@ -117,6 +117,12 @@ export const updateTriagemSchema =
 
 export type TriagemSchema = z.infer<typeof triagemSchema>;
 export type CreateTriagemInput = z.infer<typeof triagemSchema>;
+/**
+ * Tipo dos valores de entrada do formulário (antes das transformações do Zod).
+ * `motivo` e os pareceres são opcionais na entrada, então difere de
+ * `CreateTriagemInput` (saída).
+ */
+export type TriagemFormInput = z.input<typeof triagemSchema>;
 export type UpdateTriagemInput = z.infer<typeof updateTriagemSchema>;
 export type TriagemEtapa = z.infer<typeof triagemEtapaEnum>;
 export type TriagemResultado = z.infer<typeof triagemResultadoEnum>;

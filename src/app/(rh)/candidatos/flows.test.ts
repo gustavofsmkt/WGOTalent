@@ -77,6 +77,7 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       cidade: "São Paulo",
       uf: "SP",
       resumoProfissional: "Resumo profissional de teste.",
+      observacoesRh: null,
       cargoInteresseId: "cargo-inativo-1",
       areaInteresseId: "dep-1",
       disponibilidadeHorarios: null,

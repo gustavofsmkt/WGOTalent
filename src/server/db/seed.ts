@@ -4,6 +4,8 @@ import { env } from "../../env.js";
 import {
   departamentos,
   cargos,
+  cidades,
+  vagaCidades,
   vagas,
   candidatos,
   candidatoFormacoes,
@@ -182,6 +184,29 @@ export async function seed() {
       throw new Error("Failed to insert cargos");
     }
 
+    console.log("🏙️  Seeding Cidades...");
+    const [cidadeSP, cidadeBH, cidadeCuritiba, cidadeRJ, cidadeFloripa] =
+      await db
+        .insert(cidades)
+        .values([
+          { nome: "São Paulo", uf: "SP" },
+          { nome: "Belo Horizonte", uf: "MG" },
+          { nome: "Curitiba", uf: "PR" },
+          { nome: "Rio de Janeiro", uf: "RJ" },
+          { nome: "Florianópolis", uf: "SC" },
+        ])
+        .returning();
+
+    if (
+      !cidadeSP ||
+      !cidadeBH ||
+      !cidadeCuritiba ||
+      !cidadeRJ ||
+      !cidadeFloripa
+    ) {
+      throw new Error("Failed to insert cidades");
+    }
+
     console.log("📌 Seeding Vagas...");
     const [
       vagaDevSP,
@@ -198,48 +223,36 @@ export async function seed() {
           status: "aberta",
           posicoesDisponiveis: 2,
           remuneracaoOferecida: "14500.00",
-          cidade: "São Paulo",
-          uf: "SP",
         },
         {
           cargoId: cargoDevops.id,
           status: "aberta",
           posicoesDisponiveis: 1,
           remuneracaoOferecida: "10500.00",
-          cidade: "Belo Horizonte",
-          uf: "MG",
         },
         {
           cargoId: cargoAnalistaRH.id,
           status: "pausada",
           posicoesDisponiveis: 1,
           remuneracaoOferecida: "6500.00",
-          cidade: "Curitiba",
-          uf: "PR",
         },
         {
           cargoId: cargoExecutivoVendas.id,
           status: "concluida",
           posicoesDisponiveis: 1,
           remuneracaoOferecida: "8500.00",
-          cidade: "São Paulo",
-          uf: "SP",
         },
         {
           cargoId: cargoCoordLogistica.id,
           status: "cancelada",
           posicoesDisponiveis: 1,
           remuneracaoOferecida: "9000.00",
-          cidade: "Rio de Janeiro",
-          uf: "RJ",
         },
         {
           cargoId: cargoDevSenior.id,
           status: "incompleta",
           posicoesDisponiveis: 1,
           remuneracaoOferecida: null,
-          cidade: "Florianópolis",
-          uf: "SC",
         },
       ])
       .returning();
@@ -254,6 +267,16 @@ export async function seed() {
     ) {
       throw new Error("Failed to insert vagas");
     }
+
+    console.log("🔗 Seeding Vaga-Cidades...");
+    await db.insert(vagaCidades).values([
+      { vagaId: vagaDevSP.id, cidadeId: cidadeSP.id },
+      { vagaId: vagaDevopsBH.id, cidadeId: cidadeBH.id },
+      { vagaId: vagaRHPR.id, cidadeId: cidadeCuritiba.id },
+      { vagaId: vagaVendasSP.id, cidadeId: cidadeSP.id },
+      { vagaId: vagaLogRJ.id, cidadeId: cidadeRJ.id },
+      { vagaId: vagaDevFloripa.id, cidadeId: cidadeFloripa.id },
+    ]);
 
     console.log("👤 Seeding Candidatos (Dados Fictícios)...");
     const [

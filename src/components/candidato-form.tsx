@@ -61,21 +61,63 @@ export interface CargoOption {
    own useFormContext() signature, which hardcodes `any` for these 11 slots;
    each has a constraint (e.g. `undefined | FormValidateOrFn<TFormData>`) that
    `unknown` does not satisfy, so `any` is the only substitute that compiles. */
-type CandidatoFormApi = ReactFormExtendedApi<
-  CandidatoAgregadoInput,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
+
+/**
+ * Componentes de campo com handler `onChange` inline (InputField/TextAreaField).
+ * Tipar `onChange` como `(e: any) => void` dá contexto ao parâmetro do handler,
+ * evitando `implicit any` sob `noImplicitAny`; o resto das props fica livre.
+ */
+type InputLikeComponent = (
+  props: Record<string, any> & { onChange?: (e: any) => void },
+) => React.ReactNode;
+
+/**
+ * Demais componentes de campo (SelectField/CheckboxField/SwitchField). Props
+ * ficam `any` porque seus shapes exigem membros específicos (ex.: `options`
+ * obrigatório no SelectField) e seus handlers já são anotados explicitamente.
+ */
+type LooseFieldComponent = (props: any) => React.ReactNode;
+
+/**
+ * Formato do argumento entregue ao render prop de `form.AppField`. O índice
+ * `any` cobre membros dinâmicos da API do field (handleChange, state, …); os
+ * componentes de campo são tipados explicitamente para dar contexto aos filhos.
+ */
+type CandidatoFieldApi = {
+  [key: string]: any;
+  InputField: InputLikeComponent;
+  TextAreaField: InputLikeComponent;
+  SelectField: LooseFieldComponent;
+  CheckboxField: LooseFieldComponent;
+  SwitchField: LooseFieldComponent;
+};
+
+type CandidatoAppFieldComponent = (props: {
+  name: any;
+  validators?: any;
+  mode?: any;
+  listeners?: any;
+  children: (field: CandidatoFieldApi) => React.ReactNode;
+}) => React.ReactNode | Promise<React.ReactNode>;
+
+type CandidatoFormApi = Omit<
+  ReactFormExtendedApi<
+    CandidatoAgregadoInput,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any
+  >,
+  "AppField" | "AppForm"
 > & {
-  AppField: any;
+  AppField: CandidatoAppFieldComponent;
   AppForm: any;
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */

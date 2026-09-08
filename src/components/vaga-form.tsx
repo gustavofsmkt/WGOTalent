@@ -342,7 +342,9 @@ export function VagaForm({
                         <div className="flex gap-2">
                           <Select
                             value={pendingCidadeId}
-                            onValueChange={setPendingCidadeId}
+                            onValueChange={(value) =>
+                              setPendingCidadeId(value ?? "")
+                            }
                             disabled={available.length === 0}
                           >
                             <SelectTrigger

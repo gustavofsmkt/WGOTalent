@@ -6,6 +6,7 @@ import {
   triagemBaseSchema,
   motivosReprovacao,
   motivosDesistencia,
+  type TriagemFormInput,
 } from "~/lib/validation/triagem";
 import { createTriagem } from "~/actions/triagens";
 import type { Triagem } from "~/server/db/schema";
@@ -57,10 +58,10 @@ export function TriagemForm({
     defaultValues: {
       candidatoId: "",
       vagaId: "",
-      etapa: "curriculo" as string,
-      resultado: "em_andamento" as string,
-      motivo: null as string | null,
-    },
+      etapa: "curriculo",
+      resultado: "em_andamento",
+      motivo: null,
+    } as TriagemFormInput,
     validators: {
       onBlur: triagemSchema,
     },

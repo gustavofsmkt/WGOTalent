@@ -135,6 +135,13 @@ export const createCargoSchema = cargoSchema;
 export type CreateCargoInput = z.infer<typeof createCargoSchema>;
 
 /**
+ * Tipo dos valores de entrada do formulário (antes das transformações do Zod).
+ * Difere de `CreateCargoInput` porque `.default()`/`.transform()` tornam alguns
+ * campos opcionais ou aceitam formatos mais amplos na entrada.
+ */
+export type CargoFormInput = z.input<typeof createCargoSchema>;
+
+/**
  * Schema para atualização de Cargo.
  * Permite atualização parcial dos campos válidos e não aceita id, timestamps ou deletedAt.
  */

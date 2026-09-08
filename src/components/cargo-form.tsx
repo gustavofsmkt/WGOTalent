@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { cargoSchema, type CreateCargoInput } from "~/lib/validation/cargo";
+import { cargoSchema, type CargoFormInput } from "~/lib/validation/cargo";
 import { createCargo, updateCargo } from "~/actions/cargos";
 import type { Cargo } from "~/server/db/schema";
 import {
@@ -64,7 +64,7 @@ export function CargoForm({
       requisitos: cargo?.requisitos ?? "",
       requisitosDesejaveis: cargo?.requisitosDesejaveis ?? "",
       criteriosEliminatorios: cargo?.criteriosEliminatorios ?? "",
-    } as CreateCargoInput,
+    } as CargoFormInput,
     validators: {
       onBlur: cargoSchema,
     },

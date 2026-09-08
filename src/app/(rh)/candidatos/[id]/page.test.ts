@@ -36,6 +36,7 @@ describe("CandidatoDetailPage - Server Logic", () => {
     cidade: "São Paulo",
     uf: "SP",
     resumoProfissional: "Profissional com sólida experiência em marketing.",
+    observacoesRh: null,
     cargoInteresseId: "cargo-1",
     areaInteresseId: "area-1",
     disponibilidadeHorarios: "Horário comercial",
