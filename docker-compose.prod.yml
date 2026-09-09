@@ -46,7 +46,7 @@ services:
       # Vincula apenas ao loopback: o app não fica exposto publicamente —
       # só o NPM (rodando no mesmo host) consegue alcançar esta porta.
       # APP_PORT vem do .env (padrão 3000). Escolha uma porta livre na VPS.
-      - "127.0.0.1:${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
