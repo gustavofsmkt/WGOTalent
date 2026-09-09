@@ -24,8 +24,12 @@ docker volume inspect wgotalent_storage >/dev/null
 PERM="$(stat -c %a .env)"
 [ "$PERM" = "600" ] || { echo "ERRO: .env deve ter chmod 600 (atual: $PERM). Corrija antes de continuar."; exit 1; }
 
-echo "==> Build das imagens (app antigo segue no ar)"
-$COMPOSE build
+echo "==> Build da imagem do app (app antigo segue no ar)"
+# Só o `app` aqui: falha de build aborta ANTES do backup/migração, e o builder
+# stage (do qual o migrate herda) já é compilado neste passo. A imagem de
+# migração é construída na hora de rodar, logo abaixo (--build), e removida no
+# fim — evita depender de lembrar de listar um serviço de profile `tools`.
+$COMPOSE build app
 
 echo "==> Subindo/garantindo o banco"
 $COMPOSE up -d postgres
@@ -49,7 +53,10 @@ echo "==> Backup pré-migração"
 ./infra/backup/backup.sh pre-deploy
 
 echo "==> Aplicando migrações (drizzle-kit migrate, código novo, one-off)"
-$COMPOSE run --rm migrate
+# --build garante imagem de migração fresca no momento de rodar: impossível
+# executar um migrate stale (foi essa a causa do "relation ... does not exist").
+# Nomear o serviço ativa o profile `tools`; --rm remove o container ao final.
+$COMPOSE run --rm --build migrate
 
 echo "==> Trocando app para a imagem nova"
 $COMPOSE up -d --remove-orphans
@@ -66,6 +73,12 @@ for i in $(seq 1 30); do
   [ "$i" = "30" ] && { echo "ERRO: app não ficou healthy; veja: $COMPOSE logs app"; exit 1; }
   sleep 2
 done
+
+echo "==> Removendo a imagem de migração (transitória, ~2GB)"
+# Só serve durante o deploy. O build cache do BuildKit persiste, então o
+# próximo deploy a recria a partir do cache em segundos. `run --rm` remove só
+# o container; `image prune` não a toca (é tagueada). Daí o rm explícito.
+docker image rm "wgotalent-migrate:${GIT_SHA:-latest}" >/dev/null 2>&1 || true
 
 echo "==> Limpando imagens dangling"
 docker image prune -f >/dev/null
