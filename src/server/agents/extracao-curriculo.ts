@@ -183,8 +183,42 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
   additionalProperties: false,
 };
 
+/**
+ * Contexto opcional do e-mail que trouxe o currículo. Só existe no fluxo de
+ * captação por e-mail (o upload em lote e o cadastro manual não têm e-mail).
+ */
+export interface ContextoEmail {
+  assunto: string | null;
+  corpo: string | null;
+}
+
+/**
+ * Monta o trecho de contexto do e-mail para acrescentar ao `userPrompt`. O
+ * anexo continua sendo a fonte principal; assunto e corpo entram só como pistas
+ * para campos que às vezes ficam de fora do currículo (ex.: e-mail e celular na
+ * assinatura). Retorna string vazia quando não há e-mail ou o texto é vazio.
+ */
+function montarContextoEmail(contexto?: ContextoEmail): string {
+  if (!contexto) return "";
+  const partes: string[] = [];
+  if (contexto.assunto?.trim()) {
+    partes.push(`Assunto: ${contexto.assunto.trim()}`);
+  }
+  if (contexto.corpo?.trim()) {
+    partes.push(`Corpo:\n${contexto.corpo.trim()}`);
+  }
+  if (partes.length === 0) return "";
+  return (
+    "\n\nContexto do e-mail que acompanhou o currículo (use apenas como apoio" +
+    " para dados ausentes no anexo, como contato na assinatura; ignore" +
+    " saudações, assinaturas e conteúdo irrelevante):\n" +
+    partes.join("\n\n")
+  );
+}
+
 export async function executarExtracaoCurriculo(
   fileKey: string,
+  contextoEmail?: ContextoEmail,
 ): Promise<ExtracaoCurriculoOutput> {
   const [config, arquivoBuffer] = await Promise.all([
     agenteConfigRepository.findBySlot("extracao_curriculo"),
@@ -205,6 +239,7 @@ export async function executarExtracaoCurriculo(
   }
 
   const ext = fileKey.split(".").pop()?.toLowerCase();
+  const contexto = montarContextoEmail(contextoEmail);
 
   // DOCX não é lido nativamente pelo Gemini como PDF/imagem — convertido para
   // texto puro via mammoth (ADR-0007) e enviado como texto, não multimodal.
@@ -217,7 +252,7 @@ export async function executarExtracaoCurriculo(
       apiKey: decryptCredential(credencial.apiKeyCifrada),
       model: config.model,
       systemPrompt: config.systemPrompt,
-      userPrompt: `${config.userPrompt}\n\nTexto do currículo (convertido de DOCX):\n${textoDocx}`,
+      userPrompt: `${config.userPrompt}${contexto}\n\nTexto do currículo (convertido de DOCX):\n${textoDocx}`,
       responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
       responseZodSchema: extracaoCurriculoOutputSchema,
     });
@@ -229,7 +264,7 @@ export async function executarExtracaoCurriculo(
     apiKey: decryptCredential(credencial.apiKeyCifrada),
     model: config.model,
     systemPrompt: config.systemPrompt,
-    userPrompt: config.userPrompt,
+    userPrompt: `${config.userPrompt}${contexto}`,
     responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
     responseZodSchema: extracaoCurriculoOutputSchema,
     arquivo: { mimeType, data: arquivoBuffer },

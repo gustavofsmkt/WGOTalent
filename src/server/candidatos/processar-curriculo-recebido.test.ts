@@ -304,9 +304,16 @@ describe("reprocessarIngestaoCurriculo", () => {
     await reprocessarIngestaoCurriculo({
       id: "proc-9",
       arquivoKey: "resumes/abc.pdf",
+      emailAssunto: "Candidatura",
+      emailCorpo: "Segue currículo em anexo.",
     } as unknown as ProcessamentoIa);
 
-    expect(executarExtracaoCurriculo).toHaveBeenCalledWith("resumes/abc.pdf");
+    // O retry reexecuta a extração com o mesmo contexto de e-mail persistido,
+    // para não divergir do resultado da ingestão original.
+    expect(executarExtracaoCurriculo).toHaveBeenCalledWith("resumes/abc.pdf", {
+      assunto: "Candidatura",
+      corpo: "Segue currículo em anexo.",
+    });
     expect(processamentoIaRepository.finalizar).toHaveBeenCalledWith(
       "proc-9",
       expect.objectContaining({ status: "sucesso", candidatoId: "cand-2" }),

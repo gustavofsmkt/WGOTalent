@@ -91,7 +91,12 @@ export async function executarCicloDeCaptura(): Promise<void> {
     .slice()
     .sort((a, b) => a.uid - b.uid);
   const itens = mensagensOrdenadas.flatMap((mensagem) =>
-    mensagem.anexos.map((anexo) => ({ uid: mensagem.uid, anexo })),
+    mensagem.anexos.map((anexo) => ({
+      uid: mensagem.uid,
+      assunto: mensagem.assunto,
+      corpo: mensagem.corpo,
+      anexo,
+    })),
   );
 
   const processados = await runWithLimit(
@@ -104,6 +109,8 @@ export async function executarCicloDeCaptura(): Promise<void> {
         filename: item.anexo.filename,
         mimeType: item.anexo.mimeType,
         origem: "email",
+        emailAssunto: item.assunto,
+        emailCorpo: item.corpo,
       }),
     }),
   );

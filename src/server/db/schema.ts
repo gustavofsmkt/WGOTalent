@@ -449,6 +449,12 @@ export const processamentosIa = createTable(
     // (fluxo ingestao_curriculo). Nulo quando a falha não é reprocessável ou
     // quando o arquivo já pertence a um candidato criado.
     arquivoKey: text("arquivo_key"),
+    // Assunto e corpo do e-mail que trouxe o currículo (fluxo
+    // ingestao_curriculo). Persistidos para que o reprocessamento manual
+    // alimente a extração com o mesmo contexto do e-mail original — sem eles o
+    // retry rodaria só com o anexo e poderia divergir do resultado inicial.
+    emailAssunto: text("email_assunto"),
+    emailCorpo: text("email_corpo"),
     itensPendentes: jsonb("itens_pendentes")
       .$type<string[]>()
       .default(sql`'[]'::jsonb`)

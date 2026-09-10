@@ -125,6 +125,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 11,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "cv.pdf",
@@ -133,7 +135,7 @@ describe("executarCicloDeCaptura", () => {
             },
           ],
         },
-        { uid: 15, anexos: [] },
+        { uid: 15, assunto: null, corpo: null, anexos: [] },
       ],
       uidReferencia: 10,
     });
@@ -151,6 +153,47 @@ describe("executarCicloDeCaptura", () => {
     expect(atualizarWatermarkSpy).toHaveBeenCalledWith("cred-1", 15);
   });
 
+  it("forwards the message subject and body to the intake so the extraction can use them", async () => {
+    const credencial = fakeCredencial({ ultimoUidProcessado: 10 });
+    vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
+      credencial,
+    );
+    vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
+      mensagens: [
+        {
+          uid: 11,
+          assunto: "Candidatura — Analista",
+          corpo: "Segue meu currículo. Contato: 11 99999-0000.",
+          anexos: [
+            {
+              filename: "cv.pdf",
+              mimeType: "application/pdf",
+              buffer: Buffer.from("a"),
+            },
+          ],
+        },
+      ],
+      uidReferencia: 10,
+    });
+    vi.mocked(processarCurriculoRecebido).mockResolvedValueOnce({
+      status: "sucesso",
+      candidatoId: "cand-1",
+      mensagem: "ok",
+    });
+    vi.spyOn(emailCredencialRepository, "atualizarWatermark").mockResolvedValueOnce(
+      undefined,
+    );
+
+    await executarCicloDeCaptura();
+
+    expect(processarCurriculoRecebido).toHaveBeenCalledWith(
+      expect.objectContaining({
+        emailAssunto: "Candidatura — Analista",
+        emailCorpo: "Segue meu currículo. Contato: 11 99999-0000.",
+      }),
+    );
+  });
+
   it("does not let one failed attachment stop the others or block the watermark advance", async () => {
     const credencial = fakeCredencial({ ultimoUidProcessado: 0 });
     vi.spyOn(emailCredencialRepository, "findActiva").mockResolvedValueOnce(
@@ -160,6 +203,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 1,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "ruim.pdf",
@@ -202,6 +247,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 11,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "cv.pdf",
@@ -272,6 +319,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 11,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "cv.pdf",
@@ -307,6 +356,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 11,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "a.pdf",
@@ -317,6 +368,8 @@ describe("executarCicloDeCaptura", () => {
         },
         {
           uid: 12,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "b.pdf",
@@ -327,6 +380,8 @@ describe("executarCicloDeCaptura", () => {
         },
         {
           uid: 13,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "c.pdf",
@@ -372,6 +427,8 @@ describe("executarCicloDeCaptura", () => {
       mensagens: [
         {
           uid: 11,
+          assunto: null,
+          corpo: null,
           anexos: [
             {
               filename: "cv.pdf",
@@ -407,8 +464,8 @@ describe("executarCicloDeCaptura", () => {
     );
     vi.mocked(buscarMensagensNovas).mockResolvedValueOnce({
       mensagens: [
-        { uid: 1, anexos: [] },
-        { uid: 2, anexos: [] },
+        { uid: 1, assunto: null, corpo: null, anexos: [] },
+        { uid: 2, assunto: null, corpo: null, anexos: [] },
       ],
       uidReferencia: null,
     });

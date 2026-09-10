@@ -13,8 +13,22 @@ export interface AnexoRecebido {
 
 export interface MensagemComAnexos {
   uid: number;
+  /** Assunto do e-mail, ou `null` quando ausente. */
+  assunto: string | null;
+  /**
+   * Corpo do e-mail em texto puro (`parsed.text`), truncado em
+   * `MAX_CORPO_EMAIL` para não guardar mensagens gigantes no banco nem
+   * estourar o prompt da extração. `null` quando ausente.
+   */
+  corpo: string | null;
   anexos: AnexoRecebido[];
 }
+
+/**
+ * Limite do corpo do e-mail conservado. Corpos longos (threads, assinaturas,
+ * disclaimers) não agregam à extração e só inflariam o storage e o prompt.
+ */
+const MAX_CORPO_EMAIL = 8000;
 
 export interface BuscarMensagensNovasParams {
   host: string;
@@ -146,7 +160,19 @@ export async function buscarMensagensNovas(
             buffer: anexo.content,
           }));
 
-        mensagens.push({ uid: message.uid, anexos });
+        const assunto = parsed.subject?.trim() ?? null;
+        const corpoBruto = parsed.text?.trim() ?? null;
+        const corpo =
+          corpoBruto && corpoBruto.length > MAX_CORPO_EMAIL
+            ? corpoBruto.slice(0, MAX_CORPO_EMAIL)
+            : corpoBruto;
+
+        mensagens.push({
+          uid: message.uid,
+          assunto: assunto || null,
+          corpo: corpo || null,
+          anexos,
+        });
       }
 
       return { mensagens, uidReferencia };

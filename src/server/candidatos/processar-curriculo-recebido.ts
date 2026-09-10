@@ -6,7 +6,10 @@ import { processamentoIaRepository } from "~/server/db/repositories/processament
 import type { ProcessamentoIa } from "~/server/db/schema";
 import { storage } from "~/lib/storage";
 import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
-import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
+import {
+  executarExtracaoCurriculo,
+  type ContextoEmail,
+} from "~/server/agents/extracao-curriculo";
 import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import { calcularDadosPendentes } from "~/lib/validation/extracao-curriculo";
 import {
@@ -19,6 +22,10 @@ export interface ProcessarCurriculoRecebidoInput {
   filename: string;
   mimeType: string;
   origem: "manual" | "email";
+  /** Assunto do e-mail que trouxe o anexo — só no fluxo `origem: "email"`. */
+  emailAssunto?: string | null;
+  /** Corpo do e-mail que trouxe o anexo — só no fluxo `origem: "email"`. */
+  emailCorpo?: string | null;
 }
 
 export type ResultadoProcessamento =
@@ -117,9 +124,10 @@ async function salvarArquivoRecebido(
 async function extrairEPersistirCandidato(
   fileKey: string,
   origem: "manual" | "email",
+  contextoEmail?: ContextoEmail,
 ): Promise<ResultadoExtracao> {
   try {
-    const extraido = await executarExtracaoCurriculo(fileKey);
+    const extraido = await executarExtracaoCurriculo(fileKey, contextoEmail);
 
     // Currículo sem e-mail nem celular: sem chave de deduplicação confiável,
     // o candidato não é criado. Reprocessar daria o mesmo resultado, então
@@ -298,14 +306,22 @@ export async function processarCurriculoRecebido(
     return paraPublico(resultado);
   }
 
+  const contextoEmail: ContextoEmail = {
+    assunto: input.emailAssunto ?? null,
+    corpo: input.emailCorpo ?? null,
+  };
+
   // Registra a ingestão; se o próprio registro falhar (DB fora), ainda processa
-  // e retorna para não quebrar o contrato "nunca lança".
+  // e retorna para não quebrar o contrato "nunca lança". Assunto e corpo ficam
+  // guardados para o retry alimentar a extração com o mesmo contexto.
   const processamento = await processamentoIaRepository
     .create({
       fluxo: "ingestao_curriculo",
       etapa: "extracao",
       status: "processando",
       arquivoKey: fileKey,
+      emailAssunto: contextoEmail.assunto,
+      emailCorpo: contextoEmail.corpo,
     })
     .catch((err) => {
       console.error(
@@ -315,7 +331,11 @@ export async function processarCurriculoRecebido(
       return null;
     });
 
-  const resultado = await extrairEPersistirCandidato(fileKey, "email");
+  const resultado = await extrairEPersistirCandidato(
+    fileKey,
+    "email",
+    contextoEmail,
+  );
   await aplicarResultadoIngestao(processamento?.id, fileKey, resultado);
   return paraPublico(resultado);
 }
@@ -338,6 +358,9 @@ export async function reprocessarIngestaoCurriculo(
     return;
   }
 
-  const resultado = await extrairEPersistirCandidato(fileKey, "email");
+  const resultado = await extrairEPersistirCandidato(fileKey, "email", {
+    assunto: processamento.emailAssunto,
+    corpo: processamento.emailCorpo,
+  });
   await aplicarResultadoIngestao(processamento.id, fileKey, resultado);
 }
