@@ -1,7 +1,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus, Sparkles, Eye, Layers, CheckCircle2, Clock } from "lucide-react";
+import {
+  Sparkles,
+  Eye,
+  Layers,
+  CheckCircle2,
+  Clock,
+  Users,
+} from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
@@ -176,30 +183,21 @@ async function TriagensContent({
       <PageHeader
         title="Triagens"
         description="Gerencie o fluxo de candidatos pelas etapas do processo seletivo."
-        actions={
-          <Link
-            href="/triagens/nova"
-            className={buttonVariants({ variant: "default" })}
-          >
-            <Plus className="size-4 mr-2" aria-hidden="true" />
-            Nova Triagem
-          </Link>
-        }
       />
 
       {summary.total === 0 && !hasActiveFilters ? (
         <DataEmptyState
           title={"Nenhuma triagem cadastrada"}
           description={
-            "Inicie o processo seletivo criando uma nova triagem de candidato para uma vaga."
+            "Inicie o processo seletivo abrindo a página de um candidato e criando uma nova triagem para uma vaga."
           }
           action={
             <Link
-              href="/triagens/nova"
+              href="/candidatos"
               className={buttonVariants({ variant: "default" })}
             >
-              <Plus className="size-4 mr-2" aria-hidden="true" />
-              Nova Triagem
+              <Users className="size-4 mr-2" aria-hidden="true" />
+              Ver Candidatos
             </Link>
           }
         />

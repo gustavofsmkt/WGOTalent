@@ -6,6 +6,7 @@ import {
   Calendar,
   MessageSquare,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -16,9 +17,13 @@ import { PARECER_FIELD_BY_ETAPA } from "~/lib/triagem-format";
 
 interface CandidateScreeningsProps {
   triagens: CandidatoDetailCompleto["triagens"];
+  candidatoId: string;
 }
 
-export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
+export function CandidateScreenings({
+  triagens,
+  candidatoId,
+}: CandidateScreeningsProps) {
   const formatDate = (dateStr: string | Date) => {
     try {
       return new Intl.DateTimeFormat("pt-BR", {
@@ -63,14 +68,36 @@ export function CandidateScreenings({ triagens }: CandidateScreeningsProps) {
           <GitBranch className="size-4 text-primary" />
           Histórico de Triagens
         </CardTitle>
-        <Badge variant="secondary" className="text-xs font-normal">
-          {triagens.length} {triagens.length === 1 ? "triagem" : "triagens"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs font-normal">
+            {triagens.length} {triagens.length === 1 ? "triagem" : "triagens"}
+          </Badge>
+          <Link
+            href={`/triagens/nova?candidatoId=${candidatoId}`}
+            className={buttonVariants({
+              variant: "default",
+              size: "sm",
+              className: "h-7 px-2 text-xs",
+            })}
+          >
+            <Plus className="size-3.5 mr-1" aria-hidden="true" />
+            Nova Triagem
+          </Link>
+        </div>
       </CardHeader>
       <CardContent className="pt-4">
         {triagens.length === 0 ? (
-          <div className="text-center py-4 text-sm text-muted-foreground">
-            Candidato ainda não foi vinculado a nenhum processo de triagem.
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Candidato ainda não foi vinculado a nenhum processo de triagem.
+            </p>
+            <Link
+              href={`/triagens/nova?candidatoId=${candidatoId}`}
+              className={buttonVariants({ variant: "default", size: "sm" })}
+            >
+              <Plus className="size-4 mr-2" aria-hidden="true" />
+              Nova Triagem
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">

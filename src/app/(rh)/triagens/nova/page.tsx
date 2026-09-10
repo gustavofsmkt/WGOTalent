@@ -1,10 +1,12 @@
 import * as React from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft, UserPlus, Briefcase, Users } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { TriagemForm } from "~/components/triagem-form";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { triagemRepository } from "~/server/db/repositories/triagem";
+import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { buttonVariants } from "~/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -15,17 +17,39 @@ export const metadata = {
     "Inicie um novo processo de triagem vinculando um candidato a uma vaga.",
 };
 
-export default async function NovaTriagemPage() {
+interface NovaTriagemPageProps {
+  searchParams?: Promise<{ candidatoId?: string }>;
+}
+
+export default async function NovaTriagemPage(props: NovaTriagemPageProps) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const candidatoId = searchParams.candidatoId;
+
+  const candidato = candidatoId
+    ? await candidatoRepository.findById(candidatoId)
+    : null;
+
+  if (candidatoId && !candidato) {
+    notFound();
+  }
+
   const [candidatoOptions, vagaOptions] = await Promise.all([
-    triagemRepository.findActiveCandidatoOptions(),
+    candidato
+      ? Promise.resolve([])
+      : triagemRepository.findActiveCandidatoOptions(),
     triagemRepository.findActiveVagaOptions(),
   ]);
+
+  const backHref = candidato ? `/candidatos/${candidato.id}` : "/triagens";
+  const backLabel = candidato
+    ? "Voltar para o Candidato"
+    : "Voltar para Triagens";
 
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <div className="flex items-center gap-2">
         <Link
-          href="/triagens"
+          href={backHref}
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
@@ -33,16 +57,20 @@ export default async function NovaTriagemPage() {
           })}
         >
           <ArrowLeft className="size-4 mr-2" />
-          Voltar para Triagens
+          {backLabel}
         </Link>
       </div>
 
       <PageHeader
         title="Nova Triagem"
-        description="Vincule um candidato a uma vaga aberta e inicie o fluxo de avaliação seletiva."
+        description={
+          candidato
+            ? `Vincule ${candidato.nome} a uma vaga aberta e inicie o fluxo de avaliação seletiva.`
+            : "Vincule um candidato a uma vaga aberta e inicie o fluxo de avaliação seletiva."
+        }
       />
 
-      {candidatoOptions.length === 0 ? (
+      {!candidato && candidatoOptions.length === 0 ? (
         <DataEmptyState
           icon={Users}
           title="Nenhum candidato ativo disponível"
@@ -74,9 +102,10 @@ export default async function NovaTriagemPage() {
         />
       ) : (
         <TriagemForm
+          candidatoId={candidato?.id}
           candidatoOptions={candidatoOptions}
           vagaOptions={vagaOptions}
-          redirectTo="/triagens"
+          redirectTo={backHref}
           className="w-full"
         />
       )}

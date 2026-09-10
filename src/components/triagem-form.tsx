@@ -38,6 +38,11 @@ export type {
 } from "~/server/db/repositories/triagem";
 
 export interface TriagemFormProps {
+  /**
+   * Quando informado, o candidato é fixado (obtido via URL na página do
+   * candidato) e o campo de seleção de candidato não é exibido.
+   */
+  candidatoId?: string;
   candidatoOptions?: CandidatoOption[];
   vagaOptions?: VagaOption[];
   onSuccess?: (triagem: Triagem) => void;
@@ -46,6 +51,7 @@ export interface TriagemFormProps {
 }
 
 export function TriagemForm({
+  candidatoId,
   candidatoOptions = [],
   vagaOptions = [],
   onSuccess,
@@ -53,10 +59,11 @@ export function TriagemForm({
   className,
 }: TriagemFormProps) {
   const router = useRouter();
+  const isCandidatoFixo = Boolean(candidatoId);
 
   const form = useAppForm({
     defaultValues: {
-      candidatoId: "",
+      candidatoId: candidatoId ?? "",
       vagaId: "",
       etapa: "curriculo",
       resultado: "em_andamento",
@@ -109,24 +116,31 @@ export function TriagemForm({
         <CardContent>
           <div className="flex flex-col gap-5">
             {/* Seção 1: Seleção de Candidato e Vaga */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <form.AppField
-                name="candidatoId"
-                validators={{ onBlur: triagemBaseSchema.shape.candidatoId }}
-              >
-                {(field) => (
-                  <field.SelectField
-                    label="Candidato"
-                    required
-                    placeholder="Selecione um candidato..."
-                    description="Candidato a ser avaliado no processo."
-                    options={candidatoOptions.map((c) => ({
-                      value: c.id,
-                      label: `${c.nome} — ${c.email}`,
-                    }))}
-                  />
-                )}
-              </form.AppField>
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-5",
+                !isCandidatoFixo && "md:grid-cols-2",
+              )}
+            >
+              {!isCandidatoFixo && (
+                <form.AppField
+                  name="candidatoId"
+                  validators={{ onBlur: triagemBaseSchema.shape.candidatoId }}
+                >
+                  {(field) => (
+                    <field.SelectField
+                      label="Candidato"
+                      required
+                      placeholder="Selecione um candidato..."
+                      description="Candidato a ser avaliado no processo."
+                      options={candidatoOptions.map((c) => ({
+                        value: c.id,
+                        label: `${c.nome} — ${c.email}`,
+                      }))}
+                    />
+                  )}
+                </form.AppField>
+              )}
 
               <form.AppField
                 name="vagaId"

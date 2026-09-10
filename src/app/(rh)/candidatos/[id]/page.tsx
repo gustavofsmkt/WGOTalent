@@ -57,7 +57,10 @@ export default async function CandidatoDetailPage(
         {/* Right / Sidebar Column (1 col on large screens) */}
         <div className="space-y-4">
           <CandidatePreferences candidato={candidato} />
-          <CandidateScreenings triagens={candidato.triagens} />
+          <CandidateScreenings
+            triagens={candidato.triagens}
+            candidatoId={candidato.id}
+          />
         </div>
       </div>
     </div>
