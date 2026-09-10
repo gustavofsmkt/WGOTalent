@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import {
   candidatoRepository,
@@ -343,15 +344,23 @@ export async function updateCandidato(
     // tratamento do merge em createCandidato); etapas avançadas são preservadas.
     await resetTriagensEmCurriculo(id);
 
-    // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade).
-    // Fire-and-forget: não bloqueia a resposta desta action, e o próprio
-    // orquestrador limita a concorrência internamente.
-    orquestrarParaCandidatoNovo(id).catch((err) =>
-      console.error(
-        "[updateCandidato] Falha na orquestração de matching:",
-        err,
-      ),
-    );
+    // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade)
+    // em segundo plano com `after()`: o trabalho de IA roda depois que a
+    // resposta é enviada, então a tela de edição não fica presa esperando a
+    // avaliação (mesmo padrão do "tentar novamente" em /processamentos-ia). Ao
+    // concluir, revalidamos para expor as triagens recém-criadas.
+    after(async () => {
+      try {
+        await orquestrarParaCandidatoNovo(id);
+      } catch (err) {
+        console.error(
+          "[updateCandidato] Falha na orquestração de matching:",
+          err,
+        );
+      }
+      revalidatePath("/candidatos");
+      revalidatePath(`/candidatos/${id}`);
+    });
 
     revalidatePath("/candidatos");
     revalidatePath(`/candidatos/${id}`);

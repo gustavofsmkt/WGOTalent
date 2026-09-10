@@ -10,6 +10,11 @@ vi.mock("~/lib/auth/dal", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
+// `after()` roda o trabalho de IA em segundo plano na action; no teste o
+// executamos de imediato para que os efeitos (orquestração) sejam observáveis.
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => fn(),
+}));
 vi.mock("~/env", () => ({
   env: {
     DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",

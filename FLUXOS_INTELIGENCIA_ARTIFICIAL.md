@@ -89,8 +89,8 @@ flowchart TD
     VAL_SAIDA -->|sim| UPSERT
 
     UPSERT -. fire-and-forget .-> ORQ_C --> BUSCA_V --> TEM_V
-    EDICAO -. fire-and-forget .-> ORQ_C
-    TRIAGEM_MANUAL -. fire-and-forget .-> ORQ_C
+    EDICAO -. after / segundo plano .-> ORQ_C
+    TRIAGEM_MANUAL -. after / segundo plano .-> EXISTE
     TEM_V -->|não| TALENTOS
     TEM_V -->|sim| CLASS_C --> CLASS_C_OK
     CLASS_C_OK -->|falha total| FIM_C[Encerrar sem marcar talentos]
@@ -199,18 +199,24 @@ edição, reavaliando o perfil atualizado contra as vagas abertas da mesma cidad
 Antes do disparo, as triagens ainda na etapa inicial `curriculo` /
 `em_andamento` são excluídas logicamente (`resetTriagensEmCurriculo`) para que a
 orquestração possa recriá-las sobre o novo perfil; etapas mais avançadas são
-preservadas.
+preservadas. A orquestração roda em segundo plano via `after()`: o trabalho de
+IA acontece depois que a resposta é enviada, então a tela de edição não fica
+presa esperando a avaliação (mesmo padrão do "tentar novamente" em
+`/processamentos-ia`).
 
 Fonte: `src/actions/candidatos.ts`.
 
 ### 6. Criação manual de triagem
 
-`createTriagem()` dispara `orquestrarParaCandidatoNovo()` para o candidato do par
-depois de persistir a triagem. Como a triagem recém-criada já existe para o par,
-a orquestração a reaproveita e retoma direto no avaliador para gerar o parecer;
-as demais vagas abertas da cidade também são reavaliadas no mesmo fluxo.
+`createTriagem()` dispara `avaliarParManual()` para o par recém-criado depois de
+persistir a triagem. Diferente dos demais gatilhos, este **não** passa pela
+classificação de aderência: como o RH já decidiu explicitamente pelo par, o
+fluxo vai direto para o "Processamento de cada par aprovado" e o avaliador
+(`avaliador_triagem`) reaproveita a triagem existente para gerar o parecer. Roda
+em segundo plano via `after()`, sem prender a tela.
 
-Fonte: `src/actions/triagens.ts`.
+Fonte: `src/actions/triagens.ts` e `avaliarParManual()` em
+`src/server/agents/orquestracao.ts`.
 
 ### Eventos que não disparam IA
 

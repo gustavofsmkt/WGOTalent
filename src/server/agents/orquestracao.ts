@@ -387,6 +387,21 @@ export async function orquestrarParaVagaNova(vagaId: string): Promise<void> {
   await executarFluxoVagaCandidatos(vagaId);
 }
 
+/**
+ * Avalia diretamente um par candidato-vaga específico — o fluxo "Processamento
+ * de cada par aprovado" (avaliador_triagem) sem passar pela classificação de
+ * aderência. Usado quando o RH cria uma triagem manual: a triagem já existe
+ * para o par, então a orquestração a reaproveita e retoma direto no avaliador
+ * para gerar o parecer. O processamento é registrado sob o fluxo
+ * `candidato_vagas`, já que a triagem parte do candidato.
+ */
+export async function avaliarParManual(
+  candidatoId: string,
+  vagaId: string,
+): Promise<void> {
+  await processarParAprovado(candidatoId, vagaId, "candidato_vagas");
+}
+
 export async function reprocessarProcessamentoIa(
   processamento: ProcessamentoIa,
 ): Promise<void> {

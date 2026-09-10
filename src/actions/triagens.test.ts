@@ -3,7 +3,7 @@ import { createTriagem, updateTriagem, deleteTriagem } from "./triagens";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
-import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
+import { avaliarParManual } from "~/server/agents/orquestracao";
 import { revalidatePath } from "next/cache";
 import type {
   Candidato,
@@ -21,6 +21,11 @@ vi.mock("~/lib/auth/dal", () => ({
 }));
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+}));
+// `after()` roda a avaliação do par em segundo plano na action; no teste o
+// executamos de imediato para observar a chamada ao avaliador.
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => fn(),
 }));
 
 vi.mock("~/server/db/repositories/triagem", () => ({
@@ -46,7 +51,7 @@ vi.mock("~/server/db/repositories/vaga", () => ({
 }));
 
 vi.mock("~/server/agents/orquestracao", () => ({
-  orquestrarParaCandidatoNovo: vi.fn().mockResolvedValue(undefined),
+  avaliarParManual: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("Triagem Server Actions", () => {
@@ -99,8 +104,9 @@ describe("Triagem Server Actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalled();
-      expect(orquestrarParaCandidatoNovo).toHaveBeenCalledWith(
+      expect(avaliarParManual).toHaveBeenCalledWith(
         mockCandidato.id,
+        mockVaga.id,
       );
     });
 
