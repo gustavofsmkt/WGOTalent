@@ -1,0 +1,2 @@
+UPDATE "wgotalent_candidatos" SET "resumo_profissional" = '' WHERE "resumo_profissional" IS NULL;--> statement-breakpoint
+ALTER TABLE "wgotalent_candidatos" ALTER COLUMN "resumo_profissional" SET NOT NULL;

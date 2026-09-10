@@ -141,14 +141,18 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       expect(longInst.success).toBe(false);
     });
 
-    it("validates onBlur field schema for formacao 'dataInicio'", () => {
+    it("validates onBlur field schema for formacao 'dataInicio' (optional)", () => {
       const dataInicioSchema = formacaoBaseSchema.shape.dataInicio;
 
       const validDate = dataInicioSchema.safeParse("2020-02-15");
       expect(validDate.success).toBe(true);
 
+      // Data de início agora é opcional: string vazia vira null e é aceita.
       const emptyDate = dataInicioSchema.safeParse("");
-      expect(emptyDate.success).toBe(false);
+      expect(emptyDate.success).toBe(true);
+
+      const nullDate = dataInicioSchema.safeParse(null);
+      expect(nullDate.success).toBe(true);
 
       const invalidDate = dataInicioSchema.safeParse("15/02/2020");
       expect(invalidDate.success).toBe(false);
@@ -271,14 +275,18 @@ describe("CandidatoForm - Formações, Experiências & Certificações Array & V
       expect(longEmpresa.success).toBe(false);
     });
 
-    it("validates onBlur field schema for experiencia 'dataEntrada'", () => {
+    it("validates onBlur field schema for experiencia 'dataEntrada' (optional)", () => {
       const dataEntradaSchema = experienciaBaseSchema.shape.dataEntrada;
 
       const validDate = dataEntradaSchema.safeParse("2021-06-01");
       expect(validDate.success).toBe(true);
 
+      // Data de entrada agora é opcional: string vazia vira null e é aceita.
       const emptyDate = dataEntradaSchema.safeParse("");
-      expect(emptyDate.success).toBe(false);
+      expect(emptyDate.success).toBe(true);
+
+      const nullDate = dataEntradaSchema.safeParse(null);
+      expect(nullDate.success).toBe(true);
 
       const invalidDate = dataEntradaSchema.safeParse("01/06/2021");
       expect(invalidDate.success).toBe(false);

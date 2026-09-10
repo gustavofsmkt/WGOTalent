@@ -6,6 +6,7 @@ import {
   emailSchema,
   ufSchema,
   dateStringSchema,
+  optionalDateStringSchema,
 } from "./common";
 
 export const estadoCivilSchema = z.enum(
@@ -36,12 +37,27 @@ export const origemSchema = z.enum(["email", "manual", "indicacao"], {
  * rejeitar, igual já é feito com URL abaixo.
  */
 const cepSchema = z.preprocess(
-  (val) => (typeof val === "string" ? val.replace(/[^\d-]/g, "") : val),
-  nonEmptyString("O CEP é obrigatório").max(
-    9,
-    "O CEP deve ter no máximo 9 caracteres",
-  ),
+  (val) => {
+    if (typeof val !== "string") return val ?? null;
+    const cleaned = val.replace(/[^\d-]/g, "").trim();
+    return cleaned === "" ? null : cleaned;
+  },
+  trimmedString.max(9, "O CEP deve ter no máximo 9 caracteres").nullable(),
 );
+
+/**
+ * Texto opcional que normaliza string vazia/espaços, `undefined` e `null` para
+ * `null`, garantindo saída `string | null` (nunca `undefined`). Usado em campos
+ * de endereço que deixaram de ser obrigatórios.
+ */
+const nullableTrimmedString = (max: number, maxMessage: string) =>
+  z.preprocess(
+    (val) =>
+      val == null || (typeof val === "string" && val.trim() === "")
+        ? null
+        : val,
+    trimmedString.max(max, maxMessage).nullable(),
+  );
 
 const ABSOLUTE_URL_SCHEME_REGEX = /^https?:\/\//i;
 
@@ -83,13 +99,13 @@ export const formacaoBaseSchema = z.object({
     120,
     "A área deve ter no máximo 120 caracteres",
   ),
-  dataInicio: dateStringSchema,
-  dataTermino: dateStringSchema.optional().nullable(),
+  dataInicio: optionalDateStringSchema,
+  dataTermino: optionalDateStringSchema,
 });
 
 export const formacaoSchema = formacaoBaseSchema.refine(
   (data) => {
-    if (data.dataTermino) {
+    if (data.dataInicio && data.dataTermino) {
       return new Date(data.dataInicio) <= new Date(data.dataTermino);
     }
     return true;
@@ -114,13 +130,13 @@ export const experienciaBaseSchema = z.object({
     "O título do cargo deve ter no máximo 150 caracteres",
   ),
   descricao: trimmedString.optional().nullable(),
-  dataEntrada: dateStringSchema,
-  dataSaida: dateStringSchema.optional().nullable(),
+  dataEntrada: optionalDateStringSchema,
+  dataSaida: optionalDateStringSchema,
 });
 
 export const experienciaSchema = experienciaBaseSchema.refine(
   (data) => {
-    if (data.dataSaida) {
+    if (data.dataEntrada && data.dataSaida) {
       return new Date(data.dataEntrada) <= new Date(data.dataSaida);
     }
     return true;
@@ -173,7 +189,7 @@ export const candidatoSchema = z.object({
   nacionalidade: trimmedString
     .max(60, "A nacionalidade deve ter no máximo 60 caracteres")
     .default("brasileira"),
-  dataNascimento: dateStringSchema,
+  dataNascimento: optionalDateStringSchema,
   estadoCivil: estadoCivilSchema.default("nao_informado"),
   pcd: trimmedString.optional().nullable(),
   email: emailSchema
@@ -190,11 +206,11 @@ export const candidatoSchema = z.object({
     100,
     "A cidade deve ter no máximo 100 caracteres",
   ),
-  bairro: nonEmptyString("O bairro é obrigatório").max(
+  bairro: nullableTrimmedString(
     100,
     "O bairro deve ter no máximo 100 caracteres",
   ),
-  logradouro: nonEmptyString("O logradouro é obrigatório").max(
+  logradouro: nullableTrimmedString(
     200,
     "O logradouro deve ter no máximo 200 caracteres",
   ),
@@ -228,3 +244,37 @@ export const candidatoAgregadoSchema = candidatoSchema.extend({
 
 export type CandidatoAgregadoInput = z.input<typeof candidatoAgregadoSchema>;
 export type CandidatoAgregadoOutput = z.output<typeof candidatoAgregadoSchema>;
+
+/**
+ * Mensagem exibida quando nem e-mail nem celular são informados.
+ */
+export const CONTATO_OBRIGATORIO_MESSAGE =
+  "Informe ao menos um e-mail ou celular.";
+
+/**
+ * Versão refinada do schema agregado para uso no formulário e nas Server
+ * Actions: além das regras de campo, exige ao menos um meio de contato
+ * (e-mail OU celular). Mantida separada de `candidatoAgregadoSchema` (que
+ * continua sendo um `ZodObject` puro) porque `.refine()` produz um
+ * `ZodEffects`, incompatível com os usos de `.shape`/`.extend` em outros
+ * pontos (ex.: `extracao-curriculo.ts` e o próprio form).
+ */
+export const candidatoFormSchema = candidatoAgregadoSchema.superRefine(
+  (data, ctx) => {
+    if (!data.email && !data.celular) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: CONTATO_OBRIGATORIO_MESSAGE,
+        path: ["email"],
+      });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: CONTATO_OBRIGATORIO_MESSAGE,
+        path: ["celular"],
+      });
+    }
+  },
+);
+
+export type CandidatoFormInput = z.input<typeof candidatoFormSchema>;
+export type CandidatoFormOutput = z.output<typeof candidatoFormSchema>;

@@ -5,6 +5,7 @@ import {
   experienciaSchema,
   certificacaoSchema,
   candidatoAgregadoSchema,
+  candidatoFormSchema,
 } from "./candidato";
 
 describe("Validação de Candidato", () => {
@@ -156,6 +157,84 @@ describe("Validação de Candidato", () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.portfolio).toBe("http://meusite.com");
+      }
+    });
+
+    it("deve aceitar candidato sem data de nascimento", () => {
+      const { dataNascimento: _omit, ...data } = validCandidato;
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.dataNascimento).toBeNull();
+      }
+    });
+
+    it("deve aceitar data de nascimento como string vazia (normaliza para null)", () => {
+      const data = { ...validCandidato, dataNascimento: "" };
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.dataNascimento).toBeNull();
+      }
+    });
+
+    it("deve aceitar endereço apenas com cidade e uf (cep, bairro e logradouro opcionais)", () => {
+      const {
+        cep: _cep,
+        bairro: _bairro,
+        logradouro: _logradouro,
+        ...data
+      } = validCandidato;
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it("deve exigir cidade e uf no endereço", () => {
+      const { cidade: _cidade, ...data } = validCandidato;
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toContain("cidade");
+      }
+    });
+
+    it("deve rejeitar candidato sem resumo profissional (obrigatório)", () => {
+      const { resumoProfissional: _omit, ...data } = validCandidato;
+      const result = candidatoSchema.safeParse(data);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toContain("resumoProfissional");
+      }
+    });
+  });
+
+  describe("candidatoFormSchema (contato obrigatório)", () => {
+    const validCandidato = {
+      nome: "João da Silva",
+      uf: "SP",
+      cidade: "São Paulo",
+      resumoProfissional: "Desenvolvedor com experiência...",
+    };
+
+    it("deve aceitar candidato apenas com e-mail", () => {
+      const data = { ...validCandidato, email: "joao@example.com" };
+      const result = candidatoFormSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it("deve aceitar candidato apenas com celular", () => {
+      const data = { ...validCandidato, celular: "11999999999" };
+      const result = candidatoFormSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it("deve rejeitar candidato sem e-mail e sem celular", () => {
+      const result = candidatoFormSchema.safeParse(validCandidato);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const paths = result.error.issues.flatMap((i) => i.path);
+        expect(paths).toContain("email");
+        expect(paths).toContain("celular");
       }
     });
   });

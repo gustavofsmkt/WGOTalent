@@ -276,7 +276,8 @@ export const candidatoFormacoes = createTable(
     titulo: varchar("titulo", { length: 150 }).notNull(),
     instituicao: varchar("instituicao", { length: 150 }),
     areaFormacao: varchar("area_formacao", { length: 120 }).notNull(),
-    dataInicio: date("data_inicio", { mode: "string" }).notNull(),
+    // dataInicio é nullable: só curso/título e área de formação são obrigatórios.
+    dataInicio: date("data_inicio", { mode: "string" }),
     dataTermino: date("data_termino", { mode: "string" }),
     ...timestamps,
   },
@@ -298,7 +299,8 @@ export const candidatoExperiencias = createTable(
     empresa: varchar("empresa", { length: 150 }),
     cargoTitulo: varchar("cargo_titulo", { length: 150 }).notNull(),
     descricao: text("descricao"),
-    dataEntrada: date("data_entrada", { mode: "string" }).notNull(),
+    // dataEntrada é nullable: apenas cargo/função é obrigatório na experiência.
+    dataEntrada: date("data_entrada", { mode: "string" }),
     dataSaida: date("data_saida", { mode: "string" }),
     ...timestamps,
   },

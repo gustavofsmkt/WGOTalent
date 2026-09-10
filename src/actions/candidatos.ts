@@ -12,7 +12,7 @@ import { triagemRepository } from "~/server/db/repositories/triagem";
 import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-item";
 import { type Candidato, type UploadLoteItem } from "~/server/db/schema";
 import {
-  candidatoAgregadoSchema,
+  candidatoFormSchema,
   type CandidatoAgregadoInput,
 } from "~/lib/validation/candidato";
 import { storage } from "~/lib/storage";
@@ -103,7 +103,7 @@ export async function createCandidato(
     return { success: false, message: error };
   }
 
-  const parsed = candidatoAgregadoSchema.safeParse(data);
+  const parsed = candidatoFormSchema.safeParse(data);
 
   if (!parsed.success) {
     return {
@@ -115,13 +115,6 @@ export async function createCandidato(
 
   try {
     const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
-
-    if (!email && !celular) {
-      return {
-        success: false,
-        message: "Informe pelo menos um e-mail ou celular.",
-      };
-    }
 
     const existing =
       (email
@@ -238,7 +231,7 @@ export async function updateCandidato(
     return { success: false, message: error };
   }
 
-  const parsed = candidatoAgregadoSchema.safeParse(data);
+  const parsed = candidatoFormSchema.safeParse(data);
 
   if (!parsed.success) {
     return {

@@ -149,6 +149,18 @@ export const dateStringSchema = z
   );
 
 /**
+ * Data opcional: normaliza string vazia/espaços, `undefined` e `null` para
+ * `null` antes de validar. Usada em campos de data não obrigatórios, onde o
+ * input HTML entrega "" quando não preenchido. A saída é sempre `string | null`
+ * (nunca `undefined`), casando com colunas de data nullable no banco.
+ */
+export const optionalDateStringSchema = z.preprocess(
+  (val) =>
+    val == null || (typeof val === "string" && val.trim() === "") ? null : val,
+  dateStringSchema.nullable(),
+);
+
+/**
  * Coerção para número inteiro.
  */
 export const coerceInt = z.coerce

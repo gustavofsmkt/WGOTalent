@@ -6,7 +6,7 @@ import { type ReactFormExtendedApi } from "@tanstack/react-form";
 import { useAppForm } from "~/hooks/form";
 import {
   candidatoSchema,
-  candidatoAgregadoSchema,
+  candidatoFormSchema,
   formacaoBaseSchema,
   experienciaBaseSchema,
   certificacaoBaseSchema,
@@ -240,7 +240,11 @@ function DadosPessoaisSection({ form }: { form: CandidatoFormApi }) {
           validators={{ onBlur: candidatoSchema.shape.dataNascimento }}
         >
           {(field) => (
-            <field.InputField label="Data de Nascimento" required type="date" />
+            <field.InputField
+              label="Data de Nascimento"
+              type="date"
+              onChange={(e) => field.handleChange(e.target.value || null)}
+            />
           )}
         </form.AppField>
 
@@ -291,9 +295,10 @@ function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
           {(field) => (
             <field.InputField
               label="E-mail"
-              required
               type="email"
               autoComplete="email"
+              description="Informe ao menos um e-mail ou celular."
+              onChange={(e) => field.handleChange(e.target.value || null)}
             />
           )}
         </form.AppField>
@@ -305,9 +310,10 @@ function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
           {(field) => (
             <field.InputField
               label="Celular"
-              required
               autoComplete="tel"
               placeholder="(00) 00000-0000"
+              description="Informe ao menos um e-mail ou celular."
+              onChange={(e) => field.handleChange(e.target.value || null)}
             />
           )}
         </form.AppField>
@@ -356,7 +362,6 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
           {(field) => (
             <field.InputField
               label="CEP"
-              required
               placeholder="00000-000"
               autoComplete="postal-code"
             />
@@ -368,11 +373,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
           validators={{ onBlur: candidatoSchema.shape.logradouro }}
         >
           {(field) => (
-            <field.InputField
-              label="Logradouro"
-              required
-              autoComplete="street-address"
-            />
+            <field.InputField label="Logradouro" autoComplete="street-address" />
           )}
         </form.AppField>
       </div>
@@ -383,11 +384,7 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
           validators={{ onBlur: candidatoSchema.shape.bairro }}
         >
           {(field) => (
-            <field.InputField
-              label="Bairro"
-              required
-              autoComplete="neighborhood"
-            />
+            <field.InputField label="Bairro" autoComplete="neighborhood" />
           )}
         </form.AppField>
 
@@ -690,8 +687,10 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
                         {(subField) => (
                           <subField.InputField
                             label="Data de Início"
-                            required
                             type="date"
+                            onChange={(e) =>
+                              subField.handleChange(e.target.value || null)
+                            }
                           />
                         )}
                       </form.AppField>
@@ -726,7 +725,7 @@ function FormacoesSection({ form }: { form: CandidatoFormApi }) {
                     titulo: "",
                     instituicao: null,
                     areaFormacao: "",
-                    dataInicio: "",
+                    dataInicio: null,
                     dataTermino: null,
                   })
                 }
@@ -837,8 +836,10 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
                         {(subField) => (
                           <subField.InputField
                             label="Data de Entrada"
-                            required
                             type="date"
+                            onChange={(e) =>
+                              subField.handleChange(e.target.value || null)
+                            }
                           />
                         )}
                       </form.AppField>
@@ -891,7 +892,7 @@ function ExperienciasSection({ form }: { form: CandidatoFormApi }) {
                   field.pushValue({
                     cargoTitulo: "",
                     empresa: null,
-                    dataEntrada: "",
+                    dataEntrada: null,
                     dataSaida: null,
                     descricao: null,
                   })
@@ -1089,7 +1090,7 @@ export function CandidatoBaseForm({
       certificacoes: candidato?.certificacoes ?? [],
     } as CandidatoAgregadoInput,
     validators: {
-      onBlur: candidatoAgregadoSchema,
+      onBlur: candidatoFormSchema,
     },
     onSubmit: (props) => {
       console.log(props.formApi.getAllErrors());
