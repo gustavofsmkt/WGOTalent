@@ -32,6 +32,8 @@ funil automaticamente; essas decisões continuam sendo do RH.
 flowchart TD
     subgraph ENTRADAS[Entradas e gatilhos]
         MANUAL[Cadastro manual de candidato]
+        EDICAO[Edição de candidato]
+        TRIAGEM_MANUAL[Criação manual de triagem]
         LOTE[Upload em lote: 1 a 15 arquivos]
         BOOT[Bootstrap Node.js da aplicação]
         EMAIL[Tick do loop IMAP]
@@ -87,6 +89,8 @@ flowchart TD
     VAL_SAIDA -->|sim| UPSERT
 
     UPSERT -. fire-and-forget .-> ORQ_C --> BUSCA_V --> TEM_V
+    EDICAO -. fire-and-forget .-> ORQ_C
+    TRIAGEM_MANUAL -. fire-and-forget .-> ORQ_C
     TEM_V -->|não| TALENTOS
     TEM_V -->|sim| CLASS_C --> CLASS_C_OK
     CLASS_C_OK -->|falha total| FIM_C[Encerrar sem marcar talentos]
@@ -188,11 +192,29 @@ não exige `status = aberta`. Assim, uma vaga criada como `pausada`, `cancelada`
 Fonte: `src/actions/vagas.ts:45-57` e
 `src/server/agents/orquestracao.ts:91-128`.
 
+### 5. Edição de candidato
+
+`updateCandidato()` dispara `orquestrarParaCandidatoNovo()` depois de persistir a
+edição, reavaliando o perfil atualizado contra as vagas abertas da mesma cidade.
+Antes do disparo, as triagens ainda na etapa inicial `curriculo` /
+`em_andamento` são excluídas logicamente (`resetTriagensEmCurriculo`) para que a
+orquestração possa recriá-las sobre o novo perfil; etapas mais avançadas são
+preservadas.
+
+Fonte: `src/actions/candidatos.ts`.
+
+### 6. Criação manual de triagem
+
+`createTriagem()` dispara `orquestrarParaCandidatoNovo()` para o candidato do par
+depois de persistir a triagem. Como a triagem recém-criada já existe para o par,
+a orquestração a reaproveita e retoma direto no avaliador para gerar o parecer;
+as demais vagas abertas da cidade também são reavaliadas no mesmo fluxo.
+
+Fonte: `src/actions/triagens.ts`.
+
 ### Eventos que não disparam IA
 
-- editar candidato por `updateCandidato()`;
 - editar vaga, inclusive mudar seu status de pausada para aberta;
-- criar uma triagem manual por `createTriagem()`;
 - avançar, reprovar, aprovar ou encerrar uma triagem;
 - iniciar a aplicação, fora o agendamento do loop de e-mail;
 - falha anterior do matching ou do avaliador: não existe job periódico geral,
@@ -409,10 +431,10 @@ não é uma fila durável e ainda não existe rate limiter global.
    MIME é roteada pelo agente usando a extensão do nome. Um anexo com MIME
    válido e nome ausente/incorreto pode ser salvo e depois rejeitado como
    extensão não suportada.
-9. **Atualizações não reavaliam automaticamente.** Editar um candidato, abrir
-   uma vaga antes pausada ou alterar requisitos/nota de corte não dispara novo
-   matching. Também não existe varredura periódica dos candidatos contra vagas
-   atualizadas.
+9. **Nem toda atualização reavalia automaticamente.** Editar um candidato passa
+   a disparar novo matching, mas abrir uma vaga antes pausada ou alterar
+   requisitos/nota de corte ainda não dispara. Também não existe varredura
+   periódica dos candidatos contra vagas atualizadas.
 10. **A saída `vagaFoiInferida` não significa que a plataforma escolheu uma vaga
     por inferência.** A vaga já foi escolhida na fase 1; o campo indica apenas que
     o avaliador considerou os dados da vaga esparsos e inferiu parte do perfil.

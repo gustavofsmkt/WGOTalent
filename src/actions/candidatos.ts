@@ -337,6 +337,22 @@ export async function updateCandidato(
       throw new Error("Falha ao retornar o candidato atualizado.");
     }
 
+    // A edição altera o perfil: reavaliamos o candidato do zero contra as vagas
+    // abertas. Triagens ainda na etapa inicial "Currículo" são excluídas para
+    // que a orquestração possa recriá-las sobre o perfil atualizado (mesmo
+    // tratamento do merge em createCandidato); etapas avançadas são preservadas.
+    await resetTriagensEmCurriculo(id);
+
+    // Dispara a fase 1 de matching (candidato -> vagas abertas na mesma cidade).
+    // Fire-and-forget: não bloqueia a resposta desta action, e o próprio
+    // orquestrador limita a concorrência internamente.
+    orquestrarParaCandidatoNovo(id).catch((err) =>
+      console.error(
+        "[updateCandidato] Falha na orquestração de matching:",
+        err,
+      ),
+    );
+
     revalidatePath("/candidatos");
     revalidatePath(`/candidatos/${id}`);
 

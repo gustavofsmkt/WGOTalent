@@ -3,6 +3,7 @@ import { createTriagem, updateTriagem, deleteTriagem } from "./triagens";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
+import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import { revalidatePath } from "next/cache";
 import type {
   Candidato,
@@ -42,6 +43,10 @@ vi.mock("~/server/db/repositories/vaga", () => ({
   vagaRepository: {
     findById: vi.fn(),
   },
+}));
+
+vi.mock("~/server/agents/orquestracao", () => ({
+  orquestrarParaCandidatoNovo: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("Triagem Server Actions", () => {
@@ -94,6 +99,9 @@ describe("Triagem Server Actions", () => {
         }),
       );
       expect(revalidatePath).toHaveBeenCalled();
+      expect(orquestrarParaCandidatoNovo).toHaveBeenCalledWith(
+        mockCandidato.id,
+      );
     });
 
     it("deve retornar erro de dominio se já existir triagem em_andamento", async () => {

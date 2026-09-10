@@ -48,6 +48,7 @@ import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-i
 import { revalidatePath } from "next/cache";
 import { storage } from "~/lib/storage";
 import { executarExtracaoCurriculo } from "~/server/agents/extracao-curriculo";
+import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import { AgenteQuotaExcedidaError } from "~/lib/agents/shared";
 import type { Candidato, UploadLoteItem } from "~/server/db/schema";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
@@ -295,6 +296,10 @@ describe("candidatos server actions", () => {
         ...mockCandidato,
         nome: "João Pedro Silva",
       } as unknown as CandidatoDetailCompleto);
+      vi.spyOn(
+        triagemRepository,
+        "findEmCurriculoPorCandidato",
+      ).mockResolvedValueOnce([]);
 
       const result = await updateCandidato("cand-1", {
         nome: "João Pedro Silva",
@@ -322,6 +327,60 @@ describe("candidatos server actions", () => {
       expect(candidatoRepository.updateAggregate).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/candidatos");
       expect(revalidatePath).toHaveBeenCalledWith("/candidatos/cand-1");
+      expect(orquestrarParaCandidatoNovo).toHaveBeenCalledWith("cand-1");
+    });
+
+    it("resets triagens still in the Currículo stage and re-runs matching after an edit", async () => {
+      const mockCandidato = {
+        id: "cand-1",
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor Backend com 5 anos de experiência.",
+        origem: "manual" as const,
+        dataNascimento: "1990-01-01",
+        deletedAt: null,
+      };
+
+      vi.spyOn(candidatoRepository, "findById").mockResolvedValueOnce(
+        mockCandidato as unknown as Candidato,
+      );
+      vi.spyOn(candidatoRepository, "updateAggregate").mockResolvedValueOnce(
+        mockCandidato as unknown as CandidatoDetailCompleto,
+      );
+      vi.spyOn(
+        triagemRepository,
+        "findEmCurriculoPorCandidato",
+      ).mockResolvedValueOnce(["triagem-1"]);
+      const softDeleteSpy = vi
+        .spyOn(triagemRepository, "softDelete")
+        .mockResolvedValueOnce(undefined);
+
+      const result = await updateCandidato("cand-1", {
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor Backend com 5 anos de experiência.",
+        origem: "manual",
+        dataNascimento: "1990-01-01",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(softDeleteSpy).toHaveBeenCalledWith("triagem-1");
+      expect(orquestrarParaCandidatoNovo).toHaveBeenCalledWith("cand-1");
     });
 
     it("returns error when email is changed to an existing one", async () => {

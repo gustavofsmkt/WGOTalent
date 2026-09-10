@@ -7,6 +7,7 @@ import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import { triagemSchema, updateTriagemSchema } from "~/lib/validation/triagem";
+import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
 import type { ActionState } from "~/lib/action-utils";
 import type { Triagem } from "~/server/db/schema";
 
@@ -62,6 +63,19 @@ export async function createTriagem(
     revalidatePath("/triagens");
     revalidatePath(`/candidatos/${candidatoId}`);
     revalidatePath(`/vagas/${vagaId}`);
+
+    // Uma triagem manual é uma decisão explícita do RH: dispara a fase 1 de
+    // matching do candidato (candidato -> vagas abertas na mesma cidade), o
+    // mesmo fluxo do cadastro/edição. A triagem recém-criada é reaproveitada
+    // pela orquestração, que retoma direto no avaliador para gerar o parecer.
+    // Fire-and-forget: não bloqueia a resposta e o orquestrador limita a
+    // concorrência internamente.
+    orquestrarParaCandidatoNovo(candidatoId).catch((err) =>
+      console.error(
+        "[createTriagem] Falha na orquestração de matching:",
+        err,
+      ),
+    );
 
     return {
       success: true,
