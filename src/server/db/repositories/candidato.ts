@@ -186,6 +186,7 @@ export interface CandidatoListFilters {
   query?: string;
   origem?: Candidato["origem"];
   emBancoTalentos?: boolean;
+  cidade?: string;
 }
 
 export interface CandidatoListSummary {
@@ -242,6 +243,7 @@ function buildCandidatoListConditions(filters: CandidatoListFilters): SQL[] {
   if (filters.emBancoTalentos) {
     conditions.push(eq(candidatos.emBancoTalentos, true));
   }
+  if (filters.cidade) conditions.push(eq(candidatos.cidade, filters.cidade));
 
   return conditions.filter((condition): condition is SQL => Boolean(condition));
 }
@@ -322,6 +324,22 @@ export const candidatoRepository = {
       email: Number(rows[0]?.email ?? 0),
       manual: Number(rows[0]?.manual ?? 0),
     };
+  },
+
+  /** Cidades distintas de candidatos ativos, para popular o filtro da listagem. */
+  findActiveCidadeOptions: async (
+    dbOrTx: DbOrTx = db,
+  ): Promise<string[]> => {
+    const rows = await notDeleted(
+      dbOrTx
+        .selectDistinct({ cidade: candidatos.cidade })
+        .from(candidatos),
+      candidatos,
+    ).orderBy(asc(candidatos.cidade));
+
+    return rows
+      .map((row) => row.cidade)
+      .filter((cidade): cidade is string => Boolean(cidade?.trim()));
   },
 
   findById: async (

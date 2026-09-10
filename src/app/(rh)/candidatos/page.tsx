@@ -51,6 +51,7 @@ interface CandidatosPageProps {
     q?: string;
     origem?: string;
     pool?: string;
+    cidade?: string;
     page?: string;
   }>;
 }
@@ -60,20 +61,28 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
   const query = (searchParams.q ?? "").trim();
   const origemFilter = (searchParams.origem ?? "").trim().toLowerCase();
   const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
+  const cidadeFilter = (searchParams.cidade ?? "").trim();
   const page = parsePage(searchParams.page);
   const origem = origemEnum.enumValues.find((value) => value === origemFilter);
 
-  const [candidatosPage, summary] = await Promise.all([
+  const [candidatosPage, summary, cidadeOptions] = await Promise.all([
     candidatoRepository.findPageActiveSummary(
       {
         query,
         origem,
         emBancoTalentos: poolFilter === "banco_talentos",
+        cidade: cidadeFilter || undefined,
       },
       { page, pageSize: DEFAULT_PAGE_SIZE },
     ),
     candidatoRepository.getListSummary(),
+    candidatoRepository.findActiveCidadeOptions(),
   ]);
+
+  const CIDADE_OPTIONS = [
+    { value: "todas", label: "Todas as cidades" },
+    ...cidadeOptions.map((cidade) => ({ value: cidade, label: cidade })),
+  ];
   const totalPages = getTotalPages(candidatosPage.total, DEFAULT_PAGE_SIZE);
   if (candidatosPage.total > 0 && page > totalPages) {
     redirect(
@@ -302,6 +311,12 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                   defaultValue: "todos",
                   placeholder: "Banco de Talentos",
                   options: POOL_OPTIONS,
+                },
+                {
+                  paramKey: "cidade",
+                  defaultValue: "todas",
+                  placeholder: "Cidade",
+                  options: CIDADE_OPTIONS,
                 },
               ],
             }}
