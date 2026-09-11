@@ -123,7 +123,7 @@ export interface Candidato {
   portfolio: string | null;             // VARCHAR(255)
  
   origem: "email" | "manual" | "indicacao"; // VARCHAR NOT NULL DEFAULT 'manual' — como o candidato entrou no sistema
-  em_banco_talentos: boolean; // NOT NULL DEFAULT false — sem vaga compatível no momento (ADR 0013). Derivado automaticamente pela orquestração de matching, não editável manualmente.
+  em_banco_talentos: boolean; // NOT NULL DEFAULT false — sem vaga compatível no momento (ADR 0013). Derivado pela orquestração; expira após 3 meses desde updated_at, salvo triagem aprovada.
 
   curriculo_arquivo_key: string | null; // TEXT — chave/caminho no StorageProvider, NÃO é URL pública
   texto_curriculo_extraido: string | null; // TEXT — texto bruto do PDF. Necessário para reprocessamento e auditoria (PII: não exibir em logs/API)

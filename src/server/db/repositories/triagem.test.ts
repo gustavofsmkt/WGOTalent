@@ -13,7 +13,7 @@ import { vi } from "vitest";
 import { triagemRepository, type DbOrTx } from "./triagem";
 import { triagens, vagas, avaliacaoIA } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
-import { and, eq, gte, isNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { PgDialect } from "drizzle-orm/pg-core";
 import postgres from "postgres";
@@ -28,6 +28,9 @@ describe("triagemRepository", () => {
     expect(typeof triagemRepository.findPageWithJoins).toBe("function");
     expect(typeof triagemRepository.getListSummary).toBe("function");
     expect(typeof triagemRepository.isAtiva).toBe("function");
+    expect(typeof triagemRepository.findApprovedCandidateIds).toBe(
+      "function",
+    );
     expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe(
       "function",
     );
@@ -73,9 +76,7 @@ describe("triagemRepository", () => {
     const query = new PgDialect().sqlToQuery(condition);
     expect(query.sql).toContain('"wgotalent_triagens"."vaga_id" =');
     expect(query.sql).toContain('"wgotalent_triagens"."resultado" =');
-    expect(query.sql).toContain(
-      '"wgotalent_triagens"."deleted_at" is null',
-    );
+    expect(query.sql).toContain('"wgotalent_triagens"."deleted_at" is null');
     expect(query.params).toEqual(
       expect.arrayContaining([vagaId, "em_andamento"]),
     );
@@ -92,6 +93,20 @@ describe("triagemRepository", () => {
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
     expect(sql).toContain('"wgotalent_triagens"."id" =');
+  });
+
+  it("finds approved candidatos only through active triagens", () => {
+    const qb = notDeleted(
+      mockDb.select({ candidatoId: triagens.candidatoId }).from(triagens),
+      triagens,
+      inArray(triagens.candidatoId, ["11111111-1111-1111-1111-111111111111"]),
+      eq(triagens.resultado, "aprovado"),
+    );
+    const sql = qb.toSQL().sql;
+
+    expect(sql).toContain('"wgotalent_triagens"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_triagens"."candidato_id" in');
+    expect(sql).toContain('"wgotalent_triagens"."resultado" =');
   });
 
   it("findEmCurriculoPorCandidato filters by candidato, etapa='curriculo' and resultado='em_andamento'", () => {

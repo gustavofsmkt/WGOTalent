@@ -15,6 +15,8 @@ const {
   executarAvaliadorTriagemMock,
   marcarBancoTalentosMock,
   desmarcarBancoTalentosMock,
+  desmarcarBancoTalentosPorIdsMock,
+  findApprovedCandidateIdsMock,
   createProcessamentoMock,
   finalizarProcessamentoMock,
   vincularTriagemMock,
@@ -33,6 +35,8 @@ const {
   executarAvaliadorTriagemMock: vi.fn(),
   marcarBancoTalentosMock: vi.fn(),
   desmarcarBancoTalentosMock: vi.fn(),
+  desmarcarBancoTalentosPorIdsMock: vi.fn(),
+  findApprovedCandidateIdsMock: vi.fn(),
   createProcessamentoMock: vi.fn(),
   finalizarProcessamentoMock: vi.fn(),
   vincularTriagemMock: vi.fn(),
@@ -44,6 +48,7 @@ vi.mock("~/server/db/repositories/candidato", () => ({
     findActiveByCidade: findActiveByCidadeMock,
     marcarBancoTalentos: marcarBancoTalentosMock,
     desmarcarBancoTalentos: desmarcarBancoTalentosMock,
+    desmarcarBancoTalentosPorIds: desmarcarBancoTalentosPorIdsMock,
   },
 }));
 vi.mock("~/server/db/repositories/vaga", () => ({
@@ -57,6 +62,7 @@ vi.mock("~/server/db/repositories/triagem", () => ({
     findForParComAvaliacao: findForParComAvaliacaoMock,
     isAtiva: isAtivaMock,
     hasAnyActiveForCandidato: hasAnyActiveForCandidatoMock,
+    findApprovedCandidateIds: findApprovedCandidateIdsMock,
     findAvaliacaoAtivaPorTriagemId: findAvaliacaoAtivaPorTriagemIdMock,
     create: createTriagemMock,
     gravarAvaliacaoIA: gravarAvaliacaoIAMock,
@@ -100,6 +106,7 @@ describe("orquestrarParaCandidatoNovo", () => {
   beforeEach(() => {
     createProcessamentoMock.mockResolvedValue({ id: "p1" });
     hasAnyActiveForCandidatoMock.mockResolvedValue(false);
+    findApprovedCandidateIdsMock.mockResolvedValue([]);
     findAvaliacaoAtivaPorTriagemIdMock.mockResolvedValue(null);
   });
 
@@ -119,6 +126,47 @@ describe("orquestrarParaCandidatoNovo", () => {
 
     expect(executarClassificadorAderenciaMock).not.toHaveBeenCalled();
     expect(marcarBancoTalentosMock).toHaveBeenCalledWith("c1");
+  });
+
+  it("removes an expired candidato from banco de talentos and stops matching", async () => {
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+      updatedAt: "2020-01-01T00:00:00.000Z",
+    });
+
+    await orquestrarParaCandidatoNovo("c1");
+
+    expect(findApprovedCandidateIdsMock).toHaveBeenCalledWith(["c1"]);
+    expect(desmarcarBancoTalentosMock).toHaveBeenCalledWith("c1");
+    expect(findOpenByCidadeMock).not.toHaveBeenCalled();
+    expect(executarClassificadorAderenciaMock).not.toHaveBeenCalled();
+    expect(finalizarProcessamentoMock).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({
+        status: "sucesso",
+        mensagem:
+          "O cadastro do candidato excede três meses; matching não executado.",
+      }),
+    );
+  });
+
+  it("keeps matching an expired candidato approved in any active triagem", async () => {
+    findByIdMock.mockResolvedValueOnce({
+      id: "c1",
+      cidade: "Goiânia",
+      resumoProfissional: "r",
+      updatedAt: "2020-01-01T00:00:00.000Z",
+    });
+    findApprovedCandidateIdsMock.mockResolvedValueOnce(["c1"]);
+    hasAnyActiveForCandidatoMock.mockResolvedValueOnce(true);
+    findOpenByCidadeMock.mockResolvedValueOnce([]);
+
+    await orquestrarParaCandidatoNovo("c1");
+
+    expect(findOpenByCidadeMock).toHaveBeenCalledWith("Goiânia");
+    expect(desmarcarBancoTalentosMock).not.toHaveBeenCalled();
   });
 
   it("marks candidato as banco de talentos when no vaga passes the threshold", async () => {
@@ -340,6 +388,7 @@ describe("orquestrarParaVagaNova", () => {
   beforeEach(() => {
     createProcessamentoMock.mockResolvedValue({ id: "p1" });
     findAvaliacaoAtivaPorTriagemIdMock.mockResolvedValue(null);
+    findApprovedCandidateIdsMock.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -349,6 +398,7 @@ describe("orquestrarParaVagaNova", () => {
   it("creates a triagem for each approved candidato", async () => {
     findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
       id: "v1",
+      status: "aberta",
       cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
       notaCorte: "65.00",
       cargo: cargoBase,
@@ -384,6 +434,7 @@ describe("orquestrarParaVagaNova", () => {
   it("uses the vacancy cutoff score when matching existing candidates", async () => {
     findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
       id: "v1",
+      status: "aberta",
       cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
       notaCorte: "75.00",
       cargo: cargoBase,
@@ -400,5 +451,101 @@ describe("orquestrarParaVagaNova", () => {
     await orquestrarParaVagaNova("v1");
 
     expect(createTriagemMock).not.toHaveBeenCalled();
+  });
+
+  it("removes expired non-approved candidatos before classifying a vaga", async () => {
+    findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
+      id: "v1",
+      status: "aberta",
+      cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
+      notaCorte: "65.00",
+      cargo: cargoBase,
+    });
+    findActiveByCidadeMock.mockResolvedValueOnce([
+      {
+        id: "c-expirado",
+        resumoProfissional: "antigo",
+        updatedAt: "2020-01-01T00:00:00.000Z",
+      },
+      {
+        id: "c-recente",
+        resumoProfissional: "recente",
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [],
+      idsComFalha: [],
+    });
+
+    await orquestrarParaVagaNova("v1");
+
+    expect(findApprovedCandidateIdsMock).toHaveBeenCalledWith(["c-expirado"]);
+    expect(desmarcarBancoTalentosPorIdsMock).toHaveBeenCalledWith([
+      "c-expirado",
+    ]);
+    expect(executarClassificadorAderenciaMock).toHaveBeenCalledWith(
+      expect.anything(),
+      [expect.objectContaining({ id: "c-recente" })],
+      "vaga",
+      "candidato",
+    );
+  });
+
+  it("keeps an expired candidato approved in any active triagem eligible", async () => {
+    findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
+      id: "v1",
+      status: "aberta",
+      cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
+      notaCorte: "65.00",
+      cargo: cargoBase,
+    });
+    findActiveByCidadeMock.mockResolvedValueOnce([
+      {
+        id: "c-aprovado",
+        resumoProfissional: "aprovado",
+        updatedAt: "2020-01-01T00:00:00.000Z",
+      },
+    ]);
+    findApprovedCandidateIdsMock.mockResolvedValueOnce(["c-aprovado"]);
+    executarClassificadorAderenciaMock.mockResolvedValueOnce({
+      ok: true,
+      scores: [],
+      idsComFalha: [],
+    });
+
+    await orquestrarParaVagaNova("v1");
+
+    expect(desmarcarBancoTalentosPorIdsMock).not.toHaveBeenCalled();
+    expect(executarClassificadorAderenciaMock).toHaveBeenCalledWith(
+      expect.anything(),
+      [expect.objectContaining({ id: "c-aprovado" })],
+      "vaga",
+      "candidato",
+    );
+  });
+
+  it("does not classify candidates when the vaga is not open", async () => {
+    findByIdWithCargoAndDepartamentoMock.mockResolvedValueOnce({
+      id: "v1",
+      status: "pausada",
+      cidades: [{ id: "cid1", nome: "Goiânia", uf: "GO" }],
+      notaCorte: "65.00",
+      cargo: cargoBase,
+    });
+
+    await orquestrarParaVagaNova("v1");
+
+    expect(findActiveByCidadeMock).not.toHaveBeenCalled();
+    expect(executarClassificadorAderenciaMock).not.toHaveBeenCalled();
+    expect(createTriagemMock).not.toHaveBeenCalled();
+    expect(finalizarProcessamentoMock).toHaveBeenCalledWith(
+      "p1",
+      expect.objectContaining({
+        status: "sucesso",
+        mensagem: "A vaga não está aberta; matching não executado.",
+      }),
+    );
   });
 });

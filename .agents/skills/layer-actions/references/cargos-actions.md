@@ -13,6 +13,10 @@ Not responsible for: cascading to `Vaga` when a Cargo is soft-deleted (Vaga has
 its own soft-delete in → VagasActions), or fetching the Departamento option list
 for forms (→ layer-ui RHPages).
 
+Ao editar título, descrição, departamento ou qualquer bloco de requisitos do
+cargo, a action agenda novamente o matching de todas as vagas abertas ligadas a
+ele. Alterações de faixa salarial ou do indicador `ativo` não disparam IA.
+
 ### Where does it live?
 
 `src/actions/cargos.ts`
@@ -63,6 +67,8 @@ export async function deletarCargo(id: string) {
 1. Ensure `src/lib/validation/cargo.ts` includes all needed fields.
 2. Add or update functions in `src/actions/cargos.ts`.
 3. Call `revalidatePath('/cargos')` (and `/cargos/[id]` for edit) after mutation.
+4. Reprocesse as vagas abertas quando um campo usado no resumo do classificador
+   for realmente alterado.
 
 ---
 

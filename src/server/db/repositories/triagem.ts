@@ -8,6 +8,7 @@ import {
   and,
   isNull,
   gte,
+  inArray,
   type SQL,
 } from "drizzle-orm";
 import { db } from "~/server/db";
@@ -578,6 +579,21 @@ export const triagemRepository = {
       eq(triagens.candidatoId, candidatoId),
     ).limit(1);
     return rows.length > 0;
+  },
+
+  findApprovedCandidateIds: async (
+    candidatoIds: string[],
+    dbOrTx: DbOrTx = db,
+  ): Promise<string[]> => {
+    if (candidatoIds.length === 0) return [];
+
+    const rows = await notDeleted(
+      dbOrTx.select({ candidatoId: triagens.candidatoId }).from(triagens),
+      triagens,
+      inArray(triagens.candidatoId, candidatoIds),
+      eq(triagens.resultado, "aprovado"),
+    );
+    return [...new Set(rows.map((row) => row.candidatoId))];
   },
 
   findAvaliacaoAtivaPorTriagemId: async (

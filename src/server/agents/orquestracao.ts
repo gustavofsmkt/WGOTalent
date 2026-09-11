@@ -6,6 +6,10 @@ import { processamentoIaRepository } from "~/server/db/repositories/processament
 import type { ProcessamentoIa } from "~/server/db/schema";
 import { runWithLimit } from "~/lib/concurrency/run-with-limit";
 import {
+  cadastroBancoTalentosEstaVencido,
+  calcularLimiteBancoTalentos,
+} from "~/server/candidatos/permanencia-banco-talentos";
+import {
   executarClassificadorAderencia,
   type ItemAderencia,
 } from "./classificador-aderencia";
@@ -230,6 +234,26 @@ async function executarFluxoCandidatoVagas(
       throw new Error("Candidato não encontrado para classificação.");
     }
 
+    const cadastroVencido = cadastroBancoTalentosEstaVencido(
+      candidato.updatedAt,
+      calcularLimiteBancoTalentos(),
+    );
+    if (cadastroVencido) {
+      const candidatoAprovado = (
+        await triagemRepository.findApprovedCandidateIds([candidato.id])
+      ).includes(candidato.id);
+
+      if (!candidatoAprovado) {
+        await candidatoRepository.desmarcarBancoTalentos(candidato.id);
+        await processamentoIaRepository.finalizar(registro.id, {
+          status: "sucesso",
+          mensagem:
+            "O cadastro do candidato excede três meses; matching não executado.",
+        });
+        return;
+      }
+    }
+
     let vagasAbertas = await vagaRepository.findOpenByCidade(candidato.cidade);
     if (processamento && processamento.itensPendentes.length > 0) {
       const pendentes = new Set(processamento.itensPendentes);
@@ -327,10 +351,51 @@ async function executarFluxoVagaCandidatos(
   try {
     const vaga = await vagaRepository.findByIdWithCargoAndDepartamento(vagaId);
     if (!vaga) throw new Error("Vaga não encontrada para classificação.");
+    if (vaga.status !== "aberta") {
+      await processamentoIaRepository.finalizar(registro.id, {
+        status: "sucesso",
+        mensagem: "A vaga não está aberta; matching não executado.",
+      });
+      return;
+    }
 
     const nomeCidades = vaga.cidades.map((cidade) => cidade.nome);
     let candidatosAtivos =
       await candidatoRepository.findActiveByCidade(nomeCidades);
+
+    const limiteBancoTalentos = calcularLimiteBancoTalentos();
+    const candidatosVencidos = candidatosAtivos.filter((candidato) =>
+      cadastroBancoTalentosEstaVencido(
+        candidato.updatedAt,
+        limiteBancoTalentos,
+      ),
+    );
+    const candidatoIdsAprovados = new Set<string>();
+    if (candidatosVencidos.length > 0) {
+      const aprovados = await triagemRepository.findApprovedCandidateIds(
+        candidatosVencidos.map((candidato) => candidato.id),
+      );
+      aprovados.forEach((candidatoId) =>
+        candidatoIdsAprovados.add(candidatoId),
+      );
+
+      const candidatoIdsVencidosSemAprovacao = candidatosVencidos
+        .filter((candidato) => !candidatoIdsAprovados.has(candidato.id))
+        .map((candidato) => candidato.id);
+      if (candidatoIdsVencidosSemAprovacao.length > 0) {
+        await candidatoRepository.desmarcarBancoTalentosPorIds(
+          candidatoIdsVencidosSemAprovacao,
+        );
+      }
+    }
+    candidatosAtivos = candidatosAtivos.filter(
+      (candidato) =>
+        !cadastroBancoTalentosEstaVencido(
+          candidato.updatedAt,
+          limiteBancoTalentos,
+        ) || candidatoIdsAprovados.has(candidato.id),
+    );
+
     if (processamento && processamento.itensPendentes.length > 0) {
       const pendentes = new Set(processamento.itensPendentes);
       candidatosAtivos = candidatosAtivos.filter((candidato) =>

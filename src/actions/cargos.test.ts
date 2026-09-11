@@ -10,6 +10,12 @@ vi.mock("~/lib/auth/dal", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => fn(),
+}));
+vi.mock("~/server/agents/orquestracao", () => ({
+  orquestrarParaVagaNova: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("~/env", () => ({
   env: {
     DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",
@@ -22,6 +28,7 @@ import { createCargo, updateCargo, deleteCargo } from "./cargos";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { revalidatePath } from "next/cache";
+import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
 import type { Cargo } from "~/server/db/schema";
 
 describe("cargos server actions", () => {
@@ -168,6 +175,14 @@ describe("cargos server actions", () => {
       vi.spyOn(cargoRepository, "update").mockResolvedValueOnce(
         mockUpdated as unknown as Cargo,
       );
+      vi.spyOn(cargoRepository, "findById").mockResolvedValueOnce({
+        ...mockUpdated,
+        titulo: "Desenvolvedor Backend",
+      } as unknown as Cargo);
+      vi.spyOn(
+        cargoRepository,
+        "findOpenVagaIdsByCargoId",
+      ).mockResolvedValueOnce(["vaga-1", "vaga-2"]);
 
       const result = await updateCargo("cargo-1", {
         titulo: "Desenvolvedor Backend Sênior",
@@ -179,6 +194,44 @@ describe("cargos server actions", () => {
       }
       expect(revalidatePath).toHaveBeenCalledWith("/cargos");
       expect(revalidatePath).toHaveBeenCalledWith("/cargos/cargo-1");
+      expect(orquestrarParaVagaNova).toHaveBeenCalledTimes(2);
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-2");
+    });
+
+    it("reprocesses open vagas when matching requirements change", async () => {
+      const cargoAnterior = {
+        id: "cargo-1",
+        departamentoId: "550e8400-e29b-41d4-a716-446655440000",
+        titulo: "Desenvolvedor Backend",
+        descricao: "Desenvolvimento de APIs",
+        ativo: true,
+        faixaSalarial: "10000.00",
+        requisitos: "Node.js",
+        requisitosDesejaveis: "Docker",
+        criteriosEliminatorios: "Inglês",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      } as unknown as Cargo;
+      vi.spyOn(cargoRepository, "findById").mockResolvedValueOnce(
+        cargoAnterior,
+      );
+      vi.spyOn(cargoRepository, "update").mockResolvedValueOnce({
+        ...cargoAnterior,
+        requisitos: "Node.js e PostgreSQL",
+      });
+      vi.spyOn(
+        cargoRepository,
+        "findOpenVagaIdsByCargoId",
+      ).mockResolvedValueOnce(["vaga-1"]);
+
+      const result = await updateCargo("cargo-1", {
+        requisitos: "Node.js e PostgreSQL",
+      });
+
+      expect(result.success).toBe(true);
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
     });
 
     it("returns error when department provided for update is not found", async () => {

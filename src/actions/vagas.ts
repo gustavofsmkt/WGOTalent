@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { db } from "~/server/db";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
@@ -11,6 +12,25 @@ import type { ActionState } from "~/lib/action-utils";
 import { createVagaSchema, updateVagaSchema } from "~/lib/validation/vaga";
 import type { Vaga } from "~/server/db/schema";
 import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
+
+function agendarMatchingVaga(vagaId: string): void {
+  after(async () => {
+    try {
+      await orquestrarParaVagaNova(vagaId);
+    } catch (error) {
+      console.error("[VagaActions] Falha na orquestração de matching:", error);
+    }
+  });
+}
+
+function mesmasCidades(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const ordenadasA = [...a].sort();
+  const ordenadasB = [...b].sort();
+  return ordenadasA.every(
+    (cidadeId, index) => cidadeId === ordenadasB[index],
+  );
+}
 
 export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
   await requireAuthenticatedUser();
@@ -56,10 +76,9 @@ export async function createVaga(data: unknown): Promise<ActionState<Vaga>> {
       cidadeIds: parsed.data.cidadeIds,
     });
 
-    // Dispara a fase 1 de matching (vaga -> candidatos ativos nas cidades). Fire-and-forget.
-    orquestrarParaVagaNova(vaga.id).catch((err) =>
-      console.error("[createVaga] Falha na orquestração de matching:", err),
-    );
+    if (vaga.status === "aberta") {
+      agendarMatchingVaga(vaga.id);
+    }
 
     revalidatePath("/vagas");
 
@@ -101,6 +120,28 @@ export async function updateVaga(
       }
     }
 
+    const vagaAnterior = await vagaRepository.findById(id);
+    if (!vagaAnterior) {
+      return { success: false, message: "Vaga não encontrada" };
+    }
+    const cidadesAnteriores =
+      parsed.data.cidadeIds !== undefined
+        ? await vagaRepository.findCidadeIdsByVagaId(id)
+        : [];
+
+    if (parsed.data.cidadeIds !== undefined) {
+      const cidadesRemovidas = cidadesAnteriores.filter(
+        (cidadeId) => !parsed.data.cidadeIds?.includes(cidadeId),
+      );
+      if (cidadesRemovidas.length > 0) {
+        return {
+          success: false,
+          message:
+            "Não é permitido remover cidades de uma vaga existente. Apenas novas cidades podem ser adicionadas.",
+        };
+      }
+    }
+
     const updateData = {
       ...parsed.data,
       cidadeIds: parsed.data.cidadeIds,
@@ -137,6 +178,20 @@ export async function updateVaga(
       revalidatePath("/triagens");
       revalidatePath("/candidatos");
       revalidatePath("/dashboard");
+    }
+
+    const deveReprocessar =
+      vaga.status === "aberta" &&
+      (vagaAnterior.status !== "aberta" ||
+        (parsed.data.cargoId !== undefined &&
+          parsed.data.cargoId !== vagaAnterior.cargoId) ||
+        (parsed.data.notaCorte !== undefined &&
+          parsed.data.notaCorte !== vagaAnterior.notaCorte) ||
+        (parsed.data.cidadeIds !== undefined &&
+          !mesmasCidades(parsed.data.cidadeIds, cidadesAnteriores)));
+
+    if (deveReprocessar) {
+      agendarMatchingVaga(vaga.id);
     }
 
     return {

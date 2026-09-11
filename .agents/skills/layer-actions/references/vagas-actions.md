@@ -14,6 +14,13 @@ finalizada como `banco_talentos`, e os candidatos afetados recebem
 `aprovado`, `reprovado` e `desistente` são preservados. Os status `aberta`,
 `pausada` e `incompleta` não disparam essa regra.
 
+O matching vaga → candidatos só é agendado para uma vaga criada como `aberta`.
+Na edição, uma vaga aberta é reprocessada quando é reaberta ou quando muda seu
+cargo, sua nota de corte ou quando recebe novas cidades. Cidades já vinculadas
+não podem ser removidas na edição; essa restrição é validada pela Server Action,
+enquanto a criação continua livre para definir o conjunto inicial. O próprio
+orquestrador também recusa vagas não abertas.
+
 Not responsible for: cascading to `Triagem` when a Vaga is soft-deleted, or
 fetching the Cargo option list for forms (→ layer-ui RHPages).
 
@@ -67,6 +74,11 @@ export async function deletarVaga(id: string) {
 4. Chame `revalidatePath('/vagas')` (e `/vagas/[id]` na edição) após a mutação;
    invalide também `/triagens`, `/candidatos` e `/dashboard` quando as triagens
    forem finalizadas.
+5. Agende o matching em segundo plano apenas para vagas abertas criadas,
+   reabertas ou com dados relevantes para o matching alterados.
+6. Na edição, preserve todos os vínculos de cidade existentes e permita apenas
+   acrescentar cidades; na criação, permita definir livremente o conjunto
+   inicial antes de salvar.
 
 ---
 

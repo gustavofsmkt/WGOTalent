@@ -199,15 +199,11 @@ describe("candidatoRepository banco de talentos", () => {
       fakeDb,
     );
 
-    expect(builder.set).toHaveBeenCalledWith(
-      expect.objectContaining({ emBancoTalentos: true }),
-    );
+    expect(builder.set).toHaveBeenCalledWith({ emBancoTalentos: true });
     const condition = builder.where.mock.calls[0]?.[0];
     const query = new PgDialect().sqlToQuery(condition);
     expect(query.sql).toContain('"wgotalent_candidatos"."id" in');
-    expect(query.sql).toContain(
-      '"wgotalent_candidatos"."deleted_at" is null',
-    );
+    expect(query.sql).toContain('"wgotalent_candidatos"."deleted_at" is null');
     expect(query.params).toEqual(
       expect.arrayContaining(["candidato-1", "candidato-2"]),
     );
@@ -221,6 +217,28 @@ describe("candidatoRepository banco de talentos", () => {
     await candidatoRepository.marcarBancoTalentosPorIds([], fakeDb);
 
     expect(fakeDb.update).not.toHaveBeenCalled();
+  });
+
+  it("unmarks active candidatos in bulk without renewing updatedAt", async () => {
+    const builder = {
+      set: vi.fn(),
+      where: vi.fn().mockResolvedValue(undefined),
+    };
+    builder.set.mockReturnValue(builder);
+    const fakeDb = {
+      update: vi.fn(() => builder),
+    } as unknown as DbOrTx;
+
+    await candidatoRepository.desmarcarBancoTalentosPorIds(
+      ["candidato-1", "candidato-2"],
+      fakeDb,
+    );
+
+    expect(builder.set).toHaveBeenCalledWith({ emBancoTalentos: false });
+    const condition = builder.where.mock.calls[0]?.[0];
+    const query = new PgDialect().sqlToQuery(condition);
+    expect(query.sql).toContain('"wgotalent_candidatos"."id" in');
+    expect(query.sql).toContain('"wgotalent_candidatos"."deleted_at" is null');
   });
 });
 

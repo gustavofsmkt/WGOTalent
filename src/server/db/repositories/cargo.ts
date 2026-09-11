@@ -259,6 +259,19 @@ export const cargoRepository = {
     return Number(rows[0]?.count ?? 0);
   },
 
+  findOpenVagaIdsByCargoId: async (
+    cargoId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<string[]> => {
+    const rows = await notDeleted(
+      dbOrTx.select({ id: vagas.id }).from(vagas),
+      vagas,
+      eq(vagas.cargoId, cargoId),
+      eq(vagas.status, "aberta"),
+    );
+    return rows.map((row) => row.id);
+  },
+
   findActiveVagasPage: async (
     cargoId: string,
     pagination: PaginationInput,

@@ -36,6 +36,7 @@ describe("cargoRepository", () => {
     expect(typeof cargoRepository.softDelete).toBe("function");
     expect(typeof cargoRepository.hasActiveVagas).toBe("function");
     expect(typeof cargoRepository.countActiveVagas).toBe("function");
+    expect(typeof cargoRepository.findOpenVagaIdsByCargoId).toBe("function");
     expect(typeof cargoRepository.findActiveVagasPage).toBe("function");
   });
 
@@ -65,5 +66,18 @@ describe("cargoRepository", () => {
     const qb = notDeleted(mockDb.select({ id: vagas.id }).from(vagas), vagas);
     const sql = qb.toSQL().sql;
     expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
+  });
+
+  it("builds open vaga IDs query filtered by cargo and soft delete", () => {
+    const qb = notDeleted(
+      mockDb.select({ id: vagas.id }).from(vagas),
+      vagas,
+      eq(vagas.cargoId, "cargo-1"),
+      eq(vagas.status, "aberta"),
+    );
+    const sql = qb.toSQL().sql;
+    expect(sql).toContain('"wgotalent_vagas"."deleted_at" is null');
+    expect(sql).toContain('"wgotalent_vagas"."cargo_id" =');
+    expect(sql).toContain('"wgotalent_vagas"."status" =');
   });
 });

@@ -277,3 +277,21 @@ _Data: 2026-09-11_
 - Ao definir o status de uma vaga como `concluida` ou `cancelada`, suas triagens ativas com `resultado = em_andamento` passam atomicamente para `etapa = finalizado` e `resultado = banco_talentos`; `pausada` e `incompleta` não disparam a regra.
 - Triagens já encerradas como `aprovado`, `reprovado` ou `desistente` são preservadas; registros soft-deleted também não são alterados.
 - Os candidatos das triagens afetadas recebem `em_banco_talentos = true` na mesma transação. A finalização manual de uma triagem como `banco_talentos` também marca o candidato, atomicamente.
+
+## Marco: Gatilhos seguros de matching para vagas
+
+_Data: 2026-09-11_
+
+- A criação de vaga passou a agendar matching somente para `status = aberta`, e o orquestrador ganhou a mesma validação defensiva antes de buscar ou classificar candidatos.
+- Reabrir uma vaga ou alterar cargo, adicionar cidades ou mudar a nota de corte de uma vaga aberta agenda nova execução do matching.
+- Na criação, cidades podem ser adicionadas e removidas livremente antes de salvar. Na edição, vínculos existentes ficam bloqueados e apenas novas cidades podem ser acrescentadas, com a mesma validação na Server Action.
+- Alterações em título, descrição, departamento ou requisitos do cargo reprocessam todas as vagas abertas vinculadas; posições, remuneração, faixa salarial e indicador ativo não disparam IA.
+
+## Marco: Permanência no banco de talentos
+
+_Data: 2026-09-11_
+
+- A elegibilidade para matching passou a considerar três meses-calendário desde `Candidato.updatedAt`, calculados em UTC com limite inclusivo; atualizações cadastrais renovam o período.
+- Candidatos vencidos são desmarcados de `em_banco_talentos` e não chegam ao classificador nos fluxos candidato → vagas e vaga → candidatos.
+- Qualquer triagem não excluída com `resultado = aprovado` preserva a elegibilidade do candidato, mesmo após o prazo. Não foi criado job periódico: a expiração ocorre somente durante os fluxos de matching.
+- Alterações automáticas apenas no indicador `emBancoTalentos` deixaram de atualizar `updatedAt`, evitando renovação artificial do prazo.

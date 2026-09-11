@@ -44,6 +44,10 @@ configurável (ver ADR-0007). As etapas dos fluxos `candidato_vagas` e
 idempotente em `/processamentos-ia`, individual ou em lotes de até 15 falhas
 recentes executados em segundo plano.
 A nota de corte do Classificador de Aderência é configurada individualmente em cada vaga (ver ADR-0014).
+O matching considera candidatos atualizados nos últimos três meses-calendário;
+uma triagem ativa aprovada preserva a elegibilidade, e a expiração do banco de
+talentos é aplicada oportunisticamente apenas durante os fluxos de matching
+(ADR-0013).
 
 ## Links de Referência
 

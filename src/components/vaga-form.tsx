@@ -34,6 +34,7 @@ import { Input } from "~/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -96,6 +97,7 @@ export function VagaForm({
   const router = useRouter();
   const isEdit = Boolean(vaga?.id);
   const [pendingCidadeId, setPendingCidadeId] = useState<string>("");
+  const cidadeIdsOriginais = vaga?.cidadeIds ?? [];
 
   const form = useAppForm({
     defaultValues: {
@@ -132,7 +134,7 @@ export function VagaForm({
         <CardTitle>{isEdit ? "Editar Vaga" : "Nova Vaga"}</CardTitle>
         <CardDescription>
           {isEdit
-            ? "Atualize as informações, status e posições da vaga."
+            ? "Atualize as informações, cidades, status e posições da vaga."
             : "Preencha os dados necessários para cadastrar e abrir uma nova vaga."}
         </CardDescription>
       </CardHeader>
@@ -337,7 +339,7 @@ export function VagaForm({
                         Configurações Gerais.
                       </p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="flex flex-col gap-3">
                         {/* Select + botão adicionar */}
                         <div className="flex gap-2">
                           <Select
@@ -373,11 +375,13 @@ export function VagaForm({
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              {available.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nome} - {c.uf}
-                                </SelectItem>
-                              ))}
+                              <SelectGroup>
+                                {available.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.nome} - {c.uf}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
                             </SelectContent>
                           </Select>
                           <Button
@@ -402,6 +406,8 @@ export function VagaForm({
                                 (c) => c.id === id,
                               );
                               if (!cidade) return null;
+                              const cidadeOriginal =
+                                isEdit && cidadeIdsOriginais.includes(id);
                               return (
                                 <Badge
                                   key={id}
@@ -410,19 +416,25 @@ export function VagaForm({
                                 >
                                   <MapPin className="size-3 shrink-0" />
                                   {cidade.nome} - {cidade.uf}
-                                  <button
-                                    type="button"
-                                    aria-label={`Remover ${cidade.nome}`}
-                                    onClick={() => {
-                                      field.handleChange(
-                                        selected.filter((s) => s !== id),
-                                      );
-                                      field.handleBlur();
-                                    }}
-                                    className="ml-0.5 rounded-full p-0.5 hover:bg-foreground/10 transition-colors"
-                                  >
-                                    <X className="size-3" />
-                                  </button>
+                                  {cidadeOriginal ? (
+                                    <span className="ml-0.5 text-xs text-muted-foreground">
+                                      Vinculada
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      aria-label={`Remover ${cidade.nome}`}
+                                      onClick={() => {
+                                        field.handleChange(
+                                          selected.filter((s) => s !== id),
+                                        );
+                                        field.handleBlur();
+                                      }}
+                                      className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-foreground/10"
+                                    >
+                                      <X className="size-3" />
+                                    </button>
+                                  )}
                                 </Badge>
                               );
                             })}
@@ -432,8 +444,9 @@ export function VagaForm({
                     )}
 
                     <FieldDescription id={descId}>
-                      Municípios de atuação da vaga. Adicione uma ou mais
-                      cidades.
+                      {isEdit
+                        ? "Cidades já vinculadas não podem ser removidas. Você pode adicionar outras cidades."
+                        : "Municípios de atuação da vaga. Adicione ou remova cidades antes de salvar."}
                     </FieldDescription>
                     <FieldError
                       id={errorId}

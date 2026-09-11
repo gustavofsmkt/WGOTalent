@@ -1,12 +1,39 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { createCargoSchema, updateCargoSchema } from "~/lib/validation/cargo";
 import type { Cargo } from "~/server/db/schema";
 import type { ActionState } from "~/lib/action-utils";
+import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
+
+function agendarMatchingVagasDoCargo(cargoId: string): void {
+  after(async () => {
+    try {
+      const vagaIds = await cargoRepository.findOpenVagaIdsByCargoId(cargoId);
+      const resultados = await Promise.allSettled(
+        vagaIds.map((vagaId) => orquestrarParaVagaNova(vagaId)),
+      );
+
+      resultados.forEach((resultado, index) => {
+        if (resultado.status === "rejected") {
+          console.error(
+            `[updateCargo] Falha no matching da vaga ${vagaIds[index] ?? "desconhecida"}:`,
+            resultado.reason,
+          );
+        }
+      });
+    } catch (error) {
+      console.error(
+        `[updateCargo] Falha ao buscar vagas abertas do cargo ${cargoId}:`,
+        error,
+      );
+    }
+  });
+}
 
 export async function createCargo(data: unknown): Promise<ActionState<Cargo>> {
   await requireAuthenticatedUser();
@@ -84,6 +111,11 @@ export async function updateCargo(
       }
     }
 
+    const cargoAnterior = await cargoRepository.findById(id);
+    if (!cargoAnterior) {
+      return { success: false, message: "Cargo não encontrado" };
+    }
+
     const cargo = await cargoRepository.update(id, parsed.data);
 
     if (!cargo) {
@@ -92,6 +124,26 @@ export async function updateCargo(
 
     revalidatePath("/cargos");
     revalidatePath(`/cargos/${id}`);
+
+    const alteraResumoMatching =
+      (parsed.data.titulo !== undefined &&
+        parsed.data.titulo !== cargoAnterior.titulo) ||
+      (parsed.data.descricao !== undefined &&
+        parsed.data.descricao !== cargoAnterior.descricao) ||
+      (parsed.data.requisitos !== undefined &&
+        parsed.data.requisitos !== cargoAnterior.requisitos) ||
+      (parsed.data.requisitosDesejaveis !== undefined &&
+        parsed.data.requisitosDesejaveis !==
+          cargoAnterior.requisitosDesejaveis) ||
+      (parsed.data.criteriosEliminatorios !== undefined &&
+        parsed.data.criteriosEliminatorios !==
+          cargoAnterior.criteriosEliminatorios) ||
+      (parsed.data.departamentoId !== undefined &&
+        parsed.data.departamentoId !== cargoAnterior.departamentoId);
+
+    if (alteraResumoMatching) {
+      agendarMatchingVagasDoCargo(id);
+    }
 
     return {
       success: true,
@@ -128,7 +180,7 @@ export async function deleteCargo(id: string): Promise<ActionState> {
       success: true,
       message: "Cargo excluído com sucesso.",
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: "Erro ao excluir cargo.",

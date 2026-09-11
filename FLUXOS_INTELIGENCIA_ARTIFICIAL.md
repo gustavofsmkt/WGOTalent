@@ -1,6 +1,6 @@
 # Mapeamento dos fluxos de Inteligência Artificial
 
-> Varredura estática atualizada em 05/09/2026. Este documento descreve o
+> Varredura estática atualizada em 11/09/2026. Este documento descreve o
 > comportamento observado no código atual. Quando a documentação e a
 > implementação divergem, o comportamento executável é destacado.
 
@@ -19,7 +19,7 @@ configuráveis pela administração:
 Há duas direções de matching:
 
 1. **Candidato recebido ou cadastrado → vagas abertas da mesma cidade.**
-2. **Vaga criada → candidatos não excluídos das cidades da vaga.**
+2. **Vaga aberta criada ou reavaliada → candidatos elegíveis das cidades da vaga.**
 
 O classificador apenas pontua. A aplicação compara o score à `nota_corte` da
 vaga. Um par aprovado cria uma triagem em `curriculo` / `em_andamento` e então
@@ -38,6 +38,8 @@ flowchart TD
         BOOT[Bootstrap Node.js da aplicação]
         EMAIL[Tick do loop IMAP]
         NOVA_VAGA[Criação de vaga]
+        EDICAO_VAGA[Reabertura ou alteração<br/>de cargo, cidades ou nota de corte]
+        EDICAO_CARGO[Alteração dos dados do cargo<br/>usados no matching]
     end
 
     subgraph INTAKE[Ingestão de currículo]
@@ -51,6 +53,8 @@ flowchart TD
 
     subgraph CANDIDATO[Candidato para vagas]
         ORQ_C[Carregar candidato não excluído]
+        PRAZO_C{Cadastro dentro de três meses<br/>ou possui triagem aprovada?}
+        EXPIRA_C[Desmarcar banco de talentos<br/>e encerrar]
         BUSCA_V[Buscar vagas não excluídas,<br/>status aberta e cidade igual]
         TEM_V{Há vagas elegíveis?}
         CLASS_C[Agente classificador_aderencia<br/>1 candidato x N vagas]
@@ -62,8 +66,9 @@ flowchart TD
 
     subgraph VAGA[Vaga para candidatos]
         ORQ_V[Carregar vaga não excluída]
-        ALERTA_STATUS[Comportamento atual:<br/>não verifica status aberta]
+        VAGA_ABERTA{Status aberta?}
         BUSCA_C[Buscar candidatos não excluídos<br/>com cidade igual a uma cidade da vaga]
+        PRAZO_V[Desmarcar e excluir vencidos;<br/>preservar quem possui triagem aprovada]
         TEM_C{Há candidatos elegíveis?}
         CLASS_V[Agente classificador_aderencia<br/>1 vaga x N candidatos]
         CLASS_V_OK{Classificador respondeu?}
@@ -88,8 +93,10 @@ flowchart TD
     VAL_SAIDA -->|não| ERRO_ARQ
     VAL_SAIDA -->|sim| UPSERT
 
-    UPSERT -. fire-and-forget .-> ORQ_C --> BUSCA_V --> TEM_V
+    UPSERT -. fire-and-forget .-> ORQ_C --> PRAZO_C
     EDICAO -. after / segundo plano .-> ORQ_C
+    PRAZO_C -->|não| EXPIRA_C
+    PRAZO_C -->|sim| BUSCA_V --> TEM_V
     TRIAGEM_MANUAL -. after / segundo plano .-> EXISTE
     TEM_V -->|não| TALENTOS
     TEM_V -->|sim| CLASS_C --> CLASS_C_OK
@@ -98,8 +105,13 @@ flowchart TD
     TEM_AP_C -->|não| TALENTOS
     TEM_AP_C -->|sim| EXISTE
 
-    NOVA_VAGA -. fire-and-forget .-> ORQ_V --> ALERTA_STATUS --> BUSCA_C --> TEM_C
-    TEM_C -->|não| FIM_V[Encerrar]
+    NOVA_VAGA -. after / segundo plano .-> ORQ_V
+    EDICAO_VAGA -. after / segundo plano .-> ORQ_V
+    EDICAO_CARGO -. after / segundo plano .-> ORQ_V
+    ORQ_V --> VAGA_ABERTA
+    VAGA_ABERTA -->|não| FIM_V[Encerrar sem classificar]
+    VAGA_ABERTA -->|sim| BUSCA_C --> PRAZO_V --> TEM_C
+    TEM_C -->|não| FIM_V
     TEM_C -->|sim| CLASS_V --> CLASS_V_OK
     CLASS_V_OK -->|falha total| FIM_V
     CLASS_V_OK -->|sucesso total ou parcial| CORTE_V --> EXISTE
@@ -180,17 +192,36 @@ o arquivo e ficam sem retry.
 Fonte: `src/instrumentation.ts`, `src/server/email/captura-curriculos-loop.ts`,
 `src/server/email/captura-curriculos.ts` e `src/lib/email/imap-client.ts`.
 
-### 4. Criação de vaga
+### 4. Criação e reavaliação de vaga
 
-Depois de persistir uma vaga, `createVaga()` dispara
-`orquestrarParaVagaNova()` em fire-and-forget. A intenção expressa nos nomes e
-testes é processar uma vaga aberta. Porém, o código atual chama o orquestrador
-para **qualquer status criado**, e o orquestrador apenas verifica soft delete;
-não exige `status = aberta`. Assim, uma vaga criada como `pausada`, `cancelada`,
-`concluida` ou `incompleta` pode gerar triagens automáticas.
+Depois de persistir uma vaga, `createVaga()` agenda
+`orquestrarParaVagaNova()` em segundo plano somente quando o status criado é
+`aberta`. Como proteção adicional, o próprio orquestrador encerra sem buscar ou
+classificar candidatos se a vaga não estiver aberta. Portanto, vagas criadas
+como `pausada`, `cancelada`, `concluida` ou `incompleta` não geram triagens.
 
-Fonte: `src/actions/vagas.ts:45-57` e
-`src/server/agents/orquestracao.ts:91-128`.
+`updateVaga()` agenda uma nova execução quando a vaga resultante está aberta e
+uma destas condições ocorre:
+
+- uma vaga antes não aberta é reaberta;
+- a nota de corte muda;
+- o cargo vinculado muda;
+- novas cidades são vinculadas.
+
+Na criação, o conjunto inicial de cidades pode ser definido livremente antes de
+salvar. Na edição, cidades já vinculadas não podem ser removidas; somente novas
+cidades podem ser acrescentadas. A restrição existe tanto no formulário quanto
+na Server Action, evitando remoções por chamadas diretas.
+
+Como os textos usados pelo classificador pertencem ao cargo, `updateCargo()`
+também reavalia todas as vagas abertas daquele cargo quando muda título,
+descrição, departamento, requisitos obrigatórios, requisitos desejáveis ou
+critérios eliminatórios. Os disparos de criação e edição usam `after()` e não
+bloqueiam a resposta da action.
+
+Fonte: `src/actions/vagas.ts`, `src/actions/cargos.ts`,
+`src/server/db/repositories/cargo.ts` e
+`src/server/agents/orquestracao.ts`.
 
 ### 5. Edição de candidato
 
@@ -206,7 +237,34 @@ presa esperando a avaliação (mesmo padrão do "tentar novamente" em
 
 Fonte: `src/actions/candidatos.ts`.
 
-### 6. Criação manual de triagem
+### 6. Permanência no banco de talentos
+
+A elegibilidade usa `Candidato.updatedAt`. O limite é calculado subtraindo três
+meses-calendário do instante atual em UTC. Quando o dia não existe no mês de
+destino, vale o último dia daquele mês; o instante exato do limite ainda é
+elegível (`updatedAt >= limite`). Uma atualização cadastral renova o período.
+Alterações automáticas apenas no indicador `emBancoTalentos` não modificam
+`updatedAt` e não renovam o prazo.
+
+Como `Candidato` não possui status próprio, a exceção de candidato aprovado
+significa existir ao menos uma `Triagem` não excluída com
+`resultado = aprovado`, em qualquer vaga. Nesse caso, o candidato continua
+elegível mesmo com cadastro vencido.
+
+Não existe varredura periódica. A expiração acontece exclusivamente durante os
+fluxos de matching:
+
+- no candidato → vagas, o próprio candidato é desmarcado do banco de talentos e
+  o processamento termina antes de buscar vagas;
+- na vaga → candidatos, os vencidos das cidades da vaga são desmarcados e
+  removidos da lista antes do classificador.
+
+Fonte: `src/server/candidatos/permanencia-banco-talentos.ts`,
+`src/server/agents/orquestracao.ts`,
+`src/server/db/repositories/candidato.ts` e
+`src/server/db/repositories/triagem.ts`.
+
+### 7. Criação manual de triagem
 
 `createTriagem()` dispara `avaliarParManual()` para o par recém-criado depois de
 persistir a triagem. Diferente dos demais gatilhos, este **não** passa pela
@@ -220,7 +278,9 @@ Fonte: `src/actions/triagens.ts` e `avaliarParManual()` em
 
 ### Eventos que não disparam IA
 
-- editar vaga, inclusive mudar seu status de pausada para aberta;
+- criar ou manter uma vaga com status diferente de `aberta`;
+- editar apenas posições disponíveis ou remuneração de uma vaga;
+- editar apenas faixa salarial ou o indicador ativo de um cargo;
 - avançar, reprovar, aprovar ou encerrar uma triagem;
 - iniciar a aplicação, fora o agendamento do loop de e-mail;
 - falha anterior do matching ou do avaliador: não existe job periódico geral,
@@ -331,13 +391,14 @@ pré-seleção e apoio à decisão, não como decisão final automatizada.
 | Ordem | Filtro efetivo                                                                                                                                                 |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Candidato precisa existir e não estar soft-deleted.                                                                                                            |
-| 2     | Vaga precisa estar não excluída e com `status = aberta`.                                                                                                       |
-| 3     | A vaga precisa possuir uma relação cidade não excluída cuja cidade não excluída tenha `nome` exatamente igual a `candidato.cidade`.                            |
-| 4     | O classificador pontua usando apenas `candidato.resumoProfissional` contra título do cargo, departamento, requisitos obrigatórios, desejáveis e eliminatórios. |
-| 5     | O score precisa ser maior ou igual à nota de corte daquela vaga.                                                                                               |
-| 6     | Não pode existir nenhuma triagem não excluída anterior para o par candidato-vaga.                                                                              |
+| 2     | `updatedAt` precisa estar no limite inclusivo de três meses ou deve existir alguma triagem não excluída com `resultado = aprovado`.                             |
+| 3     | Vaga precisa estar não excluída e com `status = aberta`.                                                                                                       |
+| 4     | A vaga precisa possuir uma relação cidade não excluída cuja cidade não excluída tenha `nome` exatamente igual a `candidato.cidade`.                            |
+| 5     | O classificador pontua usando apenas `candidato.resumoProfissional` contra título do cargo, departamento, requisitos obrigatórios, desejáveis e eliminatórios. |
+| 6     | O score precisa ser maior ou igual à nota de corte daquela vaga.                                                                                               |
+| 7     | Não pode existir nenhuma triagem não excluída anterior para o par candidato-vaga.                                                                              |
 
-Se não houver vaga nos passos 2 e 3, ou nenhuma passar no passo 5, o candidato é
+Se não houver vaga nos passos 3 e 4, ou nenhuma passar no passo 6, o candidato é
 marcado em `em_banco_talentos`. Falha total do classificador não marca banco de
 talentos, para não confundir indisponibilidade técnica com baixa aderência.
 
@@ -345,11 +406,12 @@ talentos, para não confundir indisponibilidade técnica com baixa aderência.
 
 | Ordem | Filtro efetivo                                                                                                                                               |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1     | A vaga precisa existir e não estar soft-deleted. **O status não é filtrado no código atual.**                                                                |
-| 2     | Seleciona candidatos não soft-deleted cuja `cidade` seja exatamente igual ao nome de uma das cidades da vaga. Candidatos no banco de talentos são incluídos. |
-| 3     | O classificador pontua o resumo da vaga contra apenas `candidato.resumoProfissional`.                                                                        |
-| 4     | O score precisa ser maior ou igual à nota de corte da vaga nova.                                                                                             |
-| 5     | Não pode existir nenhuma triagem não excluída anterior para o par.                                                                                           |
+| 1     | A vaga precisa existir, não estar soft-deleted e possuir `status = aberta`.                                                                                  |
+| 2     | Seleciona candidatos não soft-deleted cuja `cidade` seja exatamente igual ao nome de uma das cidades da vaga.                                                |
+| 3     | `updatedAt` precisa estar no limite inclusivo de três meses ou deve existir alguma triagem não excluída com `resultado = aprovado`; vencidos são desmarcados. |
+| 4     | O classificador pontua o resumo da vaga contra apenas `candidato.resumoProfissional`.                                                                        |
+| 5     | O score precisa ser maior ou igual à nota de corte da vaga nova.                                                                                             |
+| 6     | Não pode existir nenhuma triagem não excluída anterior para o par.                                                                                           |
 
 ### Dados que não são filtros prévios
 
@@ -393,33 +455,29 @@ não é uma fila durável e ainda não existe rate limiter global.
 
 ### Prioridade alta
 
-1. **Vaga não aberta pode gerar triagens.** `createVaga()` sempre dispara o
-   orquestrador e `orquestrarParaVagaNova()` não valida `status = aberta`. Isso
-   contradiz o nome do fluxo e o teste chamado “without triggering classifier”,
-   que não contém uma asserção sobre o disparo.
-2. **Fire-and-forget não é uma fila durável.** Criação de candidato, criação de
+1. **Fire-and-forget não é uma fila durável.** Criação de candidato, criação de
    vaga e processamento de lote retornam enquanto o trabalho continua apenas na
    memória do processo. Reinício, crash, scale-down ou múltiplas instâncias
    podem interromper uma execução e deixá-la em `processando`. Há retry manual
    para falhas concluídas, mas ainda não há recuperação automática de execuções
    interrompidas.
-3. **Matching geográfico é frágil.** A comparação é textual, sensível a
+2. **Matching geográfico é frágil.** A comparação é textual, sensível a
    maiúsculas, acentos e grafia, e ignora UF. Isso pode produzir falso negativo
    (`Goiania` x `Goiânia`) ou falso positivo quando duas cidades de UFs
    diferentes têm o mesmo nome.
 
 ### Segurança, auditoria e explicabilidade
 
-4. **PII pode ser escrita nos logs em resposta inválida.** O parser comum registra
+3. **PII pode ser escrita nos logs em resposta inválida.** O parser comum registra
    a resposta completa recebida quando o JSON ou o Zod falham. Na extração isso
    pode conter dados pessoais e a transcrição integral do currículo, contrariando
    a orientação do ADR-0001 de não registrar `texto_curriculo_extraido` em logs.
-5. **A decisão da fase 1 não é auditável.** Scores do classificador, motivo de
+4. **A decisão da fase 1 não é auditável.** Scores do classificador, motivo de
    exclusão, bloco processado, modelo, provedor, versão do prompt, tentativas,
    tokens, latência e custo não são persistidos. `avaliacao_ia` também não guarda
    a configuração que produziu o parecer. Alterar prompts/modelos afeta execuções
    futuras sem preservar proveniência das antigas.
-6. **A fase 1 usa um retrato muito reduzido do candidato.** Somente o resumo
+5. **A fase 1 usa um retrato muito reduzido do candidato.** Somente o resumo
    profissional participa do corte. Critérios eliminatórios estruturados como
    CNH, formação ou disponibilidade podem não estar no resumo. O avaliador recebe
    mais campos escalares e a transcrição, mas não as coleções normalizadas de
@@ -427,23 +485,19 @@ não é uma fila durável e ainda não existe rate limiter global.
 
 ### Robustez e manutenção
 
-7. **Há caminhos de arquivo órfão.** Se a extração retornar candidato sem e-mail
+6. **Há caminhos de arquivo órfão.** Se a extração retornar candidato sem e-mail
    e sem celular, a função retorna antes do cleanup do arquivo já salvo. Em
    mesclagens/restaurações, um novo currículo pode substituir a chave persistida
    sem remover o arquivo antigo. Nova tentativa de uma mensagem bloqueada por
    cota pode repetir anexos já bem-sucedidos do mesmo e-mail e ampliar esse
    efeito.
-8. **MIME e extensão são validados de formas diferentes.** A entrada aceita pelo
+7. **MIME e extensão são validados de formas diferentes.** A entrada aceita pelo
    MIME é roteada pelo agente usando a extensão do nome. Um anexo com MIME
    válido e nome ausente/incorreto pode ser salvo e depois rejeitado como
    extensão não suportada.
-9. **Nem toda atualização reavalia automaticamente.** Editar um candidato passa
-   a disparar novo matching, mas abrir uma vaga antes pausada ou alterar
-   requisitos/nota de corte ainda não dispara. Também não existe varredura
-   periódica dos candidatos contra vagas atualizadas.
-10. **A saída `vagaFoiInferida` não significa que a plataforma escolheu uma vaga
-    por inferência.** A vaga já foi escolhida na fase 1; o campo indica apenas que
-    o avaliador considerou os dados da vaga esparsos e inferiu parte do perfil.
+8. **A saída `vagaFoiInferida` não significa que a plataforma escolheu uma vaga
+   por inferência.** A vaga já foi escolhida na fase 1; o campo indica apenas que
+   o avaliador considerou os dados da vaga esparsos e inferiu parte do perfil.
 
 ### Divergências de documentação
 
@@ -513,42 +567,9 @@ segundo plano, sem bloquear a navegação. Reservas atômicas impedem duas
 tentativas simultâneas para a mesma falha. O campo `retry_por` permanece nulo
 enquanto a autenticação estiver fora do MVP.
 
-### Regra de permanência no banco de talentos
+### Regra de permanência no banco de talentos — entregue
 
-- Formalizar a regra de três meses, definindo qual data do candidato será usada
-  no cálculo, se uma atualização do cadastro renova o período e qual fuso
-  horário e limite temporal serão aplicados.
-- Especificar a exceção de status `aprovado`, considerando que o candidato não
-  possui status próprio: definir quais triagens e resultados caracterizam essa
-  condição.
-- Definir como e quando candidatos vencidos serão retirados periodicamente do
-  banco de talentos, além da remoção feita durante os fluxos de matching.
-
-### Ingestão de currículo
-
-- Se `StorageProvider.save()` lançar uma exceção ao salvar o currículo,
-  registrar a falha no log do fluxo e registrar o erro operacional do item.
-
-### Vaga para candidatos
-
-- Ao carregar uma vaga não excluída, verificar também se ela está aberta antes
-  de continuar o processamento.
-- Verificar novamente se a vaga continua aberta imediatamente antes de criar
-  cada triagem.
-- Buscar somente candidatos não excluídos e com cadastro de, no máximo, três
-  meses. Esse limite define a participação no banco de talentos. Se o cadastro
-  tiver mais de três meses, retirar o candidato do banco de talentos e não
-  continuar seu processamento, exceto quando ele possuir status `aprovado`.
-- Registrar todo erro ocorrido nesse fluxo.
-
-### Candidato para vagas
-
-- Buscar somente candidatos não excluídos e com cadastro de, no máximo, três
-  meses. Se o cadastro tiver mais de três meses, retirar o candidato do banco de
-  talentos e não continuar seu processamento, exceto quando ele possuir status
-  `aprovado`.
-- Registrar todo erro ocorrido nesse fluxo.
-
-### Processamento de cada par aprovado
-
-- Registrar todo erro ocorrido nesse fluxo.
+A regra usa `updatedAt`, três meses-calendário em UTC e limite inclusivo. Uma
+triagem ativa com `resultado = aprovado` mantém a elegibilidade. Não existe job
+periódico: a remoção dos vencidos acontece apenas nos dois fluxos de matching,
+como detalhado na seção "Permanência no banco de talentos" e no ADR-0013.

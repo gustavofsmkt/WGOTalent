@@ -10,6 +10,12 @@ vi.mock("~/lib/auth/dal", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => fn(),
+}));
+vi.mock("~/server/agents/orquestracao", () => ({
+  orquestrarParaVagaNova: vi.fn().mockResolvedValue(undefined),
+}));
 
 const mockEnv = {
   DATABASE_URL: "postgres://postgres:postgres@localhost:5432/wgotalent",
@@ -45,14 +51,31 @@ import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { revalidatePath } from "next/cache";
+import { orquestrarParaVagaNova } from "~/server/agents/orquestracao";
 import type { Vaga } from "~/server/db/schema";
 
 describe("vagas server actions", () => {
   const validCargoId = "550e8400-e29b-41d4-a716-446655440000";
   const validCidadeId = "660e8400-e29b-41d4-a716-446655440001";
+  const outraCidadeId = "660e8400-e29b-41d4-a716-446655440002";
+  const vagaAnteriorAberta = {
+    id: "vaga-1",
+    cargoId: validCargoId,
+    status: "aberta" as const,
+    posicoesDisponiveis: 1,
+    notaCorte: "65.00",
+    remuneracaoOferecida: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    deletedAt: null,
+  } as Vaga;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(vagaRepository, "findById").mockResolvedValue(vagaAnteriorAberta);
+    vi.spyOn(vagaRepository, "findCidadeIdsByVagaId").mockResolvedValue([
+      validCidadeId,
+    ]);
   });
 
   describe("createVaga", () => {
@@ -109,6 +132,7 @@ describe("vagas server actions", () => {
       expect(vagaRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ notaCorte: "75.00" }),
       );
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
       expect(revalidatePath).toHaveBeenCalledWith("/vagas");
     });
 
@@ -155,6 +179,7 @@ describe("vagas server actions", () => {
       });
 
       expect(result.success).toBe(true);
+      expect(orquestrarParaVagaNova).not.toHaveBeenCalled();
     });
 
     it("blocks creation when a recent duplicate submission is detected", async () => {
@@ -368,11 +393,15 @@ describe("vagas server actions", () => {
       },
     );
 
-    it("does not close screenings when the vaga is set to aberta", async () => {
+    it("reprocesses candidates when a paused vaga is reopened", async () => {
+      vi.mocked(vagaRepository.findById).mockResolvedValueOnce({
+        ...vagaAnteriorAberta,
+        status: "pausada",
+      });
       vi.spyOn(vagaRepository, "update").mockResolvedValueOnce({
-        id: "vaga-1",
+        ...vagaAnteriorAberta,
         status: "aberta",
-      } as unknown as Vaga);
+      });
       const finalizarSpy = vi.spyOn(
         triagemRepository,
         "finalizarEmAndamentoComoBancoTalentosPorVaga",
@@ -386,6 +415,64 @@ describe("vagas server actions", () => {
         "vaga-1",
         expect.objectContaining({ status: "aberta" }),
       );
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
+    });
+
+    it("reprocesses candidates when the cutoff score changes on an open vaga", async () => {
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce({
+        ...vagaAnteriorAberta,
+        notaCorte: "70.00",
+      });
+
+      const result = await updateVaga("vaga-1", { notaCorte: 70 });
+
+      expect(result.success).toBe(true);
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
+    });
+
+    it("adds a city and reprocesses an open vaga", async () => {
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(
+        vagaAnteriorAberta,
+      );
+
+      const result = await updateVaga("vaga-1", {
+        cidadeIds: [validCidadeId, outraCidadeId],
+      });
+
+      expect(result.success).toBe(true);
+      expect(vagaRepository.update).toHaveBeenCalledWith(
+        "vaga-1",
+        expect.objectContaining({
+          cidadeIds: [validCidadeId, outraCidadeId],
+        }),
+      );
+      expect(orquestrarParaVagaNova).toHaveBeenCalledWith("vaga-1");
+    });
+
+    it("rejects removing an existing city from a vaga", async () => {
+      const updateSpy = vi.spyOn(vagaRepository, "update");
+
+      const result = await updateVaga("vaga-1", {
+        cidadeIds: [outraCidadeId],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe(
+        "Não é permitido remover cidades de uma vaga existente. Apenas novas cidades podem ser adicionadas.",
+      );
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(orquestrarParaVagaNova).not.toHaveBeenCalled();
+    });
+
+    it("does not reprocess when an open status is submitted without a matching change", async () => {
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(
+        vagaAnteriorAberta,
+      );
+
+      const result = await updateVaga("vaga-1", { status: "aberta" });
+
+      expect(result.success).toBe(true);
+      expect(orquestrarParaVagaNova).not.toHaveBeenCalled();
     });
 
     it("validates cargo is active when updating cargoId", async () => {
@@ -416,7 +503,7 @@ describe("vagas server actions", () => {
     });
 
     it("returns error when vaga is not found on update", async () => {
-      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(null);
+      vi.mocked(vagaRepository.findById).mockResolvedValueOnce(null);
 
       const result = await updateVaga("vaga-999", {
         status: "cancelada",
@@ -424,6 +511,7 @@ describe("vagas server actions", () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toBe("Vaga não encontrada");
+      expect(vagaRepository.update).not.toHaveBeenCalled();
     });
 
     it("returns validation error for empty or invalid update payload", async () => {

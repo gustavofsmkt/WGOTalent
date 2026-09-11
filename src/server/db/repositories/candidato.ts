@@ -279,10 +279,19 @@ async function marcarCandidatosNoBancoTalentos(
 
   await dbOrTx
     .update(candidatos)
-    .set({
-      emBancoTalentos: true,
-      updatedAt: new Date().toISOString(),
-    })
+    .set({ emBancoTalentos: true })
+    .where(and(inArray(candidatos.id, ids), isNull(candidatos.deletedAt)));
+}
+
+async function desmarcarCandidatosNoBancoTalentos(
+  ids: string[],
+  dbOrTx: DbOrTx,
+): Promise<void> {
+  if (ids.length === 0) return;
+
+  await dbOrTx
+    .update(candidatos)
+    .set({ emBancoTalentos: false })
     .where(and(inArray(candidatos.id, ids), isNull(candidatos.deletedAt)));
 }
 
@@ -539,13 +548,16 @@ export const candidatoRepository = {
   findActiveByCidade: async (
     cidades: string[],
     dbOrTx: DbOrTx = db,
-  ): Promise<{ id: string; resumoProfissional: string }[]> => {
+  ): Promise<
+    { id: string; resumoProfissional: string; updatedAt: string }[]
+  > => {
     if (cidades.length === 0) return [];
     return notDeleted(
       dbOrTx
         .select({
           id: candidatos.id,
           resumoProfissional: candidatos.resumoProfissional,
+          updatedAt: candidatos.updatedAt,
         })
         .from(candidatos),
       candidatos,
@@ -934,12 +946,23 @@ export const candidatoRepository = {
           .values(certificacoesNovas.map((c) => ({ ...c, candidatoId: id })));
       }
 
-      const candidato = await candidatoRepository.findByIdComplete(id, tx);
       const houveMudanca =
         houveMudancaEscalar ||
         formacoesNovas.length > 0 ||
         experienciasNovas.length > 0 ||
         certificacoesNovas.length > 0;
+
+      // Uma atualização real em qualquer parte do cadastro agregado renova o
+      // prazo de permanência. Alterações escalares já atualizaram o timestamp
+      // acima; aqui cobrimos os casos em que somente uma coleção filha mudou.
+      if (houveMudanca && !houveMudancaEscalar) {
+        await tx
+          .update(candidatos)
+          .set({ updatedAt: new Date().toISOString() })
+          .where(eq(candidatos.id, id));
+      }
+
+      const candidato = await candidatoRepository.findByIdComplete(id, tx);
 
       return { candidato, houveMudanca };
     });
@@ -1025,10 +1048,14 @@ export const candidatoRepository = {
     id: string,
     dbOrTx: DbOrTx = db,
   ): Promise<void> => {
-    await dbOrTx
-      .update(candidatos)
-      .set({ emBancoTalentos: false })
-      .where(eq(candidatos.id, id));
+    await desmarcarCandidatosNoBancoTalentos([id], dbOrTx);
+  },
+
+  desmarcarBancoTalentosPorIds: async (
+    ids: string[],
+    dbOrTx: DbOrTx = db,
+  ): Promise<void> => {
+    await desmarcarCandidatosNoBancoTalentos(ids, dbOrTx);
   },
 
   updateObservacoesRh: async (

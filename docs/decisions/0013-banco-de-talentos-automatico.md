@@ -59,6 +59,20 @@ do próprio `Candidato`, não da `Triagem`: novo campo booleano
 4. **Sem UI de edição direta do campo por ora**: o valor é derivado dos fluxos
    de matching e encerramento. O RH altera o estado por meio da triagem ou da
    vaga, sem editar diretamente `em_banco_talentos`.
+5. **Permanência por três meses-calendário**:
+   - O prazo usa `Candidato.updatedAt`. Uma atualização cadastral renova o
+     período; alterações automáticas apenas em `emBancoTalentos` não alteram
+     `updatedAt` e, portanto, não renovam o prazo.
+   - O limite é calculado em UTC, subtraindo três meses-calendário do instante
+     atual e ajustando para o último dia do mês quando necessário. O instante
+     do limite é inclusivo (`updatedAt >= limite` continua elegível).
+   - Um candidato vencido continua elegível quando possui ao menos uma
+     `Triagem` não excluída com `resultado = aprovado`, independentemente da
+     vaga. Esse é o significado de "candidato aprovado", pois `Candidato` não
+     possui status próprio.
+   - A expiração não usa job periódico. Ela é aplicada somente nos fluxos de
+     matching candidato → vagas e vaga → candidatos. Um vencido sem a exceção
+     é desmarcado (`emBancoTalentos = false`) e não chega ao classificador.
 
 ## Consequências
 
@@ -69,13 +83,11 @@ do próprio `Candidato`, não da `Triagem`: novo campo booleano
   ([status-badge.tsx](../../src/components/status-badge.tsx)). Dá visibilidade
   ao RH sobre candidatos sem vaga compatível, que antes ficavam invisíveis, e
   mantém o indicador geral sincronizado ao encerrar uma triagem ou vaga.
-- **Trade-offs:** não reavalia retroativamente candidatos cujas triagens
-  existentes terminaram todas em reprovado/desistente sem nenhuma vaga
-  alternativa disponível — esses só entram no banco de talentos se passarem
-  de novo por `orquestrarParaCandidatoNovo` (ex.: reprocessamento por
-  duplicidade) ou tiverem sido capturados depois desta decisão. Considerado
-  aceitável para o escopo pedido (momento de intake), podendo virar um
-  job de reavaliação periódica no futuro se necessário.
+- **Trade-offs:** a remoção por vencimento é oportunística: sem execução de
+  matching relacionada ao candidato ou à sua cidade, o indicador pode
+  permanecer marcado depois do prazo até o próximo matching relevante. Esse
+  comportamento é intencional porque a decisão exclui uma varredura periódica.
+  A regra também não reavalia candidatos sem um novo gatilho de matching.
 
 ## Alternativas
 
