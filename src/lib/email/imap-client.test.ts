@@ -158,6 +158,8 @@ describe("buscarMensagensNovas", () => {
     expect(result.mensagens).toEqual([
       {
         uid: 11,
+        assunto: null,
+        corpo: null,
         anexos: [
           {
             filename: "cv.pdf",

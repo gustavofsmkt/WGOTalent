@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   type SQL,
+  type Column,
 } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
@@ -40,6 +41,7 @@ import {
   type PaginationInput,
 } from "~/lib/pagination";
 import { toOrderBy, type SortState } from "~/lib/sort";
+import type { TriagemSortKey } from "~/lib/triagem-list-filters";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -60,18 +62,14 @@ export interface TriagemFiltros {
   sort?: SortState | null;
 }
 
-const TRIAGEM_SORT_COLUMNS = {
+const TRIAGEM_SORT_COLUMNS: Record<TriagemSortKey, Column> = {
   candidato: candidatos.nome,
   vaga: cargos.titulo,
   etapa: triagens.etapa,
   resultado: triagens.resultado,
   score: avaliacaoIA.scoreIa,
   createdAt: triagens.createdAt,
-} as const;
-
-export const TRIAGEM_SORT_KEYS = Object.keys(
-  TRIAGEM_SORT_COLUMNS,
-) as (keyof typeof TRIAGEM_SORT_COLUMNS)[];
+};
 
 function buildTriagemOrderBy(sort: SortState | null | undefined): SQL[] {
   if (sort && sort.sort in TRIAGEM_SORT_COLUMNS) {

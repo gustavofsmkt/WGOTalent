@@ -3,12 +3,25 @@ import {
   triagemMotivoEnum,
   triagemResultadoEnum,
 } from "~/server/db/schema";
-import {
-  TRIAGEM_SORT_KEYS,
-  type TriagemFiltros,
-} from "~/server/db/repositories/triagem";
+import type { TriagemFiltros } from "~/server/db/repositories/triagem";
 import { parsePage, type SearchParamsRecord } from "~/lib/pagination";
 import { parseSort } from "~/lib/sort";
+
+/**
+ * Colunas ordenáveis da lista de triagens. Fonte única da verdade: o parser
+ * (pura, sem dependência de banco) valida o `sort` da URL contra esta lista, e
+ * o repositório mapeia cada chave para a coluna Drizzle correspondente.
+ */
+export const TRIAGEM_SORT_KEYS = [
+  "candidato",
+  "vaga",
+  "etapa",
+  "resultado",
+  "score",
+  "createdAt",
+] as const;
+
+export type TriagemSortKey = (typeof TRIAGEM_SORT_KEYS)[number];
 
 export interface TriagemListSearchParams extends SearchParamsRecord {
   etapa?: string;
