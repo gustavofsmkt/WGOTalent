@@ -47,12 +47,18 @@ do próprio `Candidato`, não da `Triagem`: novo campo booleano
    sai do banco automaticamente (`desmarcarBancoTalentos`), centralizado em
    `processarParAprovado` — ponto único onde uma `Triagem` nova é de fato
    criada, compartilhado pelos dois sentidos de orquestração.
-3. **Sem UI de edição manual do campo por ora**: o valor é 100% derivado da
-   orquestração automática. O RH continua podendo usar `resultado =
-   banco_talentos` numa `Triagem` específica para o caso "esse candidato não
-   segue para *esta* vaga, mas continua interessante" — os dois conceitos
-   coexistem e não se confundem (um é do candidato em geral, o outro é do
-   par candidato-vaga).
+3. **Sincronização ao encerrar processos**:
+   - Quando uma vaga recebe `status = concluida` ou `status = cancelada`, suas
+     triagens ativas ainda `em_andamento` são finalizadas como
+     `banco_talentos`, e os respectivos candidatos recebem
+     `em_banco_talentos = true`.
+   - Quando o RH finaliza manualmente uma triagem como `banco_talentos`, o
+     candidato vinculado também recebe `em_banco_talentos = true`.
+   As mutações relacionadas são executadas em uma única transação. Triagens já
+   encerradas como `aprovado`, `reprovado` ou `desistente` não são alteradas.
+4. **Sem UI de edição direta do campo por ora**: o valor é derivado dos fluxos
+   de matching e encerramento. O RH altera o estado por meio da triagem ou da
+   vaga, sem editar diretamente `em_banco_talentos`.
 
 ## Consequências
 
@@ -61,7 +67,8 @@ do próprio `Candidato`, não da `Triagem`: novo campo booleano
   constraint `UNIQUE(candidato_id, vaga_id)`. Reaproveita o valor de UI já
   existente para `banco_talentos` em `statusConfigMap`
   ([status-badge.tsx](../../src/components/status-badge.tsx)). Dá visibilidade
-  ao RH sobre candidatos sem vaga compatível, que antes ficavam invisíveis.
+  ao RH sobre candidatos sem vaga compatível, que antes ficavam invisíveis, e
+  mantém o indicador geral sincronizado ao encerrar uma triagem ou vaga.
 - **Trade-offs:** não reavalia retroativamente candidatos cujas triagens
   existentes terminaram todas em reprovado/desistente sem nenhuma vaga
   alternativa disponível — esses só entram no banco de talentos se passarem

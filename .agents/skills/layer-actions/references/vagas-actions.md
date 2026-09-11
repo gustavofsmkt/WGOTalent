@@ -5,10 +5,14 @@ required FK to `Cargo` (which chains to `Departamento`).
 
 ## Responsibilities
 
-Validates input including `cargo_id` and `posicoes_disponiveis` (must be > 0),
-runs Drizzle mutations on `vagas`, calls `revalidatePath('/vagas')`. The `status`
-enum (`aberta`, `concluida`, `cancelada`, `pausada`, `incompleta`) is edited as a
-plain field — no state-machine guards are applied in the MVP.
+Valida entradas como `cargo_id` e `posicoes_disponiveis` (deve ser maior que
+zero), executa mutações por meio dos repositórios e chama
+`revalidatePath('/vagas')`. Quando `status` recebe `concluida` ou `cancelada`,
+toda `Triagem` ativa da vaga cujo `resultado` ainda seja `em_andamento` é
+finalizada como `banco_talentos`, e os candidatos afetados recebem
+`em_banco_talentos = true`, tudo na mesma transação. Resultados existentes como
+`aprovado`, `reprovado` e `desistente` são preservados. Os status `aberta`,
+`pausada` e `incompleta` não disparam essa regra.
 
 Not responsible for: cascading to `Triagem` when a Vaga is soft-deleted, or
 fetching the Cargo option list for forms (→ layer-ui RHPages).
@@ -57,7 +61,12 @@ export async function deletarVaga(id: string) {
 
 1. Ensure `src/lib/validation/vaga.ts` includes all needed fields.
 2. Add or update functions in `src/actions/vagas.ts`.
-3. Call `revalidatePath('/vagas')` (and `/vagas/[id]` for edit) after mutation.
+3. Ao definir `concluida` ou `cancelada`, atualize a vaga, suas triagens em
+   andamento e o banco de talentos dos candidatos em uma única transação por
+   meio dos métodos dos repositórios.
+4. Chame `revalidatePath('/vagas')` (e `/vagas/[id]` na edição) após a mutação;
+   invalide também `/triagens`, `/candidatos` e `/dashboard` quando as triagens
+   forem finalizadas.
 
 ---
 

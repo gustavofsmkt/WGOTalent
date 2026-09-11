@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import postgres from "postgres";
+import { db } from "~/server/db";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { vagaRepository } from "~/server/db/repositories/vaga";
@@ -28,7 +29,7 @@ export async function createTriagem(
     };
   }
 
-  const { vagaId, candidatoId, ...rest } = parsed.data;
+  const { vagaId, candidatoId } = parsed.data;
 
   try {
     // Valida se candidato existe e está ativo
@@ -146,7 +147,19 @@ export async function updateTriagem(
       }
     }
 
-    const triagem = await triagemRepository.update(id, parsed.data);
+    const triagem =
+      parsed.data.resultado === "banco_talentos"
+        ? await db.transaction(async (tx) => {
+            const updated = await triagemRepository.update(id, parsed.data, tx);
+            if (!updated) return undefined;
+
+            await candidatoRepository.marcarBancoTalentos(
+              existingTriagem.candidato.id,
+              tx,
+            );
+            return updated;
+          })
+        : await triagemRepository.update(id, parsed.data);
     revalidatePath("/triagens");
     revalidatePath(`/triagens/${id}`);
     revalidatePath(`/candidatos/${existingTriagem.candidato.id}`);

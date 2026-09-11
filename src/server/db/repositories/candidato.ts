@@ -271,6 +271,21 @@ function buildCandidatoListConditions(filters: CandidatoListFilters): SQL[] {
   return conditions.filter((condition): condition is SQL => Boolean(condition));
 }
 
+async function marcarCandidatosNoBancoTalentos(
+  ids: string[],
+  dbOrTx: DbOrTx,
+): Promise<void> {
+  if (ids.length === 0) return;
+
+  await dbOrTx
+    .update(candidatos)
+    .set({
+      emBancoTalentos: true,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(inArray(candidatos.id, ids), isNull(candidatos.deletedAt)));
+}
+
 export const candidatoRepository = {
   findPageActiveSummary: async (
     filters: CandidatoListFilters,
@@ -996,10 +1011,14 @@ export const candidatoRepository = {
     id: string,
     dbOrTx: DbOrTx = db,
   ): Promise<void> => {
-    await dbOrTx
-      .update(candidatos)
-      .set({ emBancoTalentos: true })
-      .where(eq(candidatos.id, id));
+    await marcarCandidatosNoBancoTalentos([id], dbOrTx);
+  },
+
+  marcarBancoTalentosPorIds: async (
+    ids: string[],
+    dbOrTx: DbOrTx = db,
+  ): Promise<void> => {
+    await marcarCandidatosNoBancoTalentos(ids, dbOrTx);
   },
 
   desmarcarBancoTalentos: async (

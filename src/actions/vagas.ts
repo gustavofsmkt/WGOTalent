@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
+import { db } from "~/server/db";
+import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
+import { triagemRepository } from "~/server/db/repositories/triagem";
 import { vagaRepository } from "~/server/db/repositories/vaga";
 import type { ActionState } from "~/lib/action-utils";
 import { createVagaSchema, updateVagaSchema } from "~/lib/validation/vaga";
@@ -98,10 +101,31 @@ export async function updateVaga(
       }
     }
 
-    const vaga = await vagaRepository.update(id, {
+    const updateData = {
       ...parsed.data,
       cidadeIds: parsed.data.cidadeIds,
-    });
+    };
+    const encerraTriagens =
+      parsed.data.status === "concluida" ||
+      parsed.data.status === "cancelada";
+
+    const vaga = encerraTriagens
+      ? await db.transaction(async (tx) => {
+          const updated = await vagaRepository.update(id, updateData, tx);
+          if (!updated) return null;
+
+          const candidatoIds =
+            await triagemRepository.finalizarEmAndamentoComoBancoTalentosPorVaga(
+              id,
+              tx,
+            );
+          await candidatoRepository.marcarBancoTalentosPorIds(
+            candidatoIds,
+            tx,
+          );
+          return updated;
+        })
+      : await vagaRepository.update(id, updateData);
 
     if (!vaga) {
       return { success: false, message: "Vaga não encontrada" };
@@ -109,6 +133,11 @@ export async function updateVaga(
 
     revalidatePath("/vagas");
     revalidatePath(`/vagas/${id}`);
+    if (encerraTriagens) {
+      revalidatePath("/triagens");
+      revalidatePath("/candidatos");
+      revalidatePath("/dashboard");
+    }
 
     return {
       success: true,

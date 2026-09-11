@@ -494,6 +494,30 @@ export const triagemRepository = {
     return rows[0];
   },
 
+  finalizarEmAndamentoComoBancoTalentosPorVaga: async (
+    vagaId: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<string[]> => {
+    const rows = await dbOrTx
+      .update(triagens)
+      .set({
+        etapa: "finalizado",
+        resultado: "banco_talentos",
+        motivo: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(triagens.vagaId, vagaId),
+          eq(triagens.resultado, "em_andamento"),
+          isNull(triagens.deletedAt),
+        ),
+      )
+      .returning({ candidatoId: triagens.candidatoId });
+
+    return rows.map((row) => row.candidatoId);
+  },
+
   softDelete: async (id: string, dbOrTx: DbOrTx = db): Promise<void> => {
     await dbOrTx
       .update(triagens)

@@ -269,3 +269,11 @@ _Data: 2026-09-08_
 - Administração ganhou Configurações Gerais › Usuários, com listagem, criação por username e redefinição confirmada; ambas exibem uma senha numérica aleatória de oito dígitos uma única vez.
 - Criada a página `/perfil`, com dados da conta e troca de senha, além do acesso fixado no rodapé da navegação.
 - Autorização/RBAC permanece fora do escopo: todas as contas autenticadas têm as mesmas capacidades.
+
+## Marco: Encerramento automático de triagens ao fechar vaga
+
+_Data: 2026-09-11_
+
+- Ao definir o status de uma vaga como `concluida` ou `cancelada`, suas triagens ativas com `resultado = em_andamento` passam atomicamente para `etapa = finalizado` e `resultado = banco_talentos`; `pausada` e `incompleta` não disparam a regra.
+- Triagens já encerradas como `aprovado`, `reprovado` ou `desistente` são preservadas; registros soft-deleted também não são alterados.
+- Os candidatos das triagens afetadas recebem `em_banco_talentos = true` na mesma transação. A finalização manual de uma triagem como `banco_talentos` também marca o candidato, atomicamente.

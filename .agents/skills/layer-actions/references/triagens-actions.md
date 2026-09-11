@@ -11,6 +11,10 @@ Validates `etapa`/`resultado`/`motivo` using the Zod coupling rule from
 `/triagens` and the specific triagem detail route. Does not create `AvaliacaoIA`
 rows — that is the exclusive responsibility of the native AI engine.
 
+Ao atualizar manualmente uma triagem para `resultado = banco_talentos`, a action
+também define `candidato.em_banco_talentos = true`. As duas mutações devem
+ocorrer na mesma transação.
+
 Not responsible for: `AvaliacaoIA` mutations (→ native AI engine),
 Candidato cascade on soft-delete (→ CandidatosActions), or rendering the pipeline
 view (→ layer-ui).
@@ -72,6 +76,8 @@ export async function deletarTriagem(id: string) {
 - The `motivo` pairing rule is enforced by the Zod schema — do not duplicate the coupling check inline.
 - Catch the partial unique index violation on `(candidato_id, vaga_id)` for `resultado = 'em_andamento'` and return `{ success: false, error: 'triagem_duplicada' }`.
 - `AvaliacaoIA` is never created or modified by actions in this file — only by the native AI engine.
+- A atualização manual para `banco_talentos` também marca o candidato no banco
+  de talentos, atomicamente.
 - Never hard-delete.
 
 ---

@@ -22,6 +22,13 @@ vi.mock("~/lib/auth/dal", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
+vi.mock("~/server/db", () => ({
+  db: {
+    transaction: vi.fn(
+      async (callback: (tx: object) => unknown) => callback({}),
+    ),
+  },
+}));
 // `after()` roda a avaliação do par em segundo plano na action; no teste o
 // executamos de imediato para observar a chamada ao avaliador.
 vi.mock("next/server", () => ({
@@ -41,6 +48,7 @@ vi.mock("~/server/db/repositories/triagem", () => ({
 vi.mock("~/server/db/repositories/candidato", () => ({
   candidatoRepository: {
     findById: vi.fn(),
+    marcarBancoTalentos: vi.fn(),
   },
 }));
 
@@ -247,6 +255,7 @@ describe("Triagem Server Actions", () => {
           motivo: "curriculo",
         }),
       );
+      expect(candidatoRepository.marcarBancoTalentos).not.toHaveBeenCalled();
     });
 
     it("rejeita encerramento como reprovado sem motivo", async () => {
@@ -289,6 +298,7 @@ describe("Triagem Server Actions", () => {
         etapa: "finalizado",
         resultado: "banco_talentos",
       } as unknown as Triagem);
+      vi.mocked(candidatoRepository.marcarBancoTalentos).mockResolvedValue();
 
       const response = await updateTriagem("triagem-123", {
         etapa: "finalizado",
@@ -305,6 +315,11 @@ describe("Triagem Server Actions", () => {
           resultado: "banco_talentos",
           motivo: null,
         }),
+        expect.anything(),
+      );
+      expect(candidatoRepository.marcarBancoTalentos).toHaveBeenCalledWith(
+        "cand-123",
+        expect.anything(),
       );
     });
 

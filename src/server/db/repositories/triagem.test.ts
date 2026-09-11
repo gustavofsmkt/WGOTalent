@@ -15,6 +15,7 @@ import { triagens, vagas, avaliacaoIA } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
 import { and, eq, gte, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { PgDialect } from "drizzle-orm/pg-core";
 import postgres from "postgres";
 
 const client = postgres(
@@ -30,7 +31,55 @@ describe("triagemRepository", () => {
     expect(typeof triagemRepository.findEmCurriculoPorCandidato).toBe(
       "function",
     );
+    expect(
+      typeof triagemRepository.finalizarEmAndamentoComoBancoTalentosPorVaga,
+    ).toBe("function");
     expect(typeof triagemRepository.softDelete).toBe("function");
+  });
+
+  it("moves only active, in-progress screenings for the vaga to banco de talentos", async () => {
+    const builder = {
+      set: vi.fn(),
+      where: vi.fn(),
+      returning: vi
+        .fn()
+        .mockResolvedValue([
+          { candidatoId: "candidato-1" },
+          { candidatoId: "candidato-2" },
+        ]),
+    };
+    builder.set.mockReturnValue(builder);
+    builder.where.mockReturnValue(builder);
+    const fakeDb = {
+      update: vi.fn(() => builder),
+    } as unknown as DbOrTx;
+    const vagaId = "22222222-2222-2222-2222-222222222222";
+
+    const candidatoIds =
+      await triagemRepository.finalizarEmAndamentoComoBancoTalentosPorVaga(
+        vagaId,
+        fakeDb,
+      );
+
+    expect(builder.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        etapa: "finalizado",
+        resultado: "banco_talentos",
+        motivo: null,
+      }),
+    );
+
+    const condition = builder.where.mock.calls[0]?.[0];
+    const query = new PgDialect().sqlToQuery(condition);
+    expect(query.sql).toContain('"wgotalent_triagens"."vaga_id" =');
+    expect(query.sql).toContain('"wgotalent_triagens"."resultado" =');
+    expect(query.sql).toContain(
+      '"wgotalent_triagens"."deleted_at" is null',
+    );
+    expect(query.params).toEqual(
+      expect.arrayContaining([vagaId, "em_andamento"]),
+    );
+    expect(candidatoIds).toEqual(["candidato-1", "candidato-2"]);
   });
 
   it("isAtiva filters by triagem id and deleted_at is null", () => {

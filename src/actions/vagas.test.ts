@@ -25,6 +25,9 @@ vi.mock("~/env", () => ({
 
 vi.mock("~/server/db", () => ({
   db: {
+    transaction: vi.fn(
+      async (callback: (tx: object) => unknown) => callback({}),
+    ),
     query: {
       vagas: {
         findFirst: vi.fn(),
@@ -38,7 +41,9 @@ vi.mock("~/server/db", () => ({
 
 import { createVaga, updateVaga, deleteVaga } from "./vagas";
 import { vagaRepository } from "~/server/db/repositories/vaga";
+import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { cargoRepository } from "~/server/db/repositories/cargo";
+import { triagemRepository } from "~/server/db/repositories/triagem";
 import { revalidatePath } from "next/cache";
 import type { Vaga } from "~/server/db/schema";
 
@@ -269,6 +274,14 @@ describe("vagas server actions", () => {
       vi.spyOn(vagaRepository, "update").mockResolvedValueOnce(
         mockUpdated as unknown as Vaga,
       );
+      vi.spyOn(
+        triagemRepository,
+        "finalizarEmAndamentoComoBancoTalentosPorVaga",
+      ).mockResolvedValueOnce(["candidato-1"]);
+      vi.spyOn(
+        candidatoRepository,
+        "marcarBancoTalentosPorIds",
+      ).mockResolvedValueOnce();
 
       const result = await updateVaga("vaga-1", {
         status: "concluida",
@@ -286,6 +299,92 @@ describe("vagas server actions", () => {
       expect(vagaRepository.update).toHaveBeenCalledWith(
         "vaga-1",
         expect.objectContaining({ notaCorte: "80.00" }),
+        expect.anything(),
+      );
+      expect(
+        triagemRepository.finalizarEmAndamentoComoBancoTalentosPorVaga,
+      ).toHaveBeenCalledWith("vaga-1", expect.anything());
+      expect(
+        candidatoRepository.marcarBancoTalentosPorIds,
+      ).toHaveBeenCalledWith(["candidato-1"], expect.anything());
+      expect(revalidatePath).toHaveBeenCalledWith("/triagens");
+      expect(revalidatePath).toHaveBeenCalledWith("/candidatos");
+      expect(revalidatePath).toHaveBeenCalledWith("/dashboard");
+    });
+
+    it.each(["concluida", "cancelada"] as const)(
+      "moves in-progress screenings to banco de talentos when status becomes %s",
+      async (status) => {
+        vi.spyOn(vagaRepository, "update").mockResolvedValueOnce({
+          id: "vaga-1",
+          status,
+        } as unknown as Vaga);
+        const finalizarSpy = vi
+          .spyOn(
+            triagemRepository,
+            "finalizarEmAndamentoComoBancoTalentosPorVaga",
+          )
+          .mockResolvedValueOnce(["candidato-1", "candidato-2"]);
+        const marcarSpy = vi
+          .spyOn(candidatoRepository, "marcarBancoTalentosPorIds")
+          .mockResolvedValueOnce();
+
+        const result = await updateVaga("vaga-1", { status });
+
+        expect(result.success).toBe(true);
+        expect(finalizarSpy).toHaveBeenCalledWith("vaga-1", expect.anything());
+        expect(marcarSpy).toHaveBeenCalledWith(
+          ["candidato-1", "candidato-2"],
+          expect.anything(),
+        );
+      },
+    );
+
+    it.each(["pausada", "incompleta"] as const)(
+      "does not close screenings when status becomes %s",
+      async (status) => {
+        vi.spyOn(vagaRepository, "update").mockResolvedValueOnce({
+          id: "vaga-1",
+          status,
+        } as unknown as Vaga);
+        const finalizarSpy = vi.spyOn(
+          triagemRepository,
+          "finalizarEmAndamentoComoBancoTalentosPorVaga",
+        );
+        const marcarSpy = vi.spyOn(
+          candidatoRepository,
+          "marcarBancoTalentosPorIds",
+        );
+
+        const result = await updateVaga("vaga-1", { status });
+
+        expect(result.success).toBe(true);
+        expect(finalizarSpy).not.toHaveBeenCalled();
+        expect(marcarSpy).not.toHaveBeenCalled();
+        expect(vagaRepository.update).toHaveBeenCalledWith(
+          "vaga-1",
+          expect.objectContaining({ status }),
+        );
+      },
+    );
+
+    it("does not close screenings when the vaga is set to aberta", async () => {
+      vi.spyOn(vagaRepository, "update").mockResolvedValueOnce({
+        id: "vaga-1",
+        status: "aberta",
+      } as unknown as Vaga);
+      const finalizarSpy = vi.spyOn(
+        triagemRepository,
+        "finalizarEmAndamentoComoBancoTalentosPorVaga",
+      );
+
+      const result = await updateVaga("vaga-1", { status: "aberta" });
+
+      expect(result.success).toBe(true);
+      expect(finalizarSpy).not.toHaveBeenCalled();
+      expect(vagaRepository.update).toHaveBeenCalledWith(
+        "vaga-1",
+        expect.objectContaining({ status: "aberta" }),
       );
     });
 
