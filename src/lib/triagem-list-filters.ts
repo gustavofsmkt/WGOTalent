@@ -3,8 +3,12 @@ import {
   triagemMotivoEnum,
   triagemResultadoEnum,
 } from "~/server/db/schema";
-import type { TriagemFiltros } from "~/server/db/repositories/triagem";
+import {
+  TRIAGEM_SORT_KEYS,
+  type TriagemFiltros,
+} from "~/server/db/repositories/triagem";
 import { parsePage, type SearchParamsRecord } from "~/lib/pagination";
+import { parseSort } from "~/lib/sort";
 
 export interface TriagemListSearchParams extends SearchParamsRecord {
   etapa?: string;
@@ -16,6 +20,8 @@ export interface TriagemListSearchParams extends SearchParamsRecord {
   vaga?: string;
   scoreMinimo?: string;
   page?: string;
+  sort?: string;
+  dir?: string;
 }
 
 function isEnumValue<T extends string>(
@@ -77,6 +83,9 @@ export function parseTriagemListFilters(
     filters.scoreIaMinimo = scoreMinimoFilter;
   }
   if (query) filters.query = query;
+
+  const sort = parseSort(searchParams, TRIAGEM_SORT_KEYS);
+  if (sort) filters.sort = sort;
 
   return {
     filters,

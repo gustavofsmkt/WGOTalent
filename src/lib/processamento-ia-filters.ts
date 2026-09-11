@@ -4,6 +4,8 @@ export interface ProcessamentoIaSearchParams extends SearchParamsRecord {
   fluxo?: string;
   page?: string;
   somenteFalhas?: string;
+  sort?: string;
+  dir?: string;
 }
 
 export function parseSomenteFalhas(

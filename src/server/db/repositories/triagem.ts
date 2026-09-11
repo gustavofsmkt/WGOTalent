@@ -38,6 +38,7 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -55,6 +56,29 @@ export interface TriagemFiltros {
   vagaAtiva?: boolean;
   scoreIaMinimo?: number;
   query?: string;
+  sort?: SortState | null;
+}
+
+const TRIAGEM_SORT_COLUMNS = {
+  candidato: candidatos.nome,
+  vaga: cargos.titulo,
+  etapa: triagens.etapa,
+  resultado: triagens.resultado,
+  score: avaliacaoIA.scoreIa,
+  createdAt: triagens.createdAt,
+} as const;
+
+export const TRIAGEM_SORT_KEYS = Object.keys(
+  TRIAGEM_SORT_COLUMNS,
+) as (keyof typeof TRIAGEM_SORT_COLUMNS)[];
+
+function buildTriagemOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in TRIAGEM_SORT_COLUMNS) {
+    const column =
+      TRIAGEM_SORT_COLUMNS[sort.sort as keyof typeof TRIAGEM_SORT_COLUMNS];
+    return [toOrderBy(column, sort.dir), desc(triagens.id)];
+  }
+  return [desc(triagens.createdAt), desc(triagens.id)];
 }
 
 export interface TriagemListSummary {
@@ -224,7 +248,7 @@ export const triagemRepository = {
         triagens,
         ...conditions,
       )
-        .orderBy(desc(triagens.createdAt), desc(triagens.id))
+        .orderBy(...buildTriagemOrderBy(filtros.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

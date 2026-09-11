@@ -1,4 +1,4 @@
-import { eq, sql, asc, desc, gte, ilike, or } from "drizzle-orm";
+import { eq, sql, asc, desc, gte, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   cargos,
@@ -15,6 +15,7 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -33,9 +34,30 @@ export interface DepartamentoOption {
 
 export interface CargoListFilters {
   query?: string;
+  sort?: SortState | null;
 }
 
 export type VagaComCidades = Vaga & { cidades: CidadeRef[] };
+
+const CARGO_SORT_COLUMNS = {
+  titulo: cargos.titulo,
+  departamento: departamentos.nome,
+  ativo: cargos.ativo,
+  createdAt: cargos.createdAt,
+} as const;
+
+export const CARGO_SORT_KEYS = Object.keys(
+  CARGO_SORT_COLUMNS,
+) as (keyof typeof CARGO_SORT_COLUMNS)[];
+
+function buildCargoOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in CARGO_SORT_COLUMNS) {
+    const column =
+      CARGO_SORT_COLUMNS[sort.sort as keyof typeof CARGO_SORT_COLUMNS];
+    return [toOrderBy(column, sort.dir), asc(cargos.id)];
+  }
+  return [asc(cargos.titulo), asc(cargos.id)];
+}
 
 export const cargoRepository = {
   findAll: async (dbOrTx: DbOrTx = db): Promise<Cargo[]> => {
@@ -87,7 +109,7 @@ export const cargoRepository = {
         cargos,
         searchCondition,
       )
-        .orderBy(asc(cargos.titulo), asc(cargos.id))
+        .orderBy(...buildCargoOrderBy(filters.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

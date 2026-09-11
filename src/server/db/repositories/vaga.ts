@@ -32,6 +32,7 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -66,6 +67,28 @@ export interface VagaListFilters {
   query?: string;
   status?: Vaga["status"];
   cidadeId?: string;
+  sort?: SortState | null;
+}
+
+const VAGA_SORT_COLUMNS = {
+  cargo: cargos.titulo,
+  posicoes: vagas.posicoesDisponiveis,
+  remuneracao: vagas.remuneracaoOferecida,
+  status: vagas.status,
+  createdAt: vagas.createdAt,
+} as const;
+
+export const VAGA_SORT_KEYS = Object.keys(
+  VAGA_SORT_COLUMNS,
+) as (keyof typeof VAGA_SORT_COLUMNS)[];
+
+function buildVagaOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in VAGA_SORT_COLUMNS) {
+    const column =
+      VAGA_SORT_COLUMNS[sort.sort as keyof typeof VAGA_SORT_COLUMNS];
+    return [toOrderBy(column, sort.dir), desc(vagas.id)];
+  }
+  return [desc(vagas.createdAt), desc(vagas.id)];
 }
 
 export interface VagaListSummary {
@@ -197,7 +220,7 @@ export const vagaRepository = {
         vagas,
         ...conditions,
       )
-        .orderBy(desc(vagas.createdAt), desc(vagas.id))
+        .orderBy(...buildVagaOrderBy(filters.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

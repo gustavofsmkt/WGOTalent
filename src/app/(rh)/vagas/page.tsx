@@ -14,7 +14,10 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import { vagaRepository } from "~/server/db/repositories/vaga";
+import {
+  vagaRepository,
+  VAGA_SORT_KEYS,
+} from "~/server/db/repositories/vaga";
 import { cidadeRepository } from "~/server/db/repositories/cidade";
 import { DeleteVagaButton } from "./_components/delete-vaga-button";
 import { PageFilter } from "~/components/page-filter";
@@ -28,6 +31,7 @@ import {
   getTotalPages,
   parsePage,
 } from "~/lib/pagination";
+import { parseSort } from "~/lib/sort";
 
 const STATUS_OPTIONS = [
   { value: "todas", label: "Todos os status" },
@@ -46,6 +50,8 @@ interface VagasPageProps {
     status?: string;
     cidade?: string;
     page?: string;
+    sort?: string;
+    dir?: string;
   }>;
 }
 
@@ -55,6 +61,7 @@ export default async function VagasPage(props: VagasPageProps) {
   const statusFilter = (searchParams.status ?? "").trim().toLowerCase();
   const cidadeFilter = (searchParams.cidade ?? "").trim();
   const page = parsePage(searchParams.page);
+  const sort = parseSort(searchParams, VAGA_SORT_KEYS);
   const status = statusVagaEnum.enumValues.find(
     (value) => value === statusFilter,
   );
@@ -66,6 +73,7 @@ export default async function VagasPage(props: VagasPageProps) {
         status,
         cidadeId:
           cidadeFilter && cidadeFilter !== "todas" ? cidadeFilter : undefined,
+        sort,
       },
       { page, pageSize: DEFAULT_PAGE_SIZE },
     ),
@@ -108,6 +116,7 @@ export default async function VagasPage(props: VagasPageProps) {
   const columns: ColumnDef<Vaga>[] = [
     {
       header: "Cargo / Departamento",
+      sortKey: "cargo",
       cell: (vaga) => (
         <>
           <Link
@@ -136,6 +145,7 @@ export default async function VagasPage(props: VagasPageProps) {
     },
     {
       header: "Posições",
+      sortKey: "posicoes",
       cell: (vaga) => (
         <div className="flex items-center gap-2 text-sm font-medium">
           <Users className="size-3.5 text-muted-foreground" />
@@ -145,16 +155,19 @@ export default async function VagasPage(props: VagasPageProps) {
     },
     {
       header: "Remuneração",
+      sortKey: "remuneracao",
       cellClassName: "text-sm font-medium text-foreground",
       cell: (vaga) => formatCurrency(vaga.remuneracaoOferecida),
     },
     {
       header: "Status",
+      sortKey: "status",
       headerClassName: "w-[120px]",
       cell: (vaga) => <StatusBadge status={vaga.status} />,
     },
     {
       header: "Criada em",
+      sortKey: "createdAt",
       headerClassName: "w-[120px]",
       cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
       cell: (vaga) => formatDate(vaga.createdAt),

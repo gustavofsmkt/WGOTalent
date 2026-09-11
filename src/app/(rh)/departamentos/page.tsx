@@ -7,7 +7,10 @@ import { DataEmptyState } from "~/components/data-empty-state";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { departamentoRepository } from "~/server/db/repositories/departamento";
+import {
+  departamentoRepository,
+  DEPARTAMENTO_SORT_KEYS,
+} from "~/server/db/repositories/departamento";
 import { DeleteDepartamentoButton } from "./_components/delete-departamento-button";
 import { PageFilter } from "~/components/page-filter";
 import { DataTable, type ColumnDef } from "~/components/data-table";
@@ -18,19 +21,26 @@ import {
   getTotalPages,
   parsePage,
 } from "~/lib/pagination";
+import { parseSort } from "~/lib/sort";
 
 interface DepartamentosPageProps {
-  searchParams?: Promise<{ q?: string; page?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    page?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }
 
 export default async function DepartamentosPage(props: DepartamentosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const query = (searchParams.q ?? "").trim();
   const page = parsePage(searchParams.page);
+  const sort = parseSort(searchParams, DEPARTAMENTO_SORT_KEYS);
 
   const departamentosPage =
     await departamentoRepository.findPageWithActiveCargosCount(
-      { query },
+      { query, sort },
       { page, pageSize: DEFAULT_PAGE_SIZE },
     );
   const totalPages = getTotalPages(departamentosPage.total, DEFAULT_PAGE_SIZE);
@@ -61,6 +71,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
   const columns: ColumnDef<Departamento>[] = [
     {
       header: "Nome",
+      sortKey: "nome",
       cell: (dept) => {
         const initial = dept.nome.trim().charAt(0).toUpperCase();
         return (
@@ -85,6 +96,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
     },
     {
       header: "Nº de Cargos",
+      sortKey: "activeCargosCount",
       cell: (dept) => (
         <Badge
           variant={dept.activeCargosCount > 0 ? "secondary" : "outline"}
@@ -97,6 +109,7 @@ export default async function DepartamentosPage(props: DepartamentosPageProps) {
     },
     {
       header: "Criado em",
+      sortKey: "createdAt",
       headerClassName: "w-[140px]",
       cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
       cell: (dept) => formatDate(dept.createdAt),

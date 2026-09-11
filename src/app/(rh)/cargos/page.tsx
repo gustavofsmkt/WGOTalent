@@ -6,7 +6,10 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
-import { cargoRepository } from "~/server/db/repositories/cargo";
+import {
+  cargoRepository,
+  CARGO_SORT_KEYS,
+} from "~/server/db/repositories/cargo";
 import { DeleteCargoButton } from "./_components/delete-cargo-button";
 import { PageFilter } from "~/components/page-filter";
 import { DataTable, type ColumnDef } from "~/components/data-table";
@@ -17,18 +20,25 @@ import {
   getTotalPages,
   parsePage,
 } from "~/lib/pagination";
+import { parseSort } from "~/lib/sort";
 
 interface CargosPageProps {
-  searchParams?: Promise<{ q?: string; page?: string }>;
+  searchParams?: Promise<{
+    q?: string;
+    page?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }
 
 export default async function CargosPage(props: CargosPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const query = (searchParams.q ?? "").trim();
   const page = parsePage(searchParams.page);
+  const sort = parseSort(searchParams, CARGO_SORT_KEYS);
 
   const cargosPage = await cargoRepository.findPageWithDepartamento(
-    { query },
+    { query, sort },
     { page, pageSize: DEFAULT_PAGE_SIZE },
   );
   const totalPages = getTotalPages(cargosPage.total, DEFAULT_PAGE_SIZE);
@@ -59,6 +69,7 @@ export default async function CargosPage(props: CargosPageProps) {
   const columns: ColumnDef<Cargo>[] = [
     {
       header: "Título do Cargo",
+      sortKey: "titulo",
       cell: (cargo) => (
         <Link
           href={`/cargos/${cargo.id}`}
@@ -70,6 +81,7 @@ export default async function CargosPage(props: CargosPageProps) {
     },
     {
       header: "Departamento",
+      sortKey: "departamento",
       cell: (cargo) => (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Building2 className="size-3.5" />
@@ -79,6 +91,7 @@ export default async function CargosPage(props: CargosPageProps) {
     },
     {
       header: "Status",
+      sortKey: "ativo",
       cell: (cargo) => (
         <StatusBadge
           status={cargo.ativo ? "aberta" : "incompleta"}
@@ -88,6 +101,7 @@ export default async function CargosPage(props: CargosPageProps) {
     },
     {
       header: "Criado em",
+      sortKey: "createdAt",
       cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
       cell: (cargo) => formatDate(cargo.createdAt),
     },

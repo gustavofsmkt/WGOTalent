@@ -32,6 +32,7 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -187,6 +188,28 @@ export interface CandidatoListFilters {
   origem?: Candidato["origem"];
   emBancoTalentos?: boolean;
   cidade?: string;
+  sort?: SortState | null;
+}
+
+const CANDIDATO_SORT_COLUMNS = {
+  nome: candidatos.nome,
+  cidade: candidatos.cidade,
+  cargoInteresse: cargos.titulo,
+  origem: candidatos.origem,
+  createdAt: candidatos.createdAt,
+} as const;
+
+export const CANDIDATO_SORT_KEYS = Object.keys(
+  CANDIDATO_SORT_COLUMNS,
+) as (keyof typeof CANDIDATO_SORT_COLUMNS)[];
+
+function buildCandidatoOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in CANDIDATO_SORT_COLUMNS) {
+    const column =
+      CANDIDATO_SORT_COLUMNS[sort.sort as keyof typeof CANDIDATO_SORT_COLUMNS];
+    return [toOrderBy(column, sort.dir), asc(candidatos.id)];
+  }
+  return [desc(candidatos.createdAt), desc(candidatos.id)];
 }
 
 export interface CandidatoListSummary {
@@ -275,7 +298,7 @@ export const candidatoRepository = {
         candidatos,
         ...conditions,
       )
-        .orderBy(desc(candidatos.createdAt), desc(candidatos.id))
+        .orderBy(...buildCandidatoOrderBy(filters.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

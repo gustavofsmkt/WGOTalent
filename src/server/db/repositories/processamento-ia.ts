@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   candidatos,
@@ -14,11 +14,35 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
 
 type Fluxo = ProcessamentoIa["fluxo"];
+
+const PROCESSAMENTO_SORT_COLUMNS = {
+  etapa: processamentosIa.etapa,
+  status: processamentosIa.status,
+  tentativas: processamentosIa.tentativas,
+  iniciadoEm: processamentosIa.iniciadoEm,
+  finalizadoEm: processamentosIa.finalizadoEm,
+} as const;
+
+export const PROCESSAMENTO_SORT_KEYS = Object.keys(
+  PROCESSAMENTO_SORT_COLUMNS,
+) as (keyof typeof PROCESSAMENTO_SORT_COLUMNS)[];
+
+function buildProcessamentoOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in PROCESSAMENTO_SORT_COLUMNS) {
+    const column =
+      PROCESSAMENTO_SORT_COLUMNS[
+        sort.sort as keyof typeof PROCESSAMENTO_SORT_COLUMNS
+      ];
+    return [toOrderBy(column, sort.dir), desc(processamentosIa.id)];
+  }
+  return [desc(processamentosIa.createdAt), desc(processamentosIa.id)];
+}
 
 export interface ProcessamentoIaListItem extends ProcessamentoIa {
   candidatoNome: string | null;
@@ -34,6 +58,7 @@ export interface ProcessamentoIaFluxoSummary {
 
 export interface ProcessamentoIaPageFilters {
   somenteFalhas?: boolean;
+  sort?: SortState | null;
 }
 
 const MAX_RETRIES_EM_LOTE = 15;
@@ -140,7 +165,7 @@ export const processamentoIaRepository = {
 
     const [rows, totalRows] = await Promise.all([
       notDeleted(withContextSelect(dbOrTx), processamentosIa, listCondition)
-        .orderBy(desc(processamentosIa.createdAt), desc(processamentosIa.id))
+        .orderBy(...buildProcessamentoOrderBy(filters.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

@@ -1,4 +1,4 @@
-import { eq, sql, asc, ilike, or } from "drizzle-orm";
+import { eq, sql, asc, desc, ilike, or, type SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import {
   departamentos,
@@ -13,6 +13,7 @@ import {
   type PaginatedResult,
   type PaginationInput,
 } from "~/lib/pagination";
+import { toOrderBy, type SortState } from "~/lib/sort";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type DbOrTx = typeof db | Tx;
@@ -23,6 +24,30 @@ export interface DepartamentoWithCargosCount extends Departamento {
 
 export interface DepartamentoListFilters {
   query?: string;
+  sort?: SortState | null;
+}
+
+const activeCargosCountSql = sql<number>`count(${cargos.id}) filter (where ${cargos.deletedAt} is null and ${cargos.ativo} = true)::int`;
+
+const DEPARTAMENTO_SORT_COLUMNS = {
+  nome: departamentos.nome,
+  activeCargosCount: activeCargosCountSql,
+  createdAt: departamentos.createdAt,
+} as const;
+
+export const DEPARTAMENTO_SORT_KEYS = Object.keys(
+  DEPARTAMENTO_SORT_COLUMNS,
+) as (keyof typeof DEPARTAMENTO_SORT_COLUMNS)[];
+
+function buildDepartamentoOrderBy(sort: SortState | null | undefined): SQL[] {
+  if (sort && sort.sort in DEPARTAMENTO_SORT_COLUMNS) {
+    const column =
+      DEPARTAMENTO_SORT_COLUMNS[
+        sort.sort as keyof typeof DEPARTAMENTO_SORT_COLUMNS
+      ];
+    return [toOrderBy(column, sort.dir), asc(departamentos.id)];
+  }
+  return [asc(departamentos.nome), asc(departamentos.id)];
 }
 
 export const departamentoRepository = {
@@ -58,7 +83,7 @@ export const departamentoRepository = {
             createdAt: departamentos.createdAt,
             updatedAt: departamentos.updatedAt,
             deletedAt: departamentos.deletedAt,
-            activeCargosCount: sql<number>`count(${cargos.id}) filter (where ${cargos.deletedAt} is null and ${cargos.ativo} = true)::int`,
+            activeCargosCount: activeCargosCountSql,
           })
           .from(departamentos)
           .leftJoin(cargos, eq(cargos.departamentoId, departamentos.id)),
@@ -66,7 +91,7 @@ export const departamentoRepository = {
         searchCondition,
       )
         .groupBy(departamentos.id)
-        .orderBy(asc(departamentos.nome), asc(departamentos.id))
+        .orderBy(...buildDepartamentoOrderBy(filters.sort))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(

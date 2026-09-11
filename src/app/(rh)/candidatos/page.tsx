@@ -17,7 +17,10 @@ import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
 import { Card, CardContent } from "~/components/ui/card";
-import { candidatoRepository } from "~/server/db/repositories/candidato";
+import {
+  candidatoRepository,
+  CANDIDATO_SORT_KEYS,
+} from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
 import { PageFilter } from "~/components/page-filter";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
@@ -32,6 +35,7 @@ import {
   getTotalPages,
   parsePage,
 } from "~/lib/pagination";
+import { parseSort } from "~/lib/sort";
 
 const ORIGEM_OPTIONS = [
   { value: "todas", label: "Todas as origens" },
@@ -54,6 +58,8 @@ interface CandidatosPageProps {
     pool?: string;
     cidade?: string;
     page?: string;
+    sort?: string;
+    dir?: string;
   }>;
 }
 
@@ -64,6 +70,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
   const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
   const cidadeFilter = (searchParams.cidade ?? "").trim();
   const page = parsePage(searchParams.page);
+  const sort = parseSort(searchParams, CANDIDATO_SORT_KEYS);
   const origem = origemEnum.enumValues.find((value) => value === origemFilter);
 
   const [candidatosPage, summary, cidadeOptions] = await Promise.all([
@@ -73,6 +80,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         origem,
         emBancoTalentos: poolFilter === "banco_talentos",
         cidade: cidadeFilter || undefined,
+        sort,
       },
       { page, pageSize: DEFAULT_PAGE_SIZE },
     ),
@@ -133,6 +141,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
   const columns: ColumnDef<Candidato>[] = [
     {
       header: "Candidato",
+      sortKey: "nome",
       cell: (candidato) => (
         <div className="flex items-center gap-4">
           <div className="size-9 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
@@ -165,6 +174,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     },
     {
       header: "Localidade",
+      sortKey: "cidade",
       cell: (candidato) => (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <MapPin className="size-3.5 shrink-0 text-muted-foreground/70" />
@@ -176,6 +186,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     },
     {
       header: "Cargo de Interesse",
+      sortKey: "cargoInteresse",
       cell: (candidato) =>
         candidato.cargoInteresse ? (
           <span className="text-xs font-medium text-foreground">
@@ -189,6 +200,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     },
     {
       header: "Origem",
+      sortKey: "origem",
       cell: (candidato) => {
         const origemConfig = getOrigemBadge(candidato.origem);
         return (
@@ -203,6 +215,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     },
     {
       header: "Cadastro",
+      sortKey: "createdAt",
       cellClassName: "text-xs text-muted-foreground whitespace-nowrap",
       cell: (candidato) => formatDate(candidato.createdAt),
     },

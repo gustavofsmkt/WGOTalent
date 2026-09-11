@@ -11,6 +11,7 @@ import { DataTable, type ColumnDef } from "~/components/data-table";
 import { TablePagination } from "~/components/table-pagination";
 import {
   processamentoIaRepository,
+  PROCESSAMENTO_SORT_KEYS,
   type ProcessamentoIaListItem,
 } from "~/server/db/repositories/processamento-ia";
 import {
@@ -23,6 +24,7 @@ import {
   parseSomenteFalhas,
   type ProcessamentoIaSearchParams,
 } from "~/lib/processamento-ia-filters";
+import { parseSort } from "~/lib/sort";
 import { processamentoIaFluxoSchema } from "~/lib/validation/processamento-ia";
 import { getCurriculoDownloadUrl } from "./_components/curriculo-download";
 import { FluxoTabs, type ProcessamentoFluxo } from "./_components/fluxo-tabs";
@@ -153,6 +155,7 @@ function buildColumns(): ColumnDef<ProcessamentoIaListItem>[] {
     },
     {
       header: "Etapa",
+      sortKey: "etapa",
       cell: (item) => (
         <span className="text-xs text-muted-foreground">
           {ETAPA_LABEL[item.etapa]}
@@ -161,6 +164,7 @@ function buildColumns(): ColumnDef<ProcessamentoIaListItem>[] {
     },
     {
       header: "Status",
+      sortKey: "status",
       cell: (item) => {
         const status = STATUS_CONFIG[item.status];
         return (
@@ -174,17 +178,20 @@ function buildColumns(): ColumnDef<ProcessamentoIaListItem>[] {
     },
     {
       header: "Tentativas",
+      sortKey: "tentativas",
       headerClassName: "text-center",
       cellClassName: "text-center text-xs text-muted-foreground",
       cell: (item) => item.tentativas,
     },
     {
       header: "Início",
+      sortKey: "iniciadoEm",
       cellClassName: "text-xs text-muted-foreground",
       cell: (item) => formatDate(item.iniciadoEm),
     },
     {
       header: "Conclusão",
+      sortKey: "finalizadoEm",
       cellClassName: "text-xs text-muted-foreground",
       cell: (item) => formatDate(item.finalizadoEm),
     },
@@ -212,6 +219,7 @@ async function ProcessamentosIaContent({
     : "candidato_vagas";
   const page = parsePage(searchParams.page);
   const somenteFalhas = parseSomenteFalhas(searchParams.somenteFalhas);
+  const sort = parseSort(searchParams, PROCESSAMENTO_SORT_KEYS);
 
   const [pageResult, summary] = await Promise.all([
     processamentoIaRepository.findPageByFluxo(
@@ -220,7 +228,7 @@ async function ProcessamentosIaContent({
         page,
         pageSize: DEFAULT_PAGE_SIZE,
       },
-      { somenteFalhas },
+      { somenteFalhas, sort },
     ),
     processamentoIaRepository.getFluxoSummary(fluxo),
   ]);

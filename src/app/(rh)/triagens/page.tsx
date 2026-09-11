@@ -82,6 +82,7 @@ async function TriagensContent({
   const columns: ColumnDef<Triagem>[] = [
     {
       header: "Candidato",
+      sortKey: "candidato",
       cell: (item) => (
         <div className="flex items-center gap-2">
           <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
@@ -103,6 +104,7 @@ async function TriagensContent({
     },
     {
       header: "Vaga / Cargo",
+      sortKey: "vaga",
       cell: (item) => (
         <div className="space-y-0.5">
           <p className="font-medium text-foreground text-xs">
@@ -117,10 +119,12 @@ async function TriagensContent({
     },
     {
       header: "Etapa",
+      sortKey: "etapa",
       cell: (item) => <StatusBadge status={item.etapa} />,
     },
     {
       header: "Resultado",
+      sortKey: "resultado",
       cell: (item) => (
         <div className="space-y-1">
           <StatusBadge status={item.resultado} />
@@ -134,6 +138,7 @@ async function TriagensContent({
     },
     {
       header: "Score IA",
+      sortKey: "score",
       cell: (item) =>
         item.avaliacaoIa ? (
           <span
@@ -149,6 +154,7 @@ async function TriagensContent({
     },
     {
       header: "Data",
+      sortKey: "createdAt",
       cellClassName: "text-xs text-muted-foreground",
       cell: (item) => formatDate(item.createdAt),
     },
