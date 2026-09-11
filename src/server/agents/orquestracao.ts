@@ -15,6 +15,26 @@ const CONCORRENCIA_FASE2 = 3;
 
 type FluxoIa = "candidato_vagas" | "vaga_candidatos";
 
+/**
+ * Texto que representa a vaga na fase de classificação. O classificador só
+ * compara resumos textuais (não recebe os campos estruturados do candidato nem
+ * da vaga), então a vaga precisa chegar como um resumo autocontido: cargo,
+ * departamento, descrição da função e os três blocos de requisitos.
+ */
+function montarResumoVaga(vaga: {
+  cargo: {
+    titulo: string;
+    descricao: string;
+    requisitos: string;
+    requisitosDesejaveis: string;
+    criteriosEliminatorios: string;
+    departamento: { nome: string };
+  };
+}): string {
+  const { cargo } = vaga;
+  return `${cargo.titulo} (${cargo.departamento.nome}). Descrição: ${cargo.descricao}. Requisitos: ${cargo.requisitos}. Desejáveis: ${cargo.requisitosDesejaveis}. Eliminatórios: ${cargo.criteriosEliminatorios}`;
+}
+
 function mensagemSanitizada(
   etapa: "classificador" | "avaliador",
   error: unknown,
@@ -233,7 +253,7 @@ async function executarFluxoCandidatoVagas(
 
     const itensComparacao: ItemAderencia[] = vagasAbertas.map((vaga) => ({
       id: vaga.id,
-      resumo: `${vaga.cargo.titulo} (${vaga.cargo.departamento.nome}). Requisitos: ${vaga.cargo.requisitos}. Desejáveis: ${vaga.cargo.requisitosDesejaveis}. Eliminatórios: ${vaga.cargo.criteriosEliminatorios}`,
+      resumo: montarResumoVaga(vaga),
     }));
 
     const resultado = await executarClassificadorAderencia(
@@ -333,7 +353,7 @@ async function executarFluxoVagaCandidatos(
         resumo: candidato.resumoProfissional,
       }),
     );
-    const resumoVaga = `${vaga.cargo.titulo} (${vaga.cargo.departamento.nome}). Requisitos: ${vaga.cargo.requisitos}. Desejáveis: ${vaga.cargo.requisitosDesejaveis}. Eliminatórios: ${vaga.cargo.criteriosEliminatorios}`;
+    const resumoVaga = montarResumoVaga(vaga);
 
     const resultado = await executarClassificadorAderencia(
       { id: vaga.id, resumo: resumoVaga },
