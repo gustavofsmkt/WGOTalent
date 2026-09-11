@@ -76,10 +76,7 @@ export default async function TriagemDetailPage({
       </div>
 
       {/* Interactive editor: PageHeader + Tabs */}
-      <TriagemDetailEditor
-        triagem={editorData}
-        key={String(triagem.updatedAt)}
-      />
+      <TriagemDetailEditor triagem={editorData} key={triagem.id} />
 
       {/* Static info grid — rendered as RSC, not serialized to client */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">

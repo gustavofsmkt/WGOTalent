@@ -7,7 +7,7 @@ import {
   Briefcase,
   MapPin,
   Loader2,
-  ChevronRight,
+  CircleDot,
   CheckCircle2,
   XCircle,
   Save,
@@ -85,8 +85,6 @@ function buildInitialState(triagem: TriagemEditorData): PendingState {
   };
 }
 
-const ETAPA_ORDER = ETAPAS.map((e) => e.value);
-
 const RESULTADO_OPTIONS = (
   Object.keys(resultadoLabels) as TriagemResultado[]
 ).map((value) => ({ value, label: resultadoLabels[value] }));
@@ -114,6 +112,7 @@ function ResultadoMotivoForm({
   confirmVariant = "default",
   parecerPreenchido,
   onConfirm,
+  secondaryAction,
 }: {
   pending: PendingState;
   setPending: React.Dispatch<React.SetStateAction<PendingState>>;
@@ -126,6 +125,7 @@ function ResultadoMotivoForm({
   confirmVariant?: "default" | "destructive";
   parecerPreenchido: boolean;
   onConfirm: () => void;
+  secondaryAction?: React.ReactNode;
 }) {
   const ConfirmIcon = confirmIcon;
 
@@ -218,7 +218,8 @@ function ResultadoMotivoForm({
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {secondaryAction}
         <Button
           type="button"
           variant={confirmVariant}
@@ -324,7 +325,11 @@ export function TriagemDetailEditor({
   const handleFinalizar = () => {
     setMotivoError(null);
     startTransition(async () => {
-      const result = await updateTriagem(triagem.id, buildPayload(pending));
+      const newState = {
+        ...pending,
+        etapa: "finalizado" as TriagemEtapa,
+      };
+      const result = await updateTriagem(triagem.id, buildPayload(newState));
       if (!result.success) {
         toast.add({
           type: "error",
@@ -338,6 +343,8 @@ export function TriagemDetailEditor({
         type: "success",
         description: "Triagem finalizada com sucesso.",
       });
+      setPending(newState);
+      setActiveTab("finalizado");
       router.refresh();
     });
   };
@@ -393,28 +400,23 @@ export function TriagemDetailEditor({
     void saveParecerSilent();
   };
 
-  const handleAvancar = (etapaAtual: TriagemEtapa) => {
-    const currentIndex = ETAPA_ORDER.indexOf(etapaAtual);
-    const nextEtapa = ETAPA_ORDER[currentIndex + 1];
-    if (!nextEtapa) return;
-
+  const handleMarcarAtual = (etapaAlvo: TriagemEtapa) => {
     startTransition(async () => {
-      const newState = { ...pending, etapa: nextEtapa };
+      const newState = { ...pending, etapa: etapaAlvo };
       const result = await updateTriagem(triagem.id, buildPayload(newState));
       if (!result.success) {
         toast.add({
           type: "error",
-          description: result.message ?? "Erro ao avançar a etapa.",
+          description: result.message ?? "Erro ao definir a etapa atual.",
         });
         return;
       }
-      const nextLabel = ETAPAS.find((e) => e.value === nextEtapa)?.label;
+      const label = ETAPAS.find((e) => e.value === etapaAlvo)?.label;
       toast.add({
         type: "success",
-        description: `Avançado para: ${nextLabel}`,
+        description: `Etapa atual: ${label}`,
       });
       setPending(newState);
-      setActiveTab(nextEtapa);
       router.refresh();
     });
   };
@@ -475,10 +477,7 @@ export function TriagemDetailEditor({
 
             {ETAPAS.map((etapa) => {
               const field = PARECER_FIELD_BY_ETAPA[etapa.value];
-              const currentEtapaIndex = ETAPA_ORDER.indexOf(pending.etapa);
-              const tabEtapaIndex = ETAPA_ORDER.indexOf(etapa.value);
-              const isCurrentEtapa = tabEtapaIndex === currentEtapaIndex;
-              const isPastEtapa = tabEtapaIndex < currentEtapaIndex;
+              const isCurrentEtapa = etapa.value === pending.etapa;
               const isFinalEtapa = etapa.value === "finalizado";
 
               return (
@@ -487,172 +486,150 @@ export function TriagemDetailEditor({
                   value={etapa.value}
                   className="mt-4 space-y-2"
                 >
-                  {tabEtapaIndex > currentEtapaIndex ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      Esta etapa ainda não foi iniciada.
-                    </p>
+                  <Field>
+                    <FieldLabel htmlFor={`parecer-${etapa.value}`}>
+                      Parecer do RH — {etapa.label}
+                    </FieldLabel>
+                    <Textarea
+                      id={`parecer-${etapa.value}`}
+                      value={pending[field]}
+                      onChange={(e) => {
+                        setPending((p) => ({
+                          ...p,
+                          [field]: e.target.value,
+                        }));
+                        scheduleSave();
+                      }}
+                      onBlur={handleBlurSave}
+                      placeholder="Registre as impressões desta etapa..."
+                      rows={5}
+                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <FieldDescription>
+                        Observações do RH específicas desta etapa do processo.
+                      </FieldDescription>
+                      {autoSaveStatus === "saving" && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Loader2 className="size-3 animate-spin" />
+                          Salvando...
+                        </span>
+                      )}
+                      {autoSaveStatus === "saved" && (
+                        <span className="text-xs text-muted-foreground">
+                          Salvo automaticamente
+                        </span>
+                      )}
+                      {autoSaveStatus === "error" && (
+                        <span className="text-xs text-destructive">
+                          Erro ao salvar
+                        </span>
+                      )}
+                    </div>
+                  </Field>
+
+                  {isFinalEtapa ? (
+                    <ResultadoMotivoForm
+                      pending={pending}
+                      setPending={setPending}
+                      motivoError={motivoError}
+                      setMotivoError={setMotivoError}
+                      isPending={isPending}
+                      resultadoOptions={RESULTADO_OPTIONS}
+                      confirmLabel="Finalizar"
+                      confirmIcon={CheckCircle2}
+                      parecerPreenchido={Boolean(pending[field].trim())}
+                      onConfirm={handleFinalizar}
+                      secondaryAction={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSalvarParecer}
+                          disabled={isPending || isSavingManual}
+                        >
+                          {isSavingManual ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Save className="size-4" />
+                          )}
+                          Salvar Parecer
+                        </Button>
+                      }
+                    />
                   ) : (
-                    <>
-                      <Field>
-                        <FieldLabel htmlFor={`parecer-${etapa.value}`}>
-                          Parecer do RH — {etapa.label}
-                        </FieldLabel>
-                        <Textarea
-                          id={`parecer-${etapa.value}`}
-                          value={pending[field]}
-                          onChange={(e) => {
-                            setPending((p) => ({
-                              ...p,
-                              [field]: e.target.value,
-                            }));
-                            if (isCurrentEtapa) scheduleSave();
-                          }}
-                          onBlur={isCurrentEtapa ? handleBlurSave : undefined}
-                          placeholder="Registre as impressões desta etapa..."
-                          rows={5}
-                          readOnly={isPastEtapa}
-                          className={
-                            isPastEtapa
-                              ? "cursor-default bg-muted text-foreground"
-                              : undefined
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground"
+                          aria-expanded={encerrando}
+                          onClick={() =>
+                            encerrando
+                              ? resetEncerramento()
+                              : setEncerrando(true)
                           }
+                          disabled={isPending || isSavingManual}
+                        >
+                          <XCircle className="size-4" />
+                          Encerrar processo
+                        </Button>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSalvarParecer}
+                            disabled={
+                              isPending || isSavingManual || encerrando
+                            }
+                          >
+                            {isSavingManual ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Save className="size-4" />
+                            )}
+                            Salvar
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={() => handleMarcarAtual(etapa.value)}
+                            disabled={
+                              isPending ||
+                              isSavingManual ||
+                              isCurrentEtapa ||
+                              encerrando
+                            }
+                          >
+                            {isPending ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <CircleDot className="size-4" />
+                            )}
+                            Atual
+                          </Button>
+                        </div>
+                      </div>
+
+                      {encerrando && (
+                        <ResultadoMotivoForm
+                          pending={pending}
+                          setPending={setPending}
+                          motivoError={motivoError}
+                          setMotivoError={setMotivoError}
+                          isPending={isPending}
+                          resultadoOptions={RESULTADO_ENCERRAMENTO_OPTIONS}
+                          confirmLabel="Encerrar processo"
+                          confirmIcon={XCircle}
+                          confirmVariant="destructive"
+                          parecerPreenchido={Boolean(pending[field].trim())}
+                          onConfirm={handleEncerrar}
                         />
-                        {isCurrentEtapa && (
-                          <div className="flex items-center justify-between gap-2">
-                            <FieldDescription>
-                              Observações do RH específicas desta etapa do
-                              processo.
-                            </FieldDescription>
-                            {autoSaveStatus === "saving" && (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Loader2 className="size-3 animate-spin" />
-                                Salvando...
-                              </span>
-                            )}
-                            {autoSaveStatus === "saved" && (
-                              <span className="text-xs text-muted-foreground">
-                                Salvo automaticamente
-                              </span>
-                            )}
-                            {autoSaveStatus === "error" && (
-                              <span className="text-xs text-destructive">
-                                Erro ao salvar
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </Field>
-
-                      {isCurrentEtapa &&
-                        (isFinalEtapa ? (
-                          <div className="space-y-4">
-                            <div className="flex justify-end">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleSalvarParecer}
-                                disabled={isPending || isSavingManual}
-                              >
-                                {isSavingManual ? (
-                                  <Loader2 className="size-4 animate-spin" />
-                                ) : (
-                                  <Save className="size-4" />
-                                )}
-                                Salvar Parecer
-                              </Button>
-                            </div>
-                            <ResultadoMotivoForm
-                              pending={pending}
-                              setPending={setPending}
-                              motivoError={motivoError}
-                              setMotivoError={setMotivoError}
-                              isPending={isPending}
-                              resultadoOptions={RESULTADO_OPTIONS}
-                              confirmLabel="Finalizar"
-                              confirmIcon={CheckCircle2}
-                              parecerPreenchido={Boolean(pending[field].trim())}
-                              onConfirm={handleFinalizar}
-                            />
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between gap-2">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-muted-foreground"
-                                aria-expanded={encerrando}
-                                onClick={() =>
-                                  encerrando
-                                    ? resetEncerramento()
-                                    : setEncerrando(true)
-                                }
-                                disabled={isPending || isSavingManual}
-                              >
-                                <XCircle className="size-4" />
-                                Encerrar processo
-                              </Button>
-
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={handleSalvarParecer}
-                                  disabled={
-                                    isPending || isSavingManual || encerrando
-                                  }
-                                >
-                                  {isSavingManual ? (
-                                    <Loader2 className="size-4 animate-spin" />
-                                  ) : (
-                                    <Save className="size-4" />
-                                  )}
-                                  Salvar
-                                </Button>
-
-                                <Button
-                                  type="button"
-                                  onClick={() => handleAvancar(etapa.value)}
-                                  disabled={
-                                    isPending ||
-                                    isSavingManual ||
-                                    !pending[field].trim() ||
-                                    encerrando
-                                  }
-                                >
-                                  {isPending ? (
-                                    <Loader2 className="size-4 animate-spin" />
-                                  ) : (
-                                    <ChevronRight className="size-4" />
-                                  )}
-                                  Avançar
-                                </Button>
-                              </div>
-                            </div>
-
-                            {encerrando && (
-                              <ResultadoMotivoForm
-                                pending={pending}
-                                setPending={setPending}
-                                motivoError={motivoError}
-                                setMotivoError={setMotivoError}
-                                isPending={isPending}
-                                resultadoOptions={RESULTADO_ENCERRAMENTO_OPTIONS}
-                                confirmLabel="Encerrar processo"
-                                confirmIcon={XCircle}
-                                confirmVariant="destructive"
-                                parecerPreenchido={Boolean(
-                                  pending[field].trim(),
-                                )}
-                                onConfirm={handleEncerrar}
-                              />
-                            )}
-                          </div>
-                        ))}
-                    </>
+                      )}
+                    </div>
                   )}
                 </TabsContent>
               );
