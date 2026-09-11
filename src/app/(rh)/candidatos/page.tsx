@@ -17,9 +17,11 @@ import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
 import { Card, CardContent } from "~/components/ui/card";
+import { Skeleton } from "~/components/ui/skeleton";
 import {
   candidatoRepository,
   CANDIDATO_SORT_KEYS,
+  type CandidatoListFilters,
 } from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
 import { PageFilter } from "~/components/page-filter";
@@ -34,6 +36,7 @@ import {
   DEFAULT_PAGE_SIZE,
   getTotalPages,
   parsePage,
+  type SearchParamsRecord,
 } from "~/lib/pagination";
 import { parseSort } from "~/lib/sort";
 
@@ -51,47 +54,80 @@ const POOL_OPTIONS = [
 
 export const dynamic = "force-dynamic";
 
-interface CandidatosPageProps {
-  searchParams?: Promise<{
-    q?: string;
-    origem?: string;
-    pool?: string;
-    cidade?: string;
-    page?: string;
-    sort?: string;
-    dir?: string;
-  }>;
+interface CandidatosSearchParams extends SearchParamsRecord {
+  q?: string;
+  origem?: string;
+  pool?: string;
+  cidade?: string;
+  page?: string;
+  sort?: string;
+  dir?: string;
 }
 
-export default async function CandidatosPage(props: CandidatosPageProps) {
-  const searchParams = props.searchParams ? await props.searchParams : {};
-  const query = (searchParams.q ?? "").trim();
-  const origemFilter = (searchParams.origem ?? "").trim().toLowerCase();
-  const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
-  const cidadeFilter = (searchParams.cidade ?? "").trim();
-  const page = parsePage(searchParams.page);
-  const sort = parseSort(searchParams, CANDIDATO_SORT_KEYS);
-  const origem = origemEnum.enumValues.find((value) => value === origemFilter);
+interface CandidatosPageProps {
+  searchParams?: Promise<CandidatosSearchParams>;
+}
 
-  const [candidatosPage, summary, cidadeOptions] = await Promise.all([
-    candidatoRepository.findPageActiveSummary(
-      {
-        query,
-        origem,
-        emBancoTalentos: poolFilter === "banco_talentos",
-        cidade: cidadeFilter || undefined,
-        sort,
-      },
-      { page, pageSize: DEFAULT_PAGE_SIZE },
-    ),
-    candidatoRepository.getListSummary(),
-    candidatoRepository.findActiveCidadeOptions(),
-  ]);
+function formatDate(date: Date | string) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(date));
+  } catch {
+    return "";
+  }
+}
 
-  const CIDADE_OPTIONS = [
-    { value: "todas", label: "Todas as cidades" },
-    ...cidadeOptions.map((cidade) => ({ value: cidade, label: cidade })),
-  ];
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
+  const first = parts[0]?.charAt(0) ?? "";
+  const last = parts[parts.length - 1]?.charAt(0) ?? "";
+  return `${first}${last}`.toUpperCase();
+}
+
+function getOrigemBadge(origem: string) {
+  switch (origem) {
+    case "email":
+      return { label: "E-mail (IA)", tone: "info" as StatusTone };
+    case "indicacao":
+      return { label: "Indicação", tone: "success" as StatusTone };
+    case "manual":
+    default:
+      return { label: "Manual", tone: "neutral" as StatusTone };
+  }
+}
+
+function CandidatosResultsSkeleton() {
+  return (
+    <div className="space-y-4" aria-label="Carregando candidatos">
+      <Skeleton className="hidden h-80 w-full rounded-xl md:block" />
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-40 w-full rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-8 w-full max-w-sm" />
+    </div>
+  );
+}
+
+async function CandidatosResults({
+  searchParams,
+  filters,
+  page,
+}: {
+  searchParams: CandidatosSearchParams;
+  filters: CandidatoListFilters;
+  page: number;
+}) {
+  const candidatosPage = await candidatoRepository.findPageActiveSummary(
+    filters,
+    { page, pageSize: DEFAULT_PAGE_SIZE },
+  );
+
   const totalPages = getTotalPages(candidatosPage.total, DEFAULT_PAGE_SIZE);
   if (candidatosPage.total > 0 && page > totalPages) {
     redirect(
@@ -103,38 +139,22 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
     );
   }
 
-  const formatDate = (date: Date | string) => {
-    try {
-      return new Intl.DateTimeFormat("pt-BR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(new Date(date));
-    } catch {
-      return "";
-    }
-  };
-
-  const getInitials = (name: string) => {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1)
-      return (parts[0]?.substring(0, 2) ?? "").toUpperCase();
-    const first = parts[0]?.charAt(0) ?? "";
-    const last = parts[parts.length - 1]?.charAt(0) ?? "";
-    return `${first}${last}`.toUpperCase();
-  };
-
-  const getOrigemBadge = (origem: string) => {
-    switch (origem) {
-      case "email":
-        return { label: "E-mail (IA)", tone: "info" as StatusTone };
-      case "indicacao":
-        return { label: "Indicação", tone: "success" as StatusTone };
-      case "manual":
-      default:
-        return { label: "Manual", tone: "neutral" as StatusTone };
-    }
-  };
+  if (candidatosPage.items.length === 0) {
+    return (
+      <DataEmptyState
+        title="Nenhum candidato encontrado"
+        description={`Nenhum resultado corresponde aos filtros aplicados.`}
+        action={
+          <Link
+            href="/candidatos"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            Limpar filtros
+          </Link>
+        }
+      />
+    );
+  }
 
   type Candidato = (typeof candidatosPage.items)[number];
 
@@ -206,9 +226,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         return (
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge tone={origemConfig.tone} label={origemConfig.label} />
-            {candidato.emBancoTalentos && (
-              <StatusBadge status="banco_talentos" />
-            )}
+            {candidato.emBancoTalentos && <StatusBadge status="banco_talentos" />}
           </div>
         );
       },
@@ -242,6 +260,146 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
         </div>
       ),
     },
+  ];
+
+  return (
+    <>
+      <DataTable columns={columns} rows={candidatosPage.items} />
+
+      {/* Mobile card list */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {candidatosPage.items.map((candidato) => {
+          const origemConfig = getOrigemBadge(candidato.origem);
+          return (
+            <Card
+              key={candidato.id}
+              className="border-border/60 shadow-xs hover:border-border transition-colors"
+            >
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-4">
+                    <div className="size-10 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
+                      {getInitials(candidato.nome)}
+                    </div>
+                    <div>
+                      <Link
+                        href={`/candidatos/${candidato.id}`}
+                        className="font-semibold text-sm text-foreground hover:text-primary transition-colors block"
+                      >
+                        {candidato.nome}
+                      </Link>
+                      <span className="text-xs text-muted-foreground block">
+                        {candidato.email}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <StatusBadge
+                      tone={origemConfig.tone}
+                      label={origemConfig.label}
+                    />
+                    {candidato.emBancoTalentos && (
+                      <StatusBadge status="banco_talentos" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-muted-foreground pt-2 border-t border-border/40">
+                  <div className="flex items-center gap-2">
+                    <Phone className="size-3.5 text-muted-foreground/70" />
+                    <a
+                      href={getWhatsAppUrl(candidato.celular)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary transition-colors"
+                    >
+                      {formatarCelular(candidato.celular)}
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="size-3.5 text-muted-foreground/70" />
+                    <span>
+                      {candidato.cidade}, {candidato.uf}
+                    </span>
+                  </div>
+                  {candidato.cargoInteresse && (
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="size-3.5 text-muted-foreground/70" />
+                      <span className="font-medium text-foreground">
+                        {candidato.cargoInteresse}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                  <span className="text-muted-foreground">
+                    Cadastrado em {formatDate(candidato.createdAt)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/candidatos/${candidato.id}`}
+                      className={buttonVariants({
+                        variant: "outline",
+                        size: "sm",
+                        className: "h-8 px-2 text-xs",
+                      })}
+                    >
+                      <Eye className="size-3.5 mr-2" />
+                      Ver Detalhes
+                    </Link>
+                    <DeleteCandidatoButton
+                      candidatoId={candidato.id}
+                      candidatoNome={candidato.nome}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      <TablePagination
+        pathname="/candidatos"
+        searchParams={searchParams}
+        page={page}
+        pageSize={DEFAULT_PAGE_SIZE}
+        total={candidatosPage.total}
+        itemLabel="candidatos"
+      />
+    </>
+  );
+}
+
+export default async function CandidatosPage(props: CandidatosPageProps) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const query = (searchParams.q ?? "").trim();
+  const origemFilter = (searchParams.origem ?? "").trim().toLowerCase();
+  const poolFilter = (searchParams.pool ?? "").trim().toLowerCase();
+  const cidadeFilter = (searchParams.cidade ?? "").trim();
+  const page = parsePage(searchParams.page);
+  const sort = parseSort(searchParams, CANDIDATO_SORT_KEYS);
+  const origem = origemEnum.enumValues.find((value) => value === origemFilter);
+
+  const filters: CandidatoListFilters = {
+    query,
+    origem,
+    emBancoTalentos: poolFilter === "banco_talentos",
+    cidade: cidadeFilter || undefined,
+    sort,
+  };
+
+  // Filter-independent data for the page shell — kept outside the Suspense
+  // boundary so the summary cards and filter bar stay mounted and interactive
+  // while only the results area shows a skeleton during navigation.
+  const [summary, cidadeOptions] = await Promise.all([
+    candidatoRepository.getListSummary(),
+    candidatoRepository.findActiveCidadeOptions(),
+  ]);
+
+  const CIDADE_OPTIONS = [
+    { value: "todas", label: "Todas as cidades" },
+    ...cidadeOptions.map((cidade) => ({ value: cidade, label: cidade })),
   ];
 
   return (
@@ -336,126 +494,16 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
             }}
           />
 
-          {candidatosPage.items.length === 0 ? (
-            <DataEmptyState
-              title="Nenhum candidato encontrado"
-              description={`Nenhum resultado corresponde aos filtros aplicados.`}
-              action={
-                <Link
-                  href="/candidatos"
-                  className={buttonVariants({ variant: "outline" })}
-                >
-                  Limpar filtros
-                </Link>
-              }
+          <React.Suspense
+            key={JSON.stringify(searchParams)}
+            fallback={<CandidatosResultsSkeleton />}
+          >
+            <CandidatosResults
+              searchParams={searchParams}
+              filters={filters}
+              page={page}
             />
-          ) : (
-            <>
-              <DataTable columns={columns} rows={candidatosPage.items} />
-
-              {/* Mobile card list */}
-              <div className="grid grid-cols-1 gap-4 md:hidden">
-                {candidatosPage.items.map((candidato) => {
-                  const origemConfig = getOrigemBadge(candidato.origem);
-                  return (
-                    <Card
-                      key={candidato.id}
-                      className="border-border/60 shadow-xs hover:border-border transition-colors"
-                    >
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-4">
-                            <div className="size-10 rounded-full bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                              {getInitials(candidato.nome)}
-                            </div>
-                            <div>
-                              <Link
-                                href={`/candidatos/${candidato.id}`}
-                                className="font-semibold text-sm text-foreground hover:text-primary transition-colors block"
-                              >
-                                {candidato.nome}
-                              </Link>
-                              <span className="text-xs text-muted-foreground block">
-                                {candidato.email}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center justify-end gap-2">
-                            <StatusBadge
-                              tone={origemConfig.tone}
-                              label={origemConfig.label}
-                            />
-                            {candidato.emBancoTalentos && (
-                              <StatusBadge status="banco_talentos" />
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5 text-xs text-muted-foreground pt-2 border-t border-border/40">
-                          <div className="flex items-center gap-2">
-                            <Phone className="size-3.5 text-muted-foreground/70" />
-                            <a
-                              href={getWhatsAppUrl(candidato.celular)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-primary transition-colors"
-                            >
-                              {formatarCelular(candidato.celular)}
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="size-3.5 text-muted-foreground/70" />
-                            <span>
-                              {candidato.cidade}, {candidato.uf}
-                            </span>
-                          </div>
-                          {candidato.cargoInteresse && (
-                            <div className="flex items-center gap-2">
-                              <Briefcase className="size-3.5 text-muted-foreground/70" />
-                              <span className="font-medium text-foreground">
-                                {candidato.cargoInteresse}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
-                          <span className="text-muted-foreground">
-                            Cadastrado em {formatDate(candidato.createdAt)}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/candidatos/${candidato.id}`}
-                              className={buttonVariants({
-                                variant: "outline",
-                                size: "sm",
-                                className: "h-8 px-2 text-xs",
-                              })}
-                            >
-                              <Eye className="size-3.5 mr-2" />
-                              Ver Detalhes
-                            </Link>
-                            <DeleteCandidatoButton
-                              candidatoId={candidato.id}
-                              candidatoNome={candidato.nome}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-              <TablePagination
-                pathname="/candidatos"
-                searchParams={searchParams}
-                page={page}
-                pageSize={DEFAULT_PAGE_SIZE}
-                total={candidatosPage.total}
-                itemLabel="candidatos"
-              />
-            </>
-          )}
+          </React.Suspense>
         </div>
       )}
     </div>

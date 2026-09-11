@@ -86,7 +86,6 @@ export function PageFilter({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
 
   const currentQuery = searchParams.get("q") ?? "";
 
@@ -101,9 +100,13 @@ export function PageFilter({
       }
     }
     const query = params.toString();
-    startTransition(() =>
-      router.replace(query ? `${pathname}?${query}` : pathname),
-    );
+    // Navigate directly (not inside startTransition): wrapping an App Router
+    // navigation in a transition on a force-dynamic route lets a competing
+    // update (Select closing, field commit, URL-sync effect) interrupt the
+    // pending navigation, which surfaces as "needs two clicks".
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   };
 
   const form = useAppForm({

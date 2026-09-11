@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Field, FieldLabel } from "~/components/ui/field";
@@ -13,7 +12,6 @@ export function SomenteFalhasCheckbox({ checked }: SomenteFalhasCheckboxProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = React.useTransition();
 
   function handleCheckedChange(nextChecked: boolean) {
     const params = new URLSearchParams(searchParams.toString());
@@ -26,9 +24,11 @@ export function SomenteFalhasCheckbox({ checked }: SomenteFalhasCheckboxProps) {
     }
 
     const query = params.toString();
-    startTransition(() =>
-      router.replace(query ? `${pathname}?${query}` : pathname),
-    );
+    // Navigate directly, not inside startTransition — a wrapped navigation on
+    // a dynamic route can be interrupted and require a second click.
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   }
 
   return (
@@ -36,7 +36,6 @@ export function SomenteFalhasCheckbox({ checked }: SomenteFalhasCheckboxProps) {
       <Checkbox
         id="somente-falhas"
         checked={checked}
-        disabled={isPending}
         onCheckedChange={(value) => handleCheckedChange(value === true)}
       />
       <FieldLabel htmlFor="somente-falhas">Mostrar apenas falhas</FieldLabel>

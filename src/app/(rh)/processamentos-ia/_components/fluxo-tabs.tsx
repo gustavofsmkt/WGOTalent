@@ -21,14 +21,15 @@ export function FluxoTabs({ value, children }: FluxoTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
 
   const handleChange = (next: string) => {
     if (next === value) return;
     const params = new URLSearchParams(searchParams.toString());
     params.delete("page");
     params.set("fluxo", next);
-    startTransition(() => router.replace(`${pathname}?${params.toString()}`));
+    // Navigate directly, not inside startTransition — a wrapped navigation on
+    // a dynamic route can be interrupted and require a second click.
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   return (

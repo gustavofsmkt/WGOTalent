@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Kanban, List } from "lucide-react";
 import { Button } from "~/components/ui/button";
@@ -9,7 +8,6 @@ export function TriagemViewToggle() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
   const currentView = searchParams.get("view") ?? "lista";
 
   const setView = (view: "lista" | "pipeline") => {
@@ -19,9 +17,11 @@ export function TriagemViewToggle() {
     else params.delete("view");
 
     const query = params.toString();
-    startTransition(() =>
-      router.replace(query ? `${pathname}?${query}` : pathname),
-    );
+    // Navigate directly, not inside startTransition — a wrapped navigation on
+    // a dynamic route can be interrupted and require a second click.
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   };
 
   return (

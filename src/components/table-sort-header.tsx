@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { cn } from "~/lib/utils";
@@ -29,7 +28,6 @@ export function TableSortHeader({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
 
   const isActive = searchParams.get(SORT_PARAM) === sortKey;
   const dir: SortDirection | null = isActive
@@ -54,11 +52,12 @@ export function TableSortHeader({
     }
 
     const query = params.toString();
-    startTransition(() =>
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      }),
-    );
+    // Navigate directly rather than inside startTransition: on a force-dynamic
+    // route a wrapped navigation can be interrupted by a competing update,
+    // which surfaces as the header needing two clicks to sort.
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   };
 
   const Icon = !isActive ? ChevronsUpDown : dir === "asc" ? ArrowUp : ArrowDown;
