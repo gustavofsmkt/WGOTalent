@@ -136,7 +136,7 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     resumoProfissional: stringSchema(),
     cnh: {
       anyOf: [
-        { type: "string", enum: ["a", "b", "ab", "c", "d", "e"] },
+        { type: "string", enum: ["a", "b", "ab", "c", "d", "e", "nenhuma"] },
         { type: "null" },
       ],
     },

@@ -54,7 +54,18 @@ export const estadoCivilEnum = pgEnum("estado_civil", [
   "uniao_estavel",
 ]);
 
-export const cnhEnum = pgEnum("cnh", ["a", "b", "ab", "c", "d", "e"]);
+// "nenhuma" = candidato declarou explicitamente não ter CNH; a coluna
+// nullable distingue esse caso do "não mencionado" (null). Ver cnhSchema
+// (validação) e as regras do agente de extração.
+export const cnhEnum = pgEnum("cnh", [
+  "a",
+  "b",
+  "ab",
+  "c",
+  "d",
+  "e",
+  "nenhuma",
+]);
 
 export const origemEnum = pgEnum("origem", ["email", "manual", "indicacao"]);
 

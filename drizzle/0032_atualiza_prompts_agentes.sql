@@ -121,7 +121,7 @@ A referência é a data de hoje informada na mensagem; ANO é o ano dessa data. 
 - O ano deve estar entre 1900 e 2100. Datas impossíveis ou incompreensíveis -> null.
 
 # Perfil
-- cnh: categoria declarada, em minúsculas: a, b, ab, c, d ou e. "A/B", "A e B" -> "ab". Categorias combinadas com A (AC, AD, AE) -> use a letra sem o A ("AD" -> "d"); a categoria original permanece na transcrição. CNH "em processo" ou "tirando" -> null.
+- cnh: categoria declarada, em minúsculas: a, b, ab, c, d ou e. "A/B", "A e B" -> "ab". Categorias combinadas com A (AC, AD, AE) -> use a letra sem o A ("AD" -> "d"); a categoria original permanece na transcrição. Candidato que declara expressamente não ter habilitação ("não possuo CNH", "sem habilitação") -> "nenhuma". CNH "em processo" ou "tirando", ou sem qualquer menção a CNH -> null.
 - possuiVeiculo: true somente se o candidato disser que tem veículo (carro, moto). Ter CNH NÃO significa ter veículo. Sem menção -> null.
 - ensinoMedioConcluido:
   - true se declarar ensino médio completo ("2º grau completo", "colegial completo", EJA ou supletivo concluído) OU se houver graduação, tecnólogo ou pós-graduação, concluídos ou em andamento;

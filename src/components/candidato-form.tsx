@@ -141,6 +141,7 @@ const ORIGEM_OPTIONS = [
 
 const CNH_OPTIONS = [
   { value: "none", label: "Não informada" },
+  { value: "nenhuma", label: "Não possui CNH" },
   { value: "a", label: "A (Moto)" },
   { value: "b", label: "B (Carro)" },
   { value: "ab", label: "AB (Moto e Carro)" },

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."cnh" ADD VALUE 'nenhuma';

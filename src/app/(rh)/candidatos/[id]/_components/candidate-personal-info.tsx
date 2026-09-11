@@ -64,7 +64,8 @@ export function CandidatePersonalInfo({
   };
 
   const formatCNH = (cnh?: string | null) => {
-    if (!cnh) return "Não possui";
+    if (!cnh) return "Não informado";
+    if (cnh === "nenhuma") return "Não possui";
     return `Categoria ${cnh.toUpperCase()}`;
   };
 

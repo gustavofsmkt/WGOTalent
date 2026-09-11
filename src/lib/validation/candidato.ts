@@ -22,7 +22,9 @@ export const estadoCivilSchema = z.enum(
   { required_error: "Estado civil é obrigatório" },
 );
 
-export const cnhSchema = z.enum(["a", "b", "ab", "c", "d", "e"], {
+// Tri-state, como os flags booleanos: uma categoria (a/b/ab/c/d/e) = declarada;
+// "nenhuma" = declarou não ter CNH; null (coluna nullable) = não mencionado.
+export const cnhSchema = z.enum(["a", "b", "ab", "c", "d", "e", "nenhuma"], {
   required_error: "CNH é obrigatória",
 });
 
