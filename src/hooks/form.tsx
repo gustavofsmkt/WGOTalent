@@ -6,6 +6,7 @@ import { createFormHookContexts } from "@tanstack/react-form";
 const inputField = lazy(() => import("../components/forms/inputField"));
 const selectField = lazy(() => import("../components/forms/selectField"));
 const checkboxField = lazy(() => import("../components/forms/checkboxField"));
+const tristateField = lazy(() => import("../components/forms/tristateField"));
 const switchField = lazy(() => import("../components/forms/switchField"));
 const textAreaField = lazy(() => import("../components/forms/textAreaField"));
 
@@ -20,6 +21,7 @@ export const { useAppForm, withForm, withFieldGroup } = createFormHook({
     InputField: inputField,
     SelectField: selectField,
     CheckboxField: checkboxField,
+    TristateField: tristateField,
     SwitchField: switchField,
     TextAreaField: textAreaField,
   },

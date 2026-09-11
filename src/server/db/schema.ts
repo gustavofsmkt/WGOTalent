@@ -236,18 +236,19 @@ export const candidatos = createTable(
     dadosPendentes: text("dados_pendentes"),
     resumoProfissional: text("resumo_profissional").notNull(),
     cnh: cnhEnum("cnh"),
-    possuiVeiculo: boolean("possui_veiculo").default(false).notNull(),
-    ensinoMedioConcluido: boolean("ensino_medio_concluido")
-      .default(false)
-      .notNull(),
+    // Tri-state (true/false/null): null = o currículo não mencionou o dado;
+    // true/false só quando declarado explicitamente. Ver validação em
+    // candidato.ts e as regras do agente de extração.
+    possuiVeiculo: boolean("possui_veiculo"),
+    ensinoMedioConcluido: boolean("ensino_medio_concluido"),
     cargoInteresseId: uuid("cargo_interesse_id").references(() => cargos.id),
     areaInteresseId: uuid("area_interesse_id").references(
       () => departamentos.id,
     ),
-    disponivelViagens: boolean("disponivel_viagens").default(false).notNull(),
-    disponivelMudanca: boolean("disponivel_mudanca").default(false).notNull(),
+    disponivelViagens: boolean("disponivel_viagens"),
+    disponivelMudanca: boolean("disponivel_mudanca"),
     disponibilidadeHorarios: text("disponibilidade_horarios"),
-    inicioImediato: boolean("inicio_imediato").default(false).notNull(),
+    inicioImediato: boolean("inicio_imediato"),
     linkedin: varchar("linkedin", { length: 255 }),
     portfolio: varchar("portfolio", { length: 255 }),
     origem: origemEnum("origem").default("manual").notNull(),

@@ -80,7 +80,9 @@ describe("extracaoCurriculoOutputSchema", () => {
     }
   });
 
-  it("falls back to false when the boolean flags arrive as explicit null", () => {
+  it("preserves null (tri-state) when the boolean flags arrive as explicit null", () => {
+    // Estes campos são tri-state (true/false/null): null = o currículo não
+    // mencionou o dado e precisa ser preservado, não convertido para false.
     const result = extracaoCurriculoOutputSchema.safeParse({
       ...base,
       possuiVeiculo: null,
@@ -91,11 +93,36 @@ describe("extracaoCurriculoOutputSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.possuiVeiculo).toBe(false);
+      expect(result.data.possuiVeiculo).toBeNull();
+      expect(result.data.ensinoMedioConcluido).toBeNull();
+      expect(result.data.disponivelViagens).toBeNull();
+      expect(result.data.disponivelMudanca).toBeNull();
+      expect(result.data.inicioImediato).toBeNull();
+    }
+  });
+
+  it("defaults the boolean flags to null when the keys are omitted", () => {
+    const result = extracaoCurriculoOutputSchema.safeParse({ ...base });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.possuiVeiculo).toBeNull();
+      expect(result.data.ensinoMedioConcluido).toBeNull();
+      expect(result.data.disponivelViagens).toBeNull();
+      expect(result.data.disponivelMudanca).toBeNull();
+      expect(result.data.inicioImediato).toBeNull();
+    }
+  });
+
+  it("keeps explicit true/false for the boolean flags", () => {
+    const result = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      possuiVeiculo: true,
+      ensinoMedioConcluido: false,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.possuiVeiculo).toBe(true);
       expect(result.data.ensinoMedioConcluido).toBe(false);
-      expect(result.data.disponivelViagens).toBe(false);
-      expect(result.data.disponivelMudanca).toBe(false);
-      expect(result.data.inicioImediato).toBe(false);
     }
   });
 });

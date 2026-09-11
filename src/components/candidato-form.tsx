@@ -90,6 +90,7 @@ type CandidatoFieldApi = {
   TextAreaField: InputLikeComponent;
   SelectField: LooseFieldComponent;
   CheckboxField: LooseFieldComponent;
+  TristateField: LooseFieldComponent;
   SwitchField: LooseFieldComponent;
 };
 
@@ -559,24 +560,30 @@ function DisponibilidadesSection({ form }: { form: CandidatoFormApi }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <form.AppField name="possuiVeiculo">
-          {(field) => <field.CheckboxField label="Possui Veículo Próprio" />}
+          {(field) => <field.TristateField label="Possui Veículo Próprio" />}
         </form.AppField>
 
         <form.AppField name="disponivelViagens">
-          {(field) => <field.CheckboxField label="Disponível para Viagens" />}
+          {(field) => <field.TristateField label="Disponível para Viagens" />}
         </form.AppField>
 
         <form.AppField name="disponivelMudanca">
-          {(field) => <field.CheckboxField label="Disponível para Mudança" />}
+          {(field) => <field.TristateField label="Disponível para Mudança" />}
         </form.AppField>
 
         <form.AppField name="inicioImediato">
-          {(field) => <field.CheckboxField label="Início Imediato" />}
+          {(field) => <field.TristateField label="Início Imediato" />}
         </form.AppField>
       </div>
 
       <form.AppField name="ensinoMedioConcluido">
-        {(field) => <field.CheckboxField label="Ensino Médio Concluído" />}
+        {(field) => (
+          <field.TristateField
+            label="Ensino Médio Concluído"
+            trueLabel="Concluído"
+            falseLabel="Não concluído"
+          />
+        )}
       </form.AppField>
     </div>
   );
@@ -1077,14 +1084,14 @@ export function CandidatoBaseForm({
       logradouro: candidato?.logradouro ?? "",
       resumoProfissional: candidato?.resumoProfissional ?? "",
       cnh: candidato?.cnh ?? null,
-      possuiVeiculo: candidato?.possuiVeiculo ?? false,
-      ensinoMedioConcluido: candidato?.ensinoMedioConcluido ?? false,
+      possuiVeiculo: candidato?.possuiVeiculo ?? null,
+      ensinoMedioConcluido: candidato?.ensinoMedioConcluido ?? null,
       cargoInteresseId: candidato?.cargoInteresseId ?? null,
       areaInteresseId: candidato?.areaInteresseId ?? null,
-      disponivelViagens: candidato?.disponivelViagens ?? false,
-      disponivelMudanca: candidato?.disponivelMudanca ?? false,
+      disponivelViagens: candidato?.disponivelViagens ?? null,
+      disponivelMudanca: candidato?.disponivelMudanca ?? null,
       disponibilidadeHorarios: candidato?.disponibilidadeHorarios ?? "",
-      inicioImediato: candidato?.inicioImediato ?? false,
+      inicioImediato: candidato?.inicioImediato ?? null,
       linkedin: candidato?.linkedin ?? "",
       portfolio: candidato?.portfolio ?? "",
       origem: candidato?.origem ?? "manual",

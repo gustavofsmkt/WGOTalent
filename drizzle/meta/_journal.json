@@ -232,6 +232,13 @@
       "when": 1789600000000,
       "tag": "0032_atualiza_prompts_agentes",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789600000001,
+      "tag": "0033_candidatos_booleans_tristate",
+      "breakpoints": true
     }
   ]
 }

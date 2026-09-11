@@ -227,14 +227,17 @@ export const candidatoSchema = z.object({
   ),
   resumoProfissional: nonEmptyString("O resumo profissional é obrigatório"),
   cnh: cnhSchema.optional().nullable(),
-  possuiVeiculo: z.boolean().default(false),
-  ensinoMedioConcluido: z.boolean().default(false),
+  // Tri-state (true/false/null): null = não declarado. `.default(null)`
+  // converte a chave ausente (undefined) em null, mantendo a saída
+  // `boolean | null` alinhada às colunas nuláveis correspondentes.
+  possuiVeiculo: z.boolean().nullable().default(null),
+  ensinoMedioConcluido: z.boolean().nullable().default(null),
   cargoInteresseId: uuidSchema.optional().nullable(),
   areaInteresseId: uuidSchema.optional().nullable(),
-  disponivelViagens: z.boolean().default(false),
-  disponivelMudanca: z.boolean().default(false),
+  disponivelViagens: z.boolean().nullable().default(null),
+  disponivelMudanca: z.boolean().nullable().default(null),
   disponibilidadeHorarios: trimmedString.optional().nullable(),
-  inicioImediato: z.boolean().default(false),
+  inicioImediato: z.boolean().nullable().default(null),
   linkedin: optionalUrlSchema,
   portfolio: optionalUrlSchema,
   origem: origemSchema.default("manual"),

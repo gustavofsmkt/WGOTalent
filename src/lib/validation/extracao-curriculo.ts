@@ -39,17 +39,10 @@ export const extracaoCurriculoOutputSchema = candidatoAgregadoSchema.extend({
   celular: candidatoAgregadoSchema.shape.celular.nullish(),
   nacionalidade: nullToDefault(candidatoAgregadoSchema.shape.nacionalidade),
   estadoCivil: nullToDefault(candidatoAgregadoSchema.shape.estadoCivil),
-  possuiVeiculo: nullToDefault(candidatoAgregadoSchema.shape.possuiVeiculo),
-  ensinoMedioConcluido: nullToDefault(
-    candidatoAgregadoSchema.shape.ensinoMedioConcluido,
-  ),
-  disponivelViagens: nullToDefault(
-    candidatoAgregadoSchema.shape.disponivelViagens,
-  ),
-  disponivelMudanca: nullToDefault(
-    candidatoAgregadoSchema.shape.disponivelMudanca,
-  ),
-  inicioImediato: nullToDefault(candidatoAgregadoSchema.shape.inicioImediato),
+  // possuiVeiculo, ensinoMedioConcluido, disponivelViagens, disponivelMudanca
+  // e inicioImediato NÃO usam nullToDefault: são tri-state (true/false/null) e
+  // o `null` retornado pelo agente (dado não mencionado) deve ser preservado,
+  // não convertido para o default. O schema base já os aceita como nuláveis.
 });
 
 export type ExtracaoCurriculoOutput = z.output<

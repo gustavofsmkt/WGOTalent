@@ -92,6 +92,34 @@ describe("executarExtracaoCurriculo", () => {
     expect(call.provider).toBe("google_ai_studio");
   });
 
+  it("injects the application email subject and body into the user prompt", async () => {
+    findBySlotMock.mockResolvedValueOnce(config);
+    findActiveByProviderMock.mockResolvedValueOnce(credencial);
+    storageReadMock.mockResolvedValueOnce(Buffer.from("pdf-bytes"));
+    gerarRespostaEstruturadaMock.mockResolvedValueOnce({ nome: "Maria" });
+
+    await executarExtracaoCurriculo("resumes/a.pdf", {
+      assunto: "Candidatura: Supervisor de Compras",
+      corpo: "CIDADE DA VAGA\nCatalão",
+    });
+
+    const call = gerarRespostaEstruturadaMock.mock.calls[0]![0];
+    expect(call.userPrompt).toContain("Candidatura: Supervisor de Compras");
+    expect(call.userPrompt).toContain("Catalão");
+  });
+
+  it("does not append an email block when no context is given", async () => {
+    findBySlotMock.mockResolvedValueOnce(config);
+    findActiveByProviderMock.mockResolvedValueOnce(credencial);
+    storageReadMock.mockResolvedValueOnce(Buffer.from("pdf-bytes"));
+    gerarRespostaEstruturadaMock.mockResolvedValueOnce({ nome: "Maria" });
+
+    await executarExtracaoCurriculo("resumes/a.pdf");
+
+    const call = gerarRespostaEstruturadaMock.mock.calls[0]![0];
+    expect(call.userPrompt).toBe("user");
+  });
+
   it("converts DOCX to text via mammoth instead of sending inlineData", async () => {
     findBySlotMock.mockResolvedValueOnce(config);
     findActiveByProviderMock.mockResolvedValueOnce(credencial);

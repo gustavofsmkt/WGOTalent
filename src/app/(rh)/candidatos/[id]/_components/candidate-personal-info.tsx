@@ -141,7 +141,11 @@ export function CandidatePersonalInfo({
               Veículo Próprio
             </p>
             <p className="font-medium text-foreground ">
-              {candidato.possuiVeiculo ? "Sim" : "Não"}
+              {candidato.possuiVeiculo === null
+                ? "Não informado"
+                : candidato.possuiVeiculo
+                  ? "Sim"
+                  : "Não"}
             </p>
           </div>
 
@@ -150,7 +154,11 @@ export function CandidatePersonalInfo({
               Ensino Médio
             </p>
             <p className="font-medium text-foreground ">
-              {candidato.ensinoMedioConcluido ? "Concluído" : "Não concluído"}
+              {candidato.ensinoMedioConcluido === null
+                ? "Não informado"
+                : candidato.ensinoMedioConcluido
+                  ? "Concluído"
+                  : "Não concluído"}
             </p>
           </div>
         </div>

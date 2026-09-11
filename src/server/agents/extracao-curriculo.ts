@@ -200,9 +200,11 @@ export interface ContextoEmail {
 
 /**
  * Monta o trecho de contexto do e-mail para acrescentar ao `userPrompt`. O
- * anexo continua sendo a fonte principal; assunto e corpo entram só como pistas
- * para campos que às vezes ficam de fora do currículo (ex.: e-mail e celular na
- * assinatura). Retorna string vazia quando não há e-mail ou o texto é vazio.
+ * documento anexado continua sendo a fonte principal; o e-mail de candidatura
+ * (formulário do site ou texto livre) entra como fonte auxiliar para preencher
+ * dados pessoais, de contato e de cidade que faltem no documento — as regras de
+ * precedência ficam no system prompt (seções Contato e Endereço). Retorna
+ * string vazia quando não há e-mail ou o texto é vazio.
  */
 function montarContextoEmail(contexto?: ContextoEmail): string {
   if (!contexto) return "";
@@ -215,9 +217,10 @@ function montarContextoEmail(contexto?: ContextoEmail): string {
   }
   if (partes.length === 0) return "";
   return (
-    "\n\nContexto do e-mail que acompanhou o currículo (use apenas como apoio" +
-    " para dados ausentes no anexo, como contato na assinatura; ignore" +
-    " saudações, assinaturas e conteúdo irrelevante):\n" +
+    "\n\nE-mail de candidatura que acompanhou o documento (dados informados" +
+    " pelo próprio candidato). Trate-o como fonte auxiliar conforme o system" +
+    " prompt: use-o para preencher dados pessoais, de contato e de cidade que" +
+    " faltem no documento, sem sobrepor o que o documento já traz:\n" +
     partes.join("\n\n")
   );
 }

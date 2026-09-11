@@ -70,9 +70,11 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
           >
             <Zap className="size-3.5" />
             <span>
-              {candidato.inicioImediato
-                ? "Início Imediato"
-                : "Início Imediato: Não"}
+              {candidato.inicioImediato === null
+                ? "Início Imediato: Não informado"
+                : candidato.inicioImediato
+                  ? "Início Imediato"
+                  : "Início Imediato: Não"}
             </span>
           </div>
 
@@ -85,9 +87,11 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
           >
             <Plane className="size-3.5" />
             <span>
-              {candidato.disponivelViagens
-                ? "Disponível para Viagens"
-                : "Viagens: Não"}
+              {candidato.disponivelViagens === null
+                ? "Viagens: Não informado"
+                : candidato.disponivelViagens
+                  ? "Disponível para Viagens"
+                  : "Viagens: Não"}
             </span>
           </div>
 
@@ -100,9 +104,11 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
           >
             <Truck className="size-3.5" />
             <span>
-              {candidato.disponivelMudanca
-                ? "Disponível para Mudança"
-                : "Mudança: Não"}
+              {candidato.disponivelMudanca === null
+                ? "Mudança: Não informado"
+                : candidato.disponivelMudanca
+                  ? "Disponível para Mudança"
+                  : "Mudança: Não"}
             </span>
           </div>
         </div>
