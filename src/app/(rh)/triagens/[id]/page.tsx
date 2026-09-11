@@ -16,6 +16,7 @@ import { uuidSchema } from "~/lib/validation/common";
 import { buttonVariants } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
+import { formatarCelular } from "~/lib/celular";
 import { TriagemDetailEditor } from "./_components/triagem-detail-editor";
 import { CandidatoObservacoesCard } from "./_components/candidato-observacoes-card";
 
@@ -96,7 +97,7 @@ export default async function TriagemDetailPage({
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4" />
-                  {triagem.candidato.celular}
+                  {formatarCelular(triagem.candidato.celular)}
                 </div>
               </div>
               <div className="flex gap-2">

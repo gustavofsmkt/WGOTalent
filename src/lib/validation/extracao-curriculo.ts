@@ -8,8 +8,8 @@ import { candidatoAgregadoSchema } from "./candidato";
  * de negócio (2026-08-19) é permitir que o Candidato seja criado mesmo assim
  * e siga no fluxo normal de triagem; os campos ausentes ficam listados em
  * `dadosPendentes` para o RH completar depois. As colunas correspondentes em
- * `candidatos` ainda precisam se tornar nullable (TASK-141 aguardando essa
- * migration antes da TASK-145 poder inserir de fato).
+ * `candidatos` (data_nascimento, cep, bairro, logradouro) já são nullable, bem
+ * como data_inicio (formações) e data_entrada (experiências).
  */
 /**
  * nullish() (não só nullable()) porque o JSON Schema mandado ao agente só

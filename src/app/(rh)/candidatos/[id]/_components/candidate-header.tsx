@@ -16,6 +16,7 @@ import { StatusBadge, type StatusTone } from "~/components/status-badge";
 import { DeleteCandidatoButton } from "~/app/(rh)/candidatos/_components/delete-candidato-button";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
+import { formatarCelular } from "~/lib/celular";
 
 interface CandidateHeaderProps {
   candidato: CandidatoDetailCompleto;
@@ -114,7 +115,7 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
                   rel="noopener noreferrer"
                   className="hover:text-primary transition-colors"
                 >
-                  {candidato.celular}
+                  {formatarCelular(candidato.celular)}
                 </a>
               </span>
 

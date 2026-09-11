@@ -4,6 +4,7 @@ import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
 import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import { decryptCredential } from "~/lib/agents/crypto";
 import { gerarRespostaEstruturada } from "~/lib/agents/agent-client";
+import { resolveTemplate } from "~/lib/agents/template";
 import { BRAZILIAN_UFS } from "~/lib/validation/common";
 import {
   extracaoCurriculoOutputSchema,
@@ -61,7 +62,9 @@ const itemFormacao = {
     titulo: stringSchema(150),
     instituicao: nullableStringSchema(150),
     areaFormacao: stringSchema(120),
-    dataInicio: { type: "string", format: "date" },
+    // dataInicio deixou de ser obrigatória (só título e área de formação são);
+    // nullable para o modelo poder omitir quando o currículo não traz a data.
+    dataInicio: nullableDateString,
     dataTermino: nullableDateString,
   },
   required: [
@@ -80,7 +83,9 @@ const itemExperiencia = {
     empresa: nullableStringSchema(150),
     cargoTitulo: stringSchema(150),
     descricao: nullableStringSchema(),
-    dataEntrada: { type: "string", format: "date" },
+    // dataEntrada deixou de ser obrigatória (só cargo/função é); nullable para
+    // o modelo poder omitir quando o currículo não traz a data.
+    dataEntrada: nullableDateString,
     dataSaida: nullableDateString,
   },
   required: ["empresa", "cargoTitulo", "descricao", "dataEntrada", "dataSaida"],
@@ -116,12 +121,13 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     dataNascimento: nullableDateString,
     estadoCivil: nullableEnumSchema(ESTADO_CIVIL_VALUES),
     pcd: nullableStringSchema(),
-    // Nem todo currículo traz e-mail — deixar nullable evita que o modelo
-    // "invente" um valor só pra satisfazer um campo obrigatório (ex: a string
-    // "nao informado", que não é um e-mail válido). O placeholder único é
-    // gerado em código quando isso acontece — ver processarArquivoLote.
+    // Nem todo currículo traz e-mail ou celular — deixar nullable evita que o
+    // modelo "invente" um valor só pra satisfazer um campo obrigatório (ex: a
+    // string "nao informado", que não é um contato válido). A regra de negócio
+    // exige apenas e-mail OU celular; o caso "sem nenhum dos dois" é tratado
+    // em processar-curriculo-recebido.ts (candidato não criado).
     email: nullableStringSchema(254),
-    celular: stringSchema(20),
+    celular: nullableStringSchema(20),
     cep: nullableStringSchema(9),
     uf: { type: "string", enum: [...BRAZILIAN_UFS] },
     cidade: stringSchema(100),
@@ -216,6 +222,18 @@ function montarContextoEmail(contexto?: ContextoEmail): string {
   );
 }
 
+/**
+ * Data de hoje em ISO (YYYY-MM-DD), fixada no fuso de São Paulo para não pular
+ * de dia perto da meia-noite quando o servidor roda em UTC. Serve de âncora
+ * para o modelo interpretar datas relativas do currículo (ex.: "atual",
+ * "há 2 anos") e é exposta ao template como `{{dataAtual}}`.
+ */
+function dataAtualBrasil(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date());
+}
+
 export async function executarExtracaoCurriculo(
   fileKey: string,
   contextoEmail?: ContextoEmail,
@@ -238,6 +256,10 @@ export async function executarExtracaoCurriculo(
     );
   }
 
+  const variaveis = { dataAtual: dataAtualBrasil() };
+  const systemPrompt = resolveTemplate(config.systemPrompt, variaveis);
+  const userPrompt = resolveTemplate(config.userPrompt, variaveis);
+
   const ext = fileKey.split(".").pop()?.toLowerCase();
   const contexto = montarContextoEmail(contextoEmail);
 
@@ -251,8 +273,8 @@ export async function executarExtracaoCurriculo(
       provider: config.provider,
       apiKey: decryptCredential(credencial.apiKeyCifrada),
       model: config.model,
-      systemPrompt: config.systemPrompt,
-      userPrompt: `${config.userPrompt}${contexto}\n\nTexto do currículo (convertido de DOCX):\n${textoDocx}`,
+      systemPrompt,
+      userPrompt: `${userPrompt}${contexto}\n\nTexto do currículo (convertido de DOCX):\n${textoDocx}`,
       responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
       responseZodSchema: extracaoCurriculoOutputSchema,
     });
@@ -263,8 +285,8 @@ export async function executarExtracaoCurriculo(
     provider: config.provider,
     apiKey: decryptCredential(credencial.apiKeyCifrada),
     model: config.model,
-    systemPrompt: config.systemPrompt,
-    userPrompt: `${config.userPrompt}${contexto}`,
+    systemPrompt,
+    userPrompt: `${userPrompt}${contexto}`,
     responseJsonSchema: EXTRACAO_CURRICULO_JSON_SCHEMA,
     responseZodSchema: extracaoCurriculoOutputSchema,
     arquivo: { mimeType, data: arquivoBuffer },

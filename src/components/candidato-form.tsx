@@ -33,6 +33,7 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Plus, Trash2, GraduationCap, Briefcase, Award } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { mascaraCelular } from "~/lib/celular";
 import { createCandidato, updateCandidato } from "~/actions/candidatos";
 import { toastActionPromise } from "~/lib/toast-promise";
 
@@ -311,9 +312,12 @@ function ContatoURLsSection({ form }: { form: CandidatoFormApi }) {
             <field.InputField
               label="Celular"
               autoComplete="tel"
+              inputMode="tel"
               placeholder="(00) 00000-0000"
               description="Informe ao menos um e-mail ou celular."
-              onChange={(e) => field.handleChange(e.target.value || null)}
+              onChange={(e) =>
+                field.handleChange(mascaraCelular(e.target.value) || null)
+              }
             />
           )}
         </form.AppField>
@@ -1065,7 +1069,7 @@ export function CandidatoBaseForm({
       estadoCivil: candidato?.estadoCivil ?? "nao_informado",
       pcd: candidato?.pcd ?? "",
       email: candidato?.email ?? "",
-      celular: candidato?.celular ?? "",
+      celular: mascaraCelular(candidato?.celular ?? ""),
       cep: candidato?.cep ?? "",
       uf: candidato?.uf ?? "",
       cidade: candidato?.cidade ?? "",

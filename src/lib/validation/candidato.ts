@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizarCelular } from "~/lib/celular";
 import {
   uuidSchema,
   nonEmptyString,
@@ -58,6 +59,19 @@ const nullableTrimmedString = (max: number, maxMessage: string) =>
         : val,
     trimmedString.max(max, maxMessage).nullable(),
   );
+
+/**
+ * Currículos e cadastros trazem o celular em formatos variados ("(11) 98765-4321",
+ * "+55 11 98765 4321", "11987654321"). Como o dedup casa por igualdade exata
+ * (`eq(candidatos.celular, ...)`), o valor é reduzido à forma canônica (só
+ * dígitos, DDD + 9) por `normalizarCelular` antes de validar — normalização, não
+ * validação de conteúdo, igual ao CEP acima. A formatação de exibição
+ * (XX) XXXXX-XXXX é responsabilidade do frontend (ver ~/lib/celular).
+ */
+const celularSchema = z.preprocess(
+  (val) => (typeof val === "string" ? normalizarCelular(val) : (val ?? null)),
+  trimmedString.max(20, "O celular deve ter no máximo 20 caracteres").nullable(),
+);
 
 const ABSOLUTE_URL_SCHEME_REGEX = /^https?:\/\//i;
 
@@ -196,10 +210,7 @@ export const candidatoSchema = z.object({
     .max(254, "O e-mail deve ter no máximo 254 caracteres")
     .optional()
     .nullable(),
-  celular: trimmedString
-    .max(20, "O celular deve ter no máximo 20 caracteres")
-    .optional()
-    .nullable(),
+  celular: celularSchema,
   cep: cepSchema,
   uf: ufSchema,
   cidade: nonEmptyString("A cidade é obrigatória").max(

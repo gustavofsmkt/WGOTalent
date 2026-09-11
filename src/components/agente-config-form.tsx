@@ -25,7 +25,7 @@ import {
 
 const CATALOGO_VARIAVEIS: Record<AgenteConfig["slot"], string> = {
   extracao_curriculo:
-    "Este slot não recebe variáveis de contexto — a entrada é o arquivo do currículo em si (multimodal) ou seu texto convertido (DOCX).",
+    "{{dataAtual}} (data de hoje em ISO, ex: 2026-09-10). A entrada principal continua sendo o arquivo do currículo em si (multimodal) ou seu texto convertido (DOCX).",
   classificador_aderencia:
     '{{tipo_principal}}, {{tipo_comparacao}} (rótulos, ex: "candidato"/"vaga"), {{item_principal}} (JSON do lado "1"), {{itens_comparacao}} (JSON array do lado "N").',
   avaliador_triagem:

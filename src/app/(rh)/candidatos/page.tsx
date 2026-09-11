@@ -21,6 +21,7 @@ import { candidatoRepository } from "~/server/db/repositories/candidato";
 import { DeleteCandidatoButton } from "./_components/delete-candidato-button";
 import { PageFilter } from "~/components/page-filter";
 import { getWhatsAppUrl } from "~/lib/whatsapp";
+import { formatarCelular } from "~/lib/celular";
 import MetricCardsSummary from "~/components/metric-cards-summary";
 import { DataTable, type ColumnDef } from "~/components/data-table";
 import { TablePagination } from "~/components/table-pagination";
@@ -155,7 +156,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors"
               >
-                {candidato.celular}
+                {formatarCelular(candidato.celular)}
               </a>
             </span>
           </div>
@@ -386,7 +387,7 @@ export default async function CandidatosPage(props: CandidatosPageProps) {
                               rel="noopener noreferrer"
                               className="hover:text-primary transition-colors"
                             >
-                              {candidato.celular}
+                              {formatarCelular(candidato.celular)}
                             </a>
                           </div>
                           <div className="flex items-center gap-2">
