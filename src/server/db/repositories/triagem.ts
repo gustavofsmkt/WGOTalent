@@ -389,7 +389,7 @@ export const triagemRepository = {
   },
 
   findActiveVagaOptions: async (dbOrTx: DbOrTx = db): Promise<VagaOption[]> => {
-    // Para opções de formulário, mostramos as Vagas ativas (não deletadas).
+    // Para opções de formulário, mostramos apenas Vagas abertas (não deletadas).
     const rows = await notDeleted(
       dbOrTx
         .select({
@@ -402,6 +402,7 @@ export const triagemRepository = {
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id)),
       vagas,
+      eq(vagas.status, "aberta"),
     ).orderBy(asc(cargos.titulo));
 
     return rows.map((r) => ({
