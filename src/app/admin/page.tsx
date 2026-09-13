@@ -32,6 +32,8 @@ export default async function AdminPage() {
     emailCredencialRepository.findAll(),
   ]);
 
+  const credencialNomePorId = new Map(credenciais.map((c) => [c.id, c.nome]));
+
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full">
       <PageHeader
@@ -67,6 +69,11 @@ export default async function AdminPage() {
                       {getModelsForProvider(agente.provider).find(
                         (m) => m.value === agente.model,
                       )?.label ?? agente.model}{" "}
+                      ·{" "}
+                      {agente.credencialId
+                        ? (credencialNomePorId.get(agente.credencialId) ??
+                          "credencial removida")
+                        : "sem credencial"}{" "}
                       · {agente.ativo ? "ativo" : "inativo"}
                     </div>
                   </div>
@@ -93,10 +100,9 @@ export default async function AdminPage() {
                 <Card key={c.id}>
                   <CardContent className="flex items-center justify-between p-4">
                     <div>
-                      <div className="font-medium">
-                        {getProviderLabel(c.provider)}
-                      </div>
+                      <div className="font-medium">{c.nome}</div>
                       <div className="text-sm text-muted-foreground">
+                        {getProviderLabel(c.provider)} ·{" "}
                         {c.ativo ? "ativa" : "inativa"} · cadastrada em{" "}
                         {new Date(c.createdAt).toLocaleDateString("pt-BR")}
                       </div>

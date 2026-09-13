@@ -22,6 +22,7 @@ export function CreateCredencialForm() {
   const router = useRouter();
   const form = useAppForm({
     defaultValues: {
+      nome: "",
       provider: LLM_PROVIDERS[0]?.value ?? "",
       apiKey: "",
     } as CredencialCreateInput,
@@ -61,6 +62,19 @@ export function CreateCredencialForm() {
       >
         <CardContent>
           <div className="flex flex-col gap-4">
+            <form.AppField
+              name="nome"
+              validators={{ onBlur: credencialCreateSchema.shape.nome }}
+            >
+              {(field) => (
+                <field.InputField
+                  label="Nome"
+                  description="Um rótulo para identificar esta credencial (ex: “Conta principal”, “Projeto RH”)."
+                  autoComplete="off"
+                />
+              )}
+            </form.AppField>
+
             <form.AppField
               name="provider"
               validators={{ onBlur: credencialCreateSchema.shape.provider }}

@@ -229,14 +229,14 @@
     {
       "idx": 32,
       "version": "7",
-      "when": 1789600000000,
+      "when": 1789064808044,
       "tag": "0032_atualiza_prompts_agentes",
       "breakpoints": true
     },
     {
       "idx": 33,
       "version": "7",
-      "when": 1789600000001,
+      "when": 1789064808045,
       "tag": "0033_candidatos_booleans_tristate",
       "breakpoints": true
     },
@@ -245,6 +245,13 @@
       "version": "7",
       "when": 1789144148316,
       "tag": "0034_cnh_add_nenhuma",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789158749221,
+      "tag": "0035_dazzling_azazel",
       "breakpoints": true
     }
   ]

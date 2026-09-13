@@ -12,6 +12,7 @@ export type ActionState<T> =
 
 export interface CredencialSummary {
   id: string;
+  nome: string;
   provider: string;
   ativo: boolean;
   createdAt: string;
@@ -34,6 +35,7 @@ export async function createCredencial(
   try {
     const isDuplicate = await llmCredencialRepository.existsRecentDuplicate({
       provider: parsed.data.provider,
+      nome: parsed.data.nome,
     });
     if (isDuplicate) {
       return {
@@ -44,6 +46,7 @@ export async function createCredencial(
     }
 
     const created = await llmCredencialRepository.create({
+      nome: parsed.data.nome,
       provider: parsed.data.provider,
       apiKeyCifrada: encryptCredential(parsed.data.apiKey),
     });
@@ -55,6 +58,7 @@ export async function createCredencial(
       message: "Credencial salva com sucesso.",
       data: {
         id: created.id,
+        nome: created.nome,
         provider: created.provider,
         ativo: created.ativo,
         createdAt: created.createdAt,

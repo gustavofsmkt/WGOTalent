@@ -517,6 +517,7 @@ export const agenteSlotEnum = pgEnum("agente_slot", [
 
 export const llmCredenciais = createTable("llm_credenciais", {
   id: uuid("id").primaryKey().defaultRandom(),
+  nome: varchar("nome", { length: 120 }).notNull(),
   provider: varchar("provider", { length: 60 }).notNull(),
   apiKeyCifrada: text("api_key_cifrada").notNull(),
   ativo: boolean("ativo").default(true).notNull(),
@@ -530,6 +531,7 @@ export const agenteConfig = createTable("agente_config", {
   id: uuid("id").primaryKey().defaultRandom(),
   slot: agenteSlotEnum("slot").notNull().unique(),
   provider: varchar("provider", { length: 60 }).notNull(),
+  credencialId: uuid("credencial_id").references(() => llmCredenciais.id),
   model: varchar("model", { length: 100 }).notNull(),
   systemPrompt: text("system_prompt").notNull(),
   userPrompt: text("user_prompt").notNull(),

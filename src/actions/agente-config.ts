@@ -29,21 +29,36 @@ export async function updateAgenteConfig(
   try {
     const config = parsed.data;
 
-    // Só bloqueia se o agente for ficar ativo — permite salvar um rascunho
-    // inativo apontando para um provedor ainda sem credencial.
+    // Só valida a credencial se o agente for ficar ativo — permite salvar um
+    // rascunho inativo sem credencial selecionada.
     if (config.ativo) {
-      const credencial = await llmCredencialRepository.findActiveByProvider(
-        config.provider,
-      );
-      if (!credencial) {
+      // O schema já garante credencialId presente quando ativo.
+      const credencial = config.credencialId
+        ? await llmCredencialRepository.findById(config.credencialId)
+        : null;
+      if (!credencial || !credencial.ativo) {
         return {
           success: false,
-          message: `Nenhuma credencial ativa para o provedor "${config.provider}". Cadastre a chave em Administração › Credenciais antes de ativar este agente.`,
+          message:
+            "A credencial selecionada não existe ou está inativa. Escolha uma credencial ativa em Administração › Credenciais.",
+        };
+      }
+      if (credencial.provider !== config.provider) {
+        return {
+          success: false,
+          message: "A credencial selecionada não pertence ao provedor escolhido.",
         };
       }
     }
 
-    const updated = await agenteConfigRepository.update(slot, config);
+    const updated = await agenteConfigRepository.update(slot, {
+      provider: config.provider,
+      credencialId: config.credencialId ?? null,
+      model: config.model,
+      systemPrompt: config.systemPrompt,
+      userPrompt: config.userPrompt,
+      ativo: config.ativo,
+    });
     if (!updated) {
       return {
         success: false,

@@ -250,10 +250,10 @@ export async function executarExtracaoCurriculo(
     throw new Error("Agente extracao_curriculo não está configurado/ativo.");
   }
 
-  const credencial = await llmCredencialRepository.findActiveByProvider(
-    config.provider,
-  );
-  if (!credencial) {
+  const credencial = config.credencialId
+    ? await llmCredencialRepository.findById(config.credencialId)
+    : await llmCredencialRepository.findActiveByProvider(config.provider);
+  if (!credencial || (config.credencialId && !credencial.ativo)) {
     throw new Error(
       `Nenhuma credencial ativa para o provider "${config.provider}".`,
     );

@@ -31,17 +31,30 @@ export const llmCredencialRepository = {
     return rows[0] ?? null;
   },
 
+  findManyActiveByProvider: async (
+    provider: string,
+    dbOrTx: DbOrTx = db,
+  ): Promise<LlmCredencial[]> => {
+    return notDeleted(
+      dbOrTx.select().from(llmCredenciais),
+      llmCredenciais,
+      eq(llmCredenciais.provider, provider),
+      eq(llmCredenciais.ativo, true),
+    ).orderBy(desc(llmCredenciais.createdAt));
+  },
+
   existsRecentDuplicate: async (
-    data: { provider: string },
+    data: { provider: string; nome: string },
     dbOrTx: DbOrTx = db,
   ): Promise<boolean> => {
-    // Guard contra duplo-submit: mesmo provider cadastrado nos últimos 10s.
-    // A API key não entra na comparação (é cifrada com IV aleatório, então
+    // Guard contra duplo-submit: mesmo provider + nome cadastrado nos últimos
+    // 10s. A API key não entra na comparação (é cifrada com IV aleatório, então
     // duas cifragens do mesmo texto nunca são iguais).
     const rows = await notDeleted(
       dbOrTx.select({ id: llmCredenciais.id }).from(llmCredenciais),
       llmCredenciais,
       eq(llmCredenciais.provider, data.provider),
+      eq(llmCredenciais.nome, data.nome),
       gte(llmCredenciais.createdAt, sql`now() - interval '10 seconds'`),
     ).limit(1);
     return rows.length > 0;

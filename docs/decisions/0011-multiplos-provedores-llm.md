@@ -47,6 +47,25 @@
 >    ativar um slot sem credencial ativa para o provedor. A extração só
 >    oferece provedores com capacidade multimodal (`ProviderCapabilities`).
 
+> **Nota de implementação (2026-09-11) — credenciais nomeadas e seleção por agente:**
+> antes cada provedor tinha no máximo uma credencial "ativa" e os agentes a
+> resolviam implicitamente por provedor (`findActiveByProvider`). Agora:
+>
+> 1. **`llm_credenciais.nome`.** Toda credencial tem um rótulo obrigatório;
+>    é possível cadastrar várias credenciais do mesmo provedor (ex: contas
+>    distintas). Backfill da migração `0035` preenche `nome = provider` nas
+>    linhas existentes.
+> 2. **`agente_config.credencial_id` (FK).** Cada slot aponta para uma
+>    credencial específica. `updateAgenteConfig` exige a credencial ao ativar
+>    o slot e valida que ela existe, está ativa e pertence ao provedor
+>    escolhido. Os três agentes resolvem a chave por `credencial_id`
+>    (`findById`), com fallback a `findActiveByProvider` só para linhas legadas
+>    sem `credencial_id`. Backfill da `0035` liga cada slot à credencial ativa
+>    mais recente do seu provedor.
+> 3. **UI.** `/admin` › Credenciais cadastra credenciais nomeadas; a tela de
+>    edição do agente (`/admin/agentes/[slot]`) traz um select de credencial
+>    filtrado pelo provedor selecionado.
+
 ## Status
 
 Aceita

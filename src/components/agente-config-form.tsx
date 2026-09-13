@@ -32,11 +32,22 @@ const CATALOGO_VARIAVEIS: Record<AgenteConfig["slot"], string> = {
     "{{candidato}} (JSON de CandidatoCompleto), {{vaga}} (JSON de VagaCompleta).",
 };
 
-export interface AgenteConfigFormProps {
-  agenteConfig: AgenteConfig;
+export interface CredencialOption {
+  id: string;
+  nome: string;
+  provider: string;
+  ativo: boolean;
 }
 
-export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
+export interface AgenteConfigFormProps {
+  agenteConfig: AgenteConfig;
+  credenciais: CredencialOption[];
+}
+
+export function AgenteConfigForm({
+  agenteConfig,
+  credenciais,
+}: AgenteConfigFormProps) {
   const router = useRouter();
 
   // A extração envia PDF/imagem multimodal — só oferece provedores capazes disso.
@@ -49,6 +60,7 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
   const form = useAppForm({
     defaultValues: {
       provider: agenteConfig.provider,
+      credencialId: agenteConfig.credencialId ?? "",
       model: agenteConfig.model,
       systemPrompt: agenteConfig.systemPrompt,
       userPrompt: agenteConfig.userPrompt,
@@ -97,6 +109,9 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               onChange: ({ value }) => {
                 const firstModel = getModelsForProvider(value)[0]?.value ?? "";
                 form.setFieldValue("model", firstModel);
+                // Credencial pertence a um provedor específico — limpa a
+                // seleção anterior ao trocar de provedor.
+                form.setFieldValue("credencialId", "");
               },
             }}
           >
@@ -104,6 +119,38 @@ export function AgenteConfigForm({ agenteConfig }: AgenteConfigFormProps) {
               <field.SelectField label="Provedor" options={providerOptions} />
             )}
           </form.AppField>
+
+          <form.Subscribe selector={(state) => state.values.provider}>
+            {(provider) => {
+              const opcoes = credenciais
+                .filter((c) => c.provider === provider)
+                .map((c) => ({
+                  value: c.id,
+                  label: c.ativo ? c.nome : `${c.nome} (inativa)`,
+                }));
+              return (
+                <form.AppField name="credencialId">
+                  {(field) =>
+                    opcoes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhuma credencial ativa para este provedor. Cadastre uma
+                        em Administração › Credenciais antes de ativar o agente.
+                      </p>
+                    ) : (
+                      <field.SelectField
+                        label="Credencial"
+                        description="Credencial usada por este agente para chamar o provedor."
+                        options={[
+                          { value: "", label: "Selecione uma credencial…" },
+                          ...opcoes,
+                        ]}
+                      />
+                    )
+                  }
+                </form.AppField>
+              );
+            }}
+          </form.Subscribe>
 
           <form.Subscribe selector={(state) => state.values.provider}>
             {(provider) => {

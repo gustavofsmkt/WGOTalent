@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "~/components/page-header";
 import { AgenteConfigForm } from "~/components/agente-config-form";
 import { agenteConfigRepository } from "~/server/db/repositories/agente-config";
+import { llmCredencialRepository } from "~/server/db/repositories/llm-credencial";
 import type { AgenteConfig } from "~/server/db/schema";
 
 export const dynamic = "force-dynamic";
@@ -23,13 +24,23 @@ export default async function EditAgentePage(props: EditAgentePageProps) {
     notFound();
   }
 
-  const agenteConfig = await agenteConfigRepository.findBySlot(
-    slot as AgenteConfig["slot"],
-  );
+  const [agenteConfig, credenciais] = await Promise.all([
+    agenteConfigRepository.findBySlot(slot as AgenteConfig["slot"]),
+    llmCredencialRepository.findAll(),
+  ]);
 
   if (!agenteConfig) {
     notFound();
   }
+
+  const credenciaisOptions = credenciais
+    .filter((c) => c.ativo || c.id === agenteConfig.credencialId)
+    .map((c) => ({
+      id: c.id,
+      nome: c.nome,
+      provider: c.provider,
+      ativo: c.ativo,
+    }));
 
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
@@ -37,7 +48,10 @@ export default async function EditAgentePage(props: EditAgentePageProps) {
         title={`Editar Agente: ${agenteConfig.slot}`}
         description="Prompt e modelo deste slot fixo."
       />
-      <AgenteConfigForm agenteConfig={agenteConfig} />
+      <AgenteConfigForm
+        agenteConfig={agenteConfig}
+        credenciais={credenciaisOptions}
+      />
     </div>
   );
 }

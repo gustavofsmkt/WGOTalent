@@ -39,6 +39,7 @@ describe("credenciais server actions", () => {
       ).mockResolvedValueOnce(false);
       vi.spyOn(llmCredencialRepository, "create").mockResolvedValueOnce({
         id: "cred-1",
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKeyCifrada: "cifrada",
         ativo: true,
@@ -48,6 +49,7 @@ describe("credenciais server actions", () => {
       });
 
       const result = await createCredencial({
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKey: "sk-real-secret",
       });
@@ -63,6 +65,7 @@ describe("credenciais server actions", () => {
 
     it("rejects an empty API key", async () => {
       const result = await createCredencial({
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKey: "",
       });
@@ -78,6 +81,7 @@ describe("credenciais server actions", () => {
       vi.spyOn(llmCredencialRepository, "create");
 
       const result = await createCredencial({
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKey: "sk-real-secret",
       });
@@ -107,6 +111,7 @@ describe("credenciais server actions", () => {
     it("soft-deletes an inactive credential", async () => {
       vi.spyOn(llmCredencialRepository, "findById").mockResolvedValueOnce({
         id: "cred-1",
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKeyCifrada: "cifrada",
         ativo: false,
@@ -127,6 +132,7 @@ describe("credenciais server actions", () => {
     it("refuses to delete an active credential", async () => {
       vi.spyOn(llmCredencialRepository, "findById").mockResolvedValueOnce({
         id: "cred-1",
+        nome: "Conta principal",
         provider: "google_ai_studio",
         apiKeyCifrada: "cifrada",
         ativo: true,
