@@ -234,8 +234,14 @@ export const candidatoSchema = z.object({
   // `boolean | null` alinhada às colunas nuláveis correspondentes.
   possuiVeiculo: z.boolean().nullable().default(null),
   ensinoMedioConcluido: z.boolean().nullable().default(null),
-  cargoInteresseId: uuidSchema.optional().nullable(),
-  areaInteresseId: uuidSchema.optional().nullable(),
+  cargoInteresse: nullableTrimmedString(
+    150,
+    "O cargo de interesse deve ter no máximo 150 caracteres",
+  ),
+  areaInteresse: nullableTrimmedString(
+    120,
+    "A área de interesse deve ter no máximo 120 caracteres",
+  ),
   disponivelViagens: z.boolean().nullable().default(null),
   disponivelMudanca: z.boolean().nullable().default(null),
   disponibilidadeHorarios: trimmedString.optional().nullable(),

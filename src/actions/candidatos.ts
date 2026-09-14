@@ -7,14 +7,12 @@ import {
   candidatoRepository,
   type CandidatoDetailCompleto,
 } from "~/server/db/repositories/candidato";
-import { cargoRepository } from "~/server/db/repositories/cargo";
-import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-item";
 import { type Candidato, type UploadLoteItem } from "~/server/db/schema";
 import {
   candidatoFormSchema,
-  type CandidatoAgregadoInput,
+  type CandidatoAgregadoOutput,
 } from "~/lib/validation/candidato";
 import { storage } from "~/lib/storage";
 import { orquestrarParaCandidatoNovo } from "~/server/agents/orquestracao";
@@ -94,6 +92,56 @@ async function resetTriagensEmCurriculo(candidatoId: string): Promise<void> {
   await Promise.all(ids.map((id) => triagemRepository.softDelete(id)));
 }
 
+/**
+ * O formulário trabalha com os nomes persistidos, mas só aceita valores dos
+ * cadastros ativos. Cargo -> área é uma derivação válida; área nunca escolhe
+ * um cargo por conta própria.
+ */
+async function normalizarInteressesManuais(
+  data: CandidatoAgregadoOutput,
+): Promise<string | null> {
+  const cargoInteresse = data.cargoInteresse;
+  const areaInteresse = data.areaInteresse;
+
+  if (cargoInteresse) {
+    const cargosAtivos = await candidatoRepository.findActiveCargoOptions();
+    const cargosComTitulo = cargosAtivos.filter(
+      (cargo) => cargo.titulo === cargoInteresse,
+    );
+    const cargoSelecionado = areaInteresse
+      ? cargosComTitulo.find(
+          (cargo) => cargo.departamento.nome === areaInteresse,
+        )
+      : cargosComTitulo.length === 1
+        ? cargosComTitulo[0]
+        : undefined;
+
+    if (!cargoSelecionado) {
+      return areaInteresse
+        ? "O cargo de interesse não pertence à área selecionada ou não está ativo."
+        : "Selecione um cargo de interesse existente e sua área correspondente.";
+    }
+
+    data.cargoInteresse = cargoSelecionado.titulo;
+    data.areaInteresse = cargoSelecionado.departamento.nome;
+    return null;
+  }
+
+  if (areaInteresse) {
+    const areasAtivas =
+      await candidatoRepository.findActiveDepartamentoOptions();
+    const areaSelecionada = areasAtivas.find(
+      (area) => area.nome === areaInteresse,
+    );
+    if (!areaSelecionada) {
+      return "Selecione uma área de interesse existente.";
+    }
+    data.areaInteresse = areaSelecionada.nome;
+  }
+
+  return null;
+}
+
 export async function createCandidato(
   payload: unknown,
 ): Promise<ActionState<Candidato>> {
@@ -115,7 +163,12 @@ export async function createCandidato(
   }
 
   try {
-    const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
+    const erroInteresses = await normalizarInteressesManuais(parsed.data);
+    if (erroInteresses) {
+      return { success: false, message: erroInteresses };
+    }
+
+    const { email, celular } = parsed.data;
 
     const existing =
       (email
@@ -124,27 +177,6 @@ export async function createCandidato(
       (celular
         ? await candidatoRepository.findByCelularIncludingDeleted(celular)
         : null);
-
-    // Validar referências
-    if (cargoInteresseId) {
-      const cargo = await cargoRepository.findById(cargoInteresseId);
-      if (!cargo || !cargo.ativo) {
-        return {
-          success: false,
-          message: "O cargo selecionado é inválido ou está inativo.",
-        };
-      }
-    }
-
-    if (areaInteresseId) {
-      const depto = await departamentoRepository.findById(areaInteresseId);
-      if (!depto) {
-        return {
-          success: false,
-          message: "O departamento selecionado é inválido.",
-        };
-      }
-    }
 
     let fileKey: string | null = null;
     if (file) {
@@ -243,7 +275,12 @@ export async function updateCandidato(
   }
 
   try {
-    const { cargoInteresseId, areaInteresseId, email, celular } = parsed.data;
+    const erroInteresses = await normalizarInteressesManuais(parsed.data);
+    if (erroInteresses) {
+      return { success: false, message: erroInteresses };
+    }
+
+    const { email, celular } = parsed.data;
 
     const existingCandidato = await candidatoRepository.findById(id);
     if (!existingCandidato) {
@@ -268,27 +305,6 @@ export async function updateCandidato(
         return {
           success: false,
           message: "O celular informado já está cadastrado no sistema.",
-        };
-      }
-    }
-
-    // Validar referências
-    if (cargoInteresseId) {
-      const cargo = await cargoRepository.findById(cargoInteresseId);
-      if (!cargo || !cargo.ativo) {
-        return {
-          success: false,
-          message: "O cargo selecionado é inválido ou está inativo.",
-        };
-      }
-    }
-
-    if (areaInteresseId) {
-      const depto = await departamentoRepository.findById(areaInteresseId);
-      if (!depto) {
-        return {
-          success: false,
-          message: "O departamento selecionado é inválido.",
         };
       }
     }

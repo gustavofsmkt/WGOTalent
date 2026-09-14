@@ -64,7 +64,7 @@ type CandidatoScalarKey = Exclude<
 >;
 
 /**
- * Campos de texto/referência: o valor novo só substitui o atual se vier
+ * Campos de texto: o valor novo só substitui o atual se vier
  * preenchido e for diferente — nunca apaga um dado já cadastrado com um
  * valor vazio vindo de um envio parcial (ex.: extração de currículo que
  * não capturou o linkedin não deve apagar um linkedin já cadastrado).
@@ -84,8 +84,8 @@ const CAMPOS_TEXTO_ADITIVOS: CandidatoScalarKey[] = [
   "logradouro",
   "resumoProfissional",
   "cnh",
-  "cargoInteresseId",
-  "areaInteresseId",
+  "cargoInteresse",
+  "areaInteresse",
   "disponibilidadeHorarios",
   "linkedin",
   "portfolio",
@@ -194,7 +194,7 @@ export interface CandidatoListFilters {
 const CANDIDATO_SORT_COLUMNS = {
   nome: candidatos.nome,
   cidade: candidatos.cidade,
-  cargoInteresse: cargos.titulo,
+  cargoInteresse: candidatos.cargoInteresse,
   origem: candidatos.origem,
   createdAt: candidatos.createdAt,
 } as const;
@@ -227,8 +227,6 @@ export interface CandidatoDetailCompleto extends CandidatoCompleto {
       parecerIa: string;
     } | null;
   })[];
-  cargoInteresse: { id: string; titulo: string } | null;
-  areaInteresse: { id: string; nome: string } | null;
 }
 
 export interface DepartamentoOption {
@@ -257,7 +255,8 @@ function buildCandidatoListConditions(filters: CandidatoListFilters): SQL[] {
         ilike(candidatos.email, pattern),
         ilike(candidatos.cidade, pattern),
         ilike(candidatos.uf, pattern),
-        ilike(cargos.titulo, pattern),
+        ilike(candidatos.cargoInteresse, pattern),
+        ilike(candidatos.areaInteresse, pattern),
       ),
     );
   }
@@ -315,10 +314,9 @@ export const candidatoRepository = {
             origem: candidatos.origem,
             emBancoTalentos: candidatos.emBancoTalentos,
             createdAt: candidatos.createdAt,
-            cargoInteresseTitulo: cargos.titulo,
+            cargoInteresse: candidatos.cargoInteresse,
           })
-          .from(candidatos)
-          .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id)),
+          .from(candidatos),
         candidatos,
         ...conditions,
       )
@@ -326,10 +324,7 @@ export const candidatoRepository = {
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(
-        dbOrTx
-          .select({ count: sql<number>`count(*)::int` })
-          .from(candidatos)
-          .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id)),
+        dbOrTx.select({ count: sql<number>`count(*)::int` }).from(candidatos),
         candidatos,
         ...conditions,
       ),
@@ -346,7 +341,7 @@ export const candidatoRepository = {
         origem: row.origem,
         emBancoTalentos: row.emBancoTalentos,
         createdAt: row.createdAt,
-        cargoInteresse: row.cargoInteresseTitulo,
+        cargoInteresse: row.cargoInteresse,
       })),
       total: Number(totalRows[0]?.count ?? 0),
     };
@@ -405,28 +400,15 @@ export const candidatoRepository = {
     id: string,
     dbOrTx: DbOrTx = db,
   ): Promise<CandidatoDetailCompleto | null> => {
-    // Busca candidato base com joins para cargo e área
+    // Cargo e área de interesse são textos no próprio registro do candidato.
     const baseRows = await notDeleted(
-      dbOrTx
-        .select({
-          candidato: candidatos,
-          cargoTitulo: cargos.titulo,
-          areaNome: departamentos.nome,
-        })
-        .from(candidatos)
-        .leftJoin(cargos, eq(candidatos.cargoInteresseId, cargos.id))
-        .leftJoin(
-          departamentos,
-          eq(candidatos.areaInteresseId, departamentos.id),
-        ),
+      dbOrTx.select().from(candidatos),
       candidatos,
       eq(candidatos.id, id),
     );
 
-    const baseData = baseRows[0];
-    if (!baseData) return null;
-
-    const { candidato, cargoTitulo, areaNome } = baseData;
+    const candidato = baseRows[0];
+    if (!candidato) return null;
 
     // Busca filhos sequencialmente para evitar N+1/produto cartesiano
     const [formacoes, experiencias, certificacoes, triagensRows] =
@@ -476,12 +458,6 @@ export const candidatoRepository = {
 
     return {
       ...candidato,
-      cargoInteresse: candidato.cargoInteresseId
-        ? { id: candidato.cargoInteresseId, titulo: cargoTitulo! }
-        : null,
-      areaInteresse: candidato.areaInteresseId
-        ? { id: candidato.areaInteresseId, nome: areaNome! }
-        : null,
       formacoes,
       experiencias,
       certificacoes,

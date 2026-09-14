@@ -46,8 +46,6 @@ import {
   limparUploadLoteFinalizados,
 } from "./candidatos";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
-import { cargoRepository } from "~/server/db/repositories/cargo";
-import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { uploadLoteItemRepository } from "~/server/db/repositories/upload-lote-item";
 import { revalidatePath } from "next/cache";
@@ -129,6 +127,134 @@ describe("candidatos server actions", () => {
       }
       expect(candidatoRepository.createAggregate).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith("/candidatos");
+    });
+
+    it("derives the persisted area from an existing active cargo", async () => {
+      vi.spyOn(
+        candidatoRepository,
+        "findActiveCargoOptions",
+      ).mockResolvedValueOnce([
+        {
+          id: "cargo-1",
+          titulo: "Desenvolvedor Backend",
+          departamento: { id: "dep-1", nome: "Tecnologia" },
+        },
+      ]);
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      const createSpy = vi
+        .spyOn(candidatoRepository, "createAggregate")
+        .mockResolvedValueOnce({
+          id: "cand-1",
+        } as unknown as CandidatoDetailCompleto);
+
+      const result = await createCandidato({
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor Backend.",
+        cargoInteresse: "Desenvolvedor Backend",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cargoInteresse: "Desenvolvedor Backend",
+          areaInteresse: "Tecnologia",
+        }),
+      );
+    });
+
+    it("keeps cargo empty when only an existing area is selected", async () => {
+      vi.spyOn(
+        candidatoRepository,
+        "findActiveDepartamentoOptions",
+      ).mockResolvedValueOnce([{ id: "dep-1", nome: "Tecnologia" }]);
+      vi.spyOn(
+        candidatoRepository,
+        "findByEmailIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      vi.spyOn(
+        candidatoRepository,
+        "findByCelularIncludingDeleted",
+      ).mockResolvedValueOnce(null);
+      const createSpy = vi
+        .spyOn(candidatoRepository, "createAggregate")
+        .mockResolvedValueOnce({
+          id: "cand-1",
+        } as unknown as CandidatoDetailCompleto);
+
+      const result = await createCandidato({
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor Backend.",
+        areaInteresse: "Tecnologia",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cargoInteresse: null,
+          areaInteresse: "Tecnologia",
+        }),
+      );
+    });
+
+    it("rejects a manual cargo and area that do not correspond", async () => {
+      vi.spyOn(
+        candidatoRepository,
+        "findActiveCargoOptions",
+      ).mockResolvedValueOnce([
+        {
+          id: "cargo-1",
+          titulo: "Desenvolvedor Backend",
+          departamento: { id: "dep-1", nome: "Tecnologia" },
+        },
+      ]);
+
+      const result = await createCandidato({
+        nome: "João Silva",
+        email: "joao.silva@example.com",
+        celular: "11999999999",
+        cidade: "São Paulo",
+        uf: "SP",
+        cep: "01000-000",
+        bairro: "Centro",
+        logradouro: "Rua Direita",
+        resumoProfissional: "Desenvolvedor Backend.",
+        cargoInteresse: "Desenvolvedor Backend",
+        areaInteresse: "Recursos Humanos",
+        formacoes: [],
+        experiencias: [],
+        certificacoes: [],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain("não pertence à área selecionada");
+      expect(candidatoRepository.createAggregate).not.toHaveBeenCalled();
     });
 
     it("merges data into the existing candidato when the email matches an active one without new info", async () => {

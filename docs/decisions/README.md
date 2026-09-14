@@ -18,6 +18,7 @@ Este diretório contém os registros de decisões arquiteturais (ADRs) do projet
 - [0012: Autenticação Stateless sem Autorização](./0012-autenticacao-autorizacao.md)
 - [0013: Banco de Talentos Automático para Candidatos sem Vaga Compatível](./0013-banco-de-talentos-automatico.md)
 - [0014: Nota de Corte de Aderência Configurada por Vaga](./0014-nota-corte-por-vaga.md)
+- [0015: Área e Cargo de Interesse do Candidato como Texto](./0015-interesses-do-candidato-como-texto.md)
 
 ---
 

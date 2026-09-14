@@ -37,8 +37,8 @@ describe("CandidatoDetailPage - Server Logic", () => {
     uf: "SP",
     resumoProfissional: "Profissional com sólida experiência em marketing.",
     observacoesRh: null,
-    cargoInteresseId: "cargo-1",
-    areaInteresseId: "area-1",
+    cargoInteresse: "Gerente de Marketing",
+    areaInteresse: "Marketing",
     disponibilidadeHorarios: "Horário comercial",
     disponivelViagens: true,
     disponivelMudanca: false,
@@ -51,8 +51,6 @@ describe("CandidatoDetailPage - Server Logic", () => {
     createdAt: "2023-08-01T10:00:00.000Z",
     updatedAt: "2023-08-01T10:00:00.000Z",
     deletedAt: null,
-    cargoInteresse: { id: "cargo-1", titulo: "Gerente de Marketing" },
-    areaInteresse: { id: "area-1", nome: "Marketing" },
     formacoes: [
       {
         id: "form-1",
@@ -135,8 +133,8 @@ describe("CandidatoDetailPage - Server Logic", () => {
     expect(result?.certificacoes).toHaveLength(1);
     expect(result?.triagens).toHaveLength(1);
     expect(result?.triagens[0]?.avaliacaoIA?.scoreIa).toBe("92.00");
-    expect(result?.cargoInteresse?.titulo).toBe("Gerente de Marketing");
-    expect(result?.areaInteresse?.nome).toBe("Marketing");
+    expect(result?.cargoInteresse).toBe("Gerente de Marketing");
+    expect(result?.areaInteresse).toBe("Marketing");
   });
 
   it("returns null when candidate is not found", async () => {

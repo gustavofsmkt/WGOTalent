@@ -49,6 +49,11 @@ uma triagem ativa aprovada preserva a elegibilidade, e a expiração do banco de
 talentos é aplicada oportunisticamente apenas durante os fluxos de matching
 (ADR-0013).
 
+Área e cargo de interesse do candidato são textos extraídos pelo agente. Na
+edição manual, as opções vêm do catálogo ativo e persistem seus nomes; selecionar
+um cargo define sua área, enquanto uma área isolada nunca infere um cargo
+(ADR-0015).
+
 ## Links de Referência
 
 - [Spec: Modelo de Dados & SQL Types](db_triagem_proposta.ts)

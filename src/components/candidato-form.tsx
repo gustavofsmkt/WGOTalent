@@ -379,7 +379,10 @@ function EnderecoSection({ form }: { form: CandidatoFormApi }) {
           validators={{ onBlur: candidatoSchema.shape.logradouro }}
         >
           {(field) => (
-            <field.InputField label="Logradouro" autoComplete="street-address" />
+            <field.InputField
+              label="Logradouro"
+              autoComplete="street-address"
+            />
           )}
         </form.AppField>
       </div>
@@ -463,53 +466,124 @@ function InteressesSection({
         )}
       </form.AppField>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <form.AppField
-          name="cargoInteresseId"
-          validators={{ onBlur: candidatoSchema.shape.cargoInteresseId }}
-        >
-          {(field) => (
-            <field.SelectField
-              label="Cargo de Interesse"
-              placeholder="Nenhum específico"
-              options={[
-                { value: "none", label: "Nenhum específico" },
-                ...cargoOptions.map((c) => ({
-                  value: c.id,
-                  label: `${c.titulo} (${c.departamento.nome})`,
-                })),
-              ]}
-              value={field.state.value ?? "none"}
-              onValueChange={(val: string) =>
-                field.handleChange(val === "none" ? null : val)
-              }
-            />
-          )}
-        </form.AppField>
+      <form.Subscribe selector={(state) => state.values.areaInteresse}>
+        {(areaInteresse) => {
+          const areaSelecionada = departamentoOptions.find(
+            (area) => area.nome === areaInteresse,
+          );
+          const cargosDisponiveis = areaSelecionada
+            ? cargoOptions.filter(
+                (cargo) => cargo.departamento.id === areaSelecionada.id,
+              )
+            : cargoOptions;
 
-        <form.AppField
-          name="areaInteresseId"
-          validators={{ onBlur: candidatoSchema.shape.areaInteresseId }}
-        >
-          {(field) => (
-            <field.SelectField
-              label="Área de Interesse"
-              placeholder="Nenhuma específica"
-              options={[
-                { value: "none", label: "Nenhuma específica" },
-                ...departamentoOptions.map((d) => ({
-                  value: d.id,
-                  label: d.nome,
-                })),
-              ]}
-              value={field.state.value ?? "none"}
-              onValueChange={(val: string) =>
-                field.handleChange(val === "none" ? null : val)
-              }
-            />
-          )}
-        </form.AppField>
-      </div>
+          return (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <form.AppField
+                name="areaInteresse"
+                validators={{ onBlur: candidatoSchema.shape.areaInteresse }}
+              >
+                {(field) => (
+                  <field.SelectField
+                    label="Área de Interesse"
+                    placeholder="Nenhuma específica"
+                    description={
+                      areaInteresse && !areaSelecionada
+                        ? "A área extraída não existe mais no cadastro. Selecione uma área válida."
+                        : "Selecionar uma área restringe os cargos disponíveis."
+                    }
+                    options={[
+                      { value: "none", label: "Nenhuma específica" },
+                      ...departamentoOptions.map((area) => ({
+                        value: area.id,
+                        label: area.nome,
+                      })),
+                    ]}
+                    value={areaSelecionada?.id ?? areaInteresse ?? "none"}
+                    onValueChange={(areaId: string) => {
+                      if (areaId === "none") {
+                        field.handleChange(null);
+                        form.setFieldValue("cargoInteresse", null);
+                        return;
+                      }
+
+                      const novaArea = departamentoOptions.find(
+                        (area) => area.id === areaId,
+                      );
+                      if (!novaArea) return;
+
+                      field.handleChange(novaArea.nome);
+                      const cargoAtual = form.getFieldValue("cargoInteresse");
+                      const cargoPertenceANovaArea = cargoOptions.some(
+                        (cargo) =>
+                          cargo.titulo === cargoAtual &&
+                          cargo.departamento.id === novaArea.id,
+                      );
+                      if (!cargoPertenceANovaArea) {
+                        form.setFieldValue("cargoInteresse", null);
+                      }
+                    }}
+                  />
+                )}
+              </form.AppField>
+
+              <form.AppField
+                name="cargoInteresse"
+                validators={{ onBlur: candidatoSchema.shape.cargoInteresse }}
+              >
+                {(field) => {
+                  const cargosCorrespondentes = cargosDisponiveis.filter(
+                    (cargo) => cargo.titulo === field.state.value,
+                  );
+                  const cargoSelecionado =
+                    cargosCorrespondentes.length === 1
+                      ? cargosCorrespondentes[0]
+                      : undefined;
+
+                  return (
+                    <field.SelectField
+                      label="Cargo de Interesse"
+                      placeholder="Nenhum específico"
+                      description={
+                        field.state.value && !cargoSelecionado
+                          ? "O cargo extraído não corresponde à área ou não está ativo. Selecione um cargo válido."
+                          : "Ao selecionar um cargo, sua área será preenchida automaticamente."
+                      }
+                      options={[
+                        { value: "none", label: "Nenhum específico" },
+                        ...cargosDisponiveis.map((cargo) => ({
+                          value: cargo.id,
+                          label: `${cargo.titulo} (${cargo.departamento.nome})`,
+                        })),
+                      ]}
+                      value={
+                        cargoSelecionado?.id ?? field.state.value ?? "none"
+                      }
+                      onValueChange={(cargoId: string) => {
+                        if (cargoId === "none") {
+                          field.handleChange(null);
+                          return;
+                        }
+
+                        const novoCargo = cargoOptions.find(
+                          (cargo) => cargo.id === cargoId,
+                        );
+                        if (!novoCargo) return;
+
+                        field.handleChange(novoCargo.titulo);
+                        form.setFieldValue(
+                          "areaInteresse",
+                          novoCargo.departamento.nome,
+                        );
+                      }}
+                    />
+                  );
+                }}
+              </form.AppField>
+            </div>
+          );
+        }}
+      </form.Subscribe>
 
       <form.AppField
         name="origem"
@@ -1087,8 +1161,8 @@ export function CandidatoBaseForm({
       cnh: candidato?.cnh ?? null,
       possuiVeiculo: candidato?.possuiVeiculo ?? null,
       ensinoMedioConcluido: candidato?.ensinoMedioConcluido ?? null,
-      cargoInteresseId: candidato?.cargoInteresseId ?? null,
-      areaInteresseId: candidato?.areaInteresseId ?? null,
+      cargoInteresse: candidato?.cargoInteresse ?? null,
+      areaInteresse: candidato?.areaInteresse ?? null,
       disponivelViagens: candidato?.disponivelViagens ?? null,
       disponivelMudanca: candidato?.disponivelMudanca ?? null,
       disponibilidadeHorarios: candidato?.disponibilidadeHorarios ?? "",

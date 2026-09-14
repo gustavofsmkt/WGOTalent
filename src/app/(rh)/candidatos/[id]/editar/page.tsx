@@ -5,8 +5,6 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { CandidatoBaseForm } from "~/components/candidato-form";
 import { candidatoRepository } from "~/server/db/repositories/candidato";
-import { cargoRepository } from "~/server/db/repositories/cargo";
-import { departamentoRepository } from "~/server/db/repositories/departamento";
 import { buttonVariants } from "~/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -46,43 +44,6 @@ export default async function EditarCandidatoPage(
     notFound();
   }
 
-  const [currentCargo, currentDept] = await Promise.all([
-    candidato.cargoInteresseId &&
-    !activeCargoOptions.some((c) => c.id === candidato.cargoInteresseId)
-      ? cargoRepository.findByIdWithDepartamento(candidato.cargoInteresseId)
-      : Promise.resolve(null),
-    candidato.areaInteresseId &&
-    !activeDepartamentoOptions.some((d) => d.id === candidato.areaInteresseId)
-      ? departamentoRepository.findById(candidato.areaInteresseId)
-      : Promise.resolve(null),
-  ]);
-
-  let cargoOptions = activeCargoOptions;
-  if (currentCargo) {
-    cargoOptions = [
-      {
-        id: currentCargo.id,
-        titulo: `${currentCargo.titulo} (Inativo)`,
-        departamento: {
-          id: currentCargo.departamento.id,
-          nome: currentCargo.departamento.nome,
-        },
-      },
-      ...activeCargoOptions,
-    ];
-  }
-
-  let departamentoOptions = activeDepartamentoOptions;
-  if (currentDept) {
-    departamentoOptions = [
-      {
-        id: currentDept.id,
-        nome: `${currentDept.nome} (Inativo)`,
-      },
-      ...activeDepartamentoOptions,
-    ];
-  }
-
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <div className="flex items-center gap-2">
@@ -107,8 +68,8 @@ export default async function EditarCandidatoPage(
       <div className="flex justify-center">
         <CandidatoBaseForm
           candidato={candidato}
-          cargoOptions={cargoOptions}
-          departamentoOptions={departamentoOptions}
+          cargoOptions={activeCargoOptions}
+          departamentoOptions={activeDepartamentoOptions}
           redirectTo={`/candidatos/${candidato.id}`}
           className="w-full"
         />

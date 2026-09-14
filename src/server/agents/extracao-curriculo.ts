@@ -142,6 +142,8 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     },
     possuiVeiculo: nullableBooleanSchema(),
     ensinoMedioConcluido: nullableBooleanSchema(),
+    cargoInteresse: nullableStringSchema(150),
+    areaInteresse: nullableStringSchema(120),
     disponivelViagens: nullableBooleanSchema(),
     disponivelMudanca: nullableBooleanSchema(),
     disponibilidadeHorarios: nullableStringSchema(),
@@ -175,6 +177,8 @@ const EXTRACAO_CURRICULO_JSON_SCHEMA = {
     "cnh",
     "possuiVeiculo",
     "ensinoMedioConcluido",
+    "cargoInteresse",
+    "areaInteresse",
     "disponivelViagens",
     "disponivelMudanca",
     "disponibilidadeHorarios",
@@ -202,8 +206,8 @@ export interface ContextoEmail {
  * Monta o trecho de contexto do e-mail para acrescentar ao `userPrompt`. O
  * documento anexado continua sendo a fonte principal; o e-mail de candidatura
  * (formulário do site ou texto livre) entra como fonte auxiliar para preencher
- * dados pessoais, de contato e de cidade que faltem no documento — as regras de
- * precedência ficam no system prompt (seções Contato e Endereço). Retorna
+ * dados pessoais, de contato, de cidade e de interesse que faltem no documento
+ * — as regras de precedência ficam no system prompt. Retorna
  * string vazia quando não há e-mail ou o texto é vazio.
  */
 function montarContextoEmail(contexto?: ContextoEmail): string {
@@ -219,8 +223,9 @@ function montarContextoEmail(contexto?: ContextoEmail): string {
   return (
     "\n\nE-mail de candidatura que acompanhou o documento (dados informados" +
     " pelo próprio candidato). Trate-o como fonte auxiliar conforme o system" +
-    " prompt: use-o para preencher dados pessoais, de contato e de cidade que" +
-    " faltem no documento, sem sobrepor o que o documento já traz:\n" +
+    " prompt: use-o para preencher dados pessoais, de contato, de cidade e de" +
+    " interesse que faltem no documento, sem sobrepor o que o documento já" +
+    " traz:\n" +
     partes.join("\n\n")
   );
 }

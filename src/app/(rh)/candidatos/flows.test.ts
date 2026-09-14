@@ -15,8 +15,6 @@ import {
   type CargoOption,
   type DepartamentoOption,
 } from "~/server/db/repositories/candidato";
-import { cargoRepository } from "~/server/db/repositories/cargo";
-import { departamentoRepository } from "~/server/db/repositories/departamento";
 
 describe("Candidate Create & Edit flows - Server logic", () => {
   beforeEach(() => {
@@ -55,7 +53,7 @@ describe("Candidate Create & Edit flows - Server logic", () => {
     expect(depts).toHaveLength(2);
   });
 
-  it("handles inactive cargo when editing a candidate", async () => {
+  it("keeps extracted interest text while offering only active catalog options", async () => {
     const mockCandidate: CandidatoDetailCompleto = {
       id: "cand-1",
       nome: "Juliana Silva",
@@ -78,8 +76,8 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       uf: "SP",
       resumoProfissional: "Resumo profissional de teste.",
       observacoesRh: null,
-      cargoInteresseId: "cargo-inativo-1",
-      areaInteresseId: "dep-1",
+      cargoInteresse: "Designer Antigo",
+      areaInteresse: "Tecnologia",
       disponibilidadeHorarios: null,
       disponivelViagens: false,
       disponivelMudanca: false,
@@ -92,8 +90,6 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       createdAt: "2023-01-01T00:00:00.000Z",
       updatedAt: "2023-01-01T00:00:00.000Z",
       deletedAt: null,
-      cargoInteresse: null,
-      areaInteresse: null,
       formacoes: [],
       experiencias: [],
       certificacoes: [],
@@ -115,63 +111,13 @@ describe("Candidate Create & Edit flows - Server logic", () => {
       candidatoRepository,
       "findActiveCargoOptions",
     ).mockResolvedValueOnce(activeCargos);
-    vi.spyOn(
-      candidatoRepository,
-      "findActiveDepartamentoOptions",
-    ).mockResolvedValueOnce([{ id: "dep-1", nome: "Tecnologia" }]);
-
-    vi.spyOn(cargoRepository, "findByIdWithDepartamento").mockResolvedValueOnce(
-      {
-        id: "cargo-inativo-1",
-        departamentoId: "dep-1",
-        titulo: "Designer Antigo",
-        descricao: "Desc",
-        ativo: false,
-        faixaSalarial: "5000",
-        requisitos: "Req",
-        requisitosDesejaveis: "",
-        criteriosEliminatorios: "",
-        createdAt: "2023-01-01T00:00:00.000Z",
-        updatedAt: "2023-01-01T00:00:00.000Z",
-        deletedAt: null,
-        departamento: {
-          id: "dep-1",
-          nome: "Tecnologia",
-        },
-      },
-    );
-
     const cand = await candidatoRepository.findByIdComplete("cand-1");
     expect(cand).not.toBeNull();
 
-    const activeCargoOptions =
-      await candidatoRepository.findActiveCargoOptions();
-    let cargoOptions = activeCargoOptions;
+    const cargoOptions = await candidatoRepository.findActiveCargoOptions();
 
-    if (
-      cand?.cargoInteresseId &&
-      !activeCargoOptions.some((c) => c.id === cand.cargoInteresseId)
-    ) {
-      const currentCargo = await cargoRepository.findByIdWithDepartamento(
-        cand.cargoInteresseId,
-      );
-      if (currentCargo) {
-        cargoOptions = [
-          {
-            id: currentCargo.id,
-            titulo: `${currentCargo.titulo} (Inativo)`,
-            departamento: {
-              id: currentCargo.departamento.id,
-              nome: currentCargo.departamento.nome,
-            },
-          },
-          ...activeCargoOptions,
-        ];
-      }
-    }
-
-    expect(cargoOptions).toHaveLength(2);
-    expect(cargoOptions[0]?.titulo).toBe("Designer Antigo (Inativo)");
-    expect(cargoOptions[1]?.titulo).toBe("Engenheiro de Dados");
+    expect(cand?.cargoInteresse).toBe("Designer Antigo");
+    expect(cargoOptions).toHaveLength(1);
+    expect(cargoOptions[0]?.titulo).toBe("Engenheiro de Dados");
   });
 });

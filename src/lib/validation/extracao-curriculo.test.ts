@@ -113,6 +113,24 @@ describe("extracaoCurriculoOutputSchema", () => {
     }
   });
 
+  it("preserves extracted cargo and area text and defaults both to null when absent", () => {
+    const withInterests = extracaoCurriculoOutputSchema.safeParse({
+      ...base,
+      cargoInteresse: "Auxiliar Administrativo",
+      areaInteresse: "Administrativo",
+    });
+    const withoutInterests = extracaoCurriculoOutputSchema.safeParse(base);
+
+    expect(withInterests.success).toBe(true);
+    expect(withoutInterests.success).toBe(true);
+    if (withInterests.success && withoutInterests.success) {
+      expect(withInterests.data.cargoInteresse).toBe("Auxiliar Administrativo");
+      expect(withInterests.data.areaInteresse).toBe("Administrativo");
+      expect(withoutInterests.data.cargoInteresse).toBeNull();
+      expect(withoutInterests.data.areaInteresse).toBeNull();
+    }
+  });
+
   it("keeps explicit true/false for the boolean flags", () => {
     const result = extracaoCurriculoOutputSchema.safeParse({
       ...base,

@@ -253,6 +253,13 @@
       "when": 1789158749221,
       "tag": "0035_dazzling_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789392273843,
+      "tag": "0036_alter_candidato_interesses_texto",
+      "breakpoints": true
     }
   ]
 }

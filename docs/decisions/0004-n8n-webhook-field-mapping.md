@@ -2,7 +2,10 @@
 
 Data: 2026-08-13
 
-> **Nota:** Superseded parcialmente pelo ADR-0007. O mapeamento de payload n8n (eliminatorios_falhos, wrapper output etc.) não se aplica mais. Sobrevive a decisão de negócio: ao persistir uma AvaliacaoIA gerada por IA, etapa = 'curriculo' e resultado = 'em_andamento' como defaults.
+> **Nota:** Superseded parcialmente pelos ADRs 0007 e 0015. O mapeamento de
+> payload n8n não se aplica mais. Sobrevive a decisão de negócio: ao persistir
+> uma AvaliacaoIA gerada por IA, etapa = 'curriculo' e resultado =
+> 'em_andamento' como defaults.
 
 ## Status
 
@@ -10,7 +13,8 @@ Obsoleta (Superseded parcialmente)
 
 ## Superseded-by
 
-[0007. Encerramento da Integração com n8n](0007-encerramento-integracao-n8n.md)
+- [0007. Encerramento da Integração com n8n](0007-encerramento-integracao-n8n.md)
+- [0015. Área e Cargo de Interesse do Candidato como Texto](0015-interesses-do-candidato-como-texto.md)
 
 ## Contexto
 
@@ -48,12 +52,9 @@ O payload real enviado pelo n8n Triagem é um **array** onde cada item tem um wr
 
 ### 2. Webhook de Candidatos (`/api/webhooks/n8n/candidatos`)
 
-* **`area_interesse` (string enviada pelo n8n na chave `referencias`) → `area_interesse_id` (FK para `Departamento`)**:
-  * **Estado**: n8n envia strings como "Administrativo", "Comercial", "Recursos Humanos" ou "Técnico/Operacional".
-  * **Solução**: A plataforma deve realizar um lookup de banco de dados (`Departamento.nome ILIKE :valor`) para obter o `id`. Se não encontrar correspondência, logar um aviso (`warn`) e salvar `NULL` (campo é nullable).
-* **`cargo_interesse` (string enviada pelo n8n na chave `referencias`) → `cargo_interesse_id` (FK para `Cargo`)**:
-  * **Estado**: n8n envia uma string descritiva.
-  * **Solução**: A plataforma deve realizar um lookup (`Cargo.titulo ILIKE :valor`) para obter o `id`. Se não encontrar correspondência, logar um aviso e salvar `NULL`.
+As regras de resolução de área e cargo contra o catálogo foram substituídas
+pelo armazenamento textual e pelo motor de agentes nativo. Consulte o
+[ADR-0015](0015-interesses-do-candidato-como-texto.md).
 * **`disponibilidade_horarios`**:
   * **Estado**: Pode chegar como `boolean` ou `string` no payload.
   * **Solução**: Se o valor for `false` (boolean) ou `null`, persistir como `NULL` no banco. Se for uma `string` descritiva, persistir como `TEXT`.
@@ -61,5 +62,4 @@ O payload real enviado pelo n8n Triagem é um **array** onde cada item tem um wr
 ## Consequências
 
 * A API se torna a única responsável por inferir o estado inicial no funil de RH para as triagens automáticas (`etapa` e `resultado`).
-* Os *lookups* de departamento e cargo podem ser suscetíveis a inconsistências caso o n8n envie nomes ligeiramente diferentes; contudo, o *fallback* para `NULL` com *log* previne a interrupção da esteira de cadastro.
 * Será necessário implementar Zod schemas dedicados para os payloads dos webhooks.

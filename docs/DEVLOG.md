@@ -295,3 +295,16 @@ _Data: 2026-09-11_
 - Candidatos vencidos são desmarcados de `em_banco_talentos` e não chegam ao classificador nos fluxos candidato → vagas e vaga → candidatos.
 - Qualquer triagem não excluída com `resultado = aprovado` preserva a elegibilidade do candidato, mesmo após o prazo. Não foi criado job periódico: a expiração ocorre somente durante os fluxos de matching.
 - Alterações automáticas apenas no indicador `emBancoTalentos` deixaram de atualizar `updatedAt`, evitando renovação artificial do prazo.
+
+## Marco: Interesses do candidato como texto (ADR-0015)
+
+_Data: 2026-09-14_
+
+- Área e cargo de interesse deixaram de ser chaves estrangeiras e passaram a
+  ser textos opcionais, preservando valores informados pelo agente de extração.
+- A migração converte os vínculos existentes em nomes antes de remover as
+  colunas antigas e atualiza as regras do prompt persistido.
+- A edição manual continua limitada ao catálogo ativo: cargo preenche sua área
+  correspondente; área isolada não preenche cargo; somente os nomes são salvos.
+- Repositório, listagem, detalhe, seeds, validação e testes foram adaptados ao
+  novo contrato.

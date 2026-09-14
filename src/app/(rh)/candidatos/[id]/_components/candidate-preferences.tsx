@@ -34,7 +34,7 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
               Cargo de Interesse
             </p>
             <p className="font-medium text-foreground ">
-              {candidato.cargoInteresse?.titulo ?? "Não especificado"}
+              {candidato.cargoInteresse ?? "Não especificado"}
             </p>
           </div>
 
@@ -44,7 +44,7 @@ export function CandidatePreferences({ candidato }: CandidatePreferencesProps) {
               Área de Interesse
             </p>
             <p className="font-medium text-foreground ">
-              {candidato.areaInteresse?.nome ?? "Não especificada"}
+              {candidato.areaInteresse ?? "Não especificada"}
             </p>
           </div>
 

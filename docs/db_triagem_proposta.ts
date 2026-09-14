@@ -111,8 +111,8 @@ export interface Candidato {
  
   ensino_medio_concluido: boolean;      // NOT NULL DEFAULT false
  
-  cargo_interesse_id: string | null;    // uuid, FK -> Cargo.id, INDEXED, NULL = sem preferência
-  area_interesse_id: string | null;     // uuid, FK -> Departamento.id, INDEXED, NULL = sem preferência
+  cargo_interesse: string | null;       // varchar(150), texto extraído ou cargo existente selecionado manualmente
+  area_interesse: string | null;        // varchar(120), texto extraído/derivado ou departamento existente selecionado manualmente
  
   disponivel_viagens: boolean;          // NOT NULL DEFAULT false
   disponivel_mudanca: boolean;          // NOT NULL DEFAULT false

@@ -252,10 +252,10 @@ export const candidatos = createTable(
     // candidato.ts e as regras do agente de extração.
     possuiVeiculo: boolean("possui_veiculo"),
     ensinoMedioConcluido: boolean("ensino_medio_concluido"),
-    cargoInteresseId: uuid("cargo_interesse_id").references(() => cargos.id),
-    areaInteresseId: uuid("area_interesse_id").references(
-      () => departamentos.id,
-    ),
+    // Texto livre na ingestão por IA. No cadastro/edição manual, a UI limita
+    // estes valores aos cargos e departamentos ativos, sem persistir seus IDs.
+    cargoInteresse: varchar("cargo_interesse", { length: 150 }),
+    areaInteresse: varchar("area_interesse", { length: 120 }),
     disponivelViagens: boolean("disponivel_viagens"),
     disponivelMudanca: boolean("disponivel_mudanca"),
     disponibilidadeHorarios: text("disponibilidade_horarios"),
@@ -269,10 +269,6 @@ export const candidatos = createTable(
     observacoesRh: text("observacoes_rh"),
     ...timestamps,
   },
-  (table) => [
-    index("candidatos_cargo_interesse_id_idx").on(table.cargoInteresseId),
-    index("candidatos_area_interesse_id_idx").on(table.areaInteresseId),
-  ],
 );
 
 export type Candidato = typeof candidatos.$inferSelect;
@@ -611,19 +607,11 @@ export const vagaCidadesRelations = relations(vagaCidades, ({ one }) => ({
   }),
 }));
 
-export const candidatosRelations = relations(candidatos, ({ one, many }) => ({
+export const candidatosRelations = relations(candidatos, ({ many }) => ({
   formacoes: many(candidatoFormacoes),
   experiencias: many(candidatoExperiencias),
   certificacoes: many(candidatoCertificacoes),
   triagens: many(triagens),
-  cargoInteresse: one(cargos, {
-    fields: [candidatos.cargoInteresseId],
-    references: [cargos.id],
-  }),
-  areaInteresse: one(departamentos, {
-    fields: [candidatos.areaInteresseId],
-    references: [departamentos.id],
-  }),
 }));
 
 export const candidatoFormacoesRelations = relations(
