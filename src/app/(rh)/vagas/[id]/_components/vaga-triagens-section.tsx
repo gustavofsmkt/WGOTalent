@@ -61,6 +61,7 @@ export async function VagaTriagensSection({
   const columns: ColumnDef<TriagemListItem>[] = [
     {
       header: "Candidato",
+      sortKey: "candidato",
       cell: (item) => (
         <div className="flex items-center gap-2">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
@@ -82,10 +83,12 @@ export async function VagaTriagensSection({
     },
     {
       header: "Etapa",
+      sortKey: "etapa",
       cell: (item) => <StatusBadge status={item.etapa} />,
     },
     {
       header: "Resultado",
+      sortKey: "resultado",
       cell: (item) => (
         <div className="space-y-1">
           <StatusBadge status={item.resultado} />
@@ -99,6 +102,7 @@ export async function VagaTriagensSection({
     },
     {
       header: "Score IA",
+      sortKey: "score",
       cell: (item) =>
         item.avaliacaoIa ? (
           <span
@@ -114,6 +118,7 @@ export async function VagaTriagensSection({
     },
     {
       header: "Data",
+      sortKey: "createdAt",
       cellClassName: "text-xs text-muted-foreground",
       cell: (item) => formatDate(item.createdAt),
     },
