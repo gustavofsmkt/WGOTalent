@@ -1,13 +1,7 @@
 import * as React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  Pencil,
-  Building2,
-  MapPin,
-  Users,
-  ExternalLink,
-} from "lucide-react";
+import { Pencil, Building2, MapPin, Users, ExternalLink } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { buttonVariants } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
@@ -115,8 +109,8 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
         {/* Main Content - 2 columns */}
         <div className="md:col-span-2 space-y-4">
           {/* Cargo Details */}
-          <Card className="shadow-xs border-border/60">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4 flex flex-row items-center justify-between">
+          <Card>
+            <CardHeader className="flex flex-row border-b border-border/40 items-center justify-between">
               <CardTitle className="text-lg">Descrição do Cargo</CardTitle>
               <Link
                 href={`/cargos/${vaga.cargo.id}`}
@@ -126,7 +120,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
                 <ExternalLink className="size-3" />
               </Link>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent>
               <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
                 <p className="whitespace-pre-wrap leading-relaxed">
                   {vaga.cargo.descricao}
@@ -135,12 +129,12 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
             </CardContent>
           </Card>
 
-          <Card className="shadow-xs border-border/60">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+          <Card>
+            <CardHeader className=" border-b border-border/40">
               <CardTitle className="text-lg">Requisitos e Critérios</CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 space-y-4">
-              <div className="space-y-2">
+            <CardContent className="space-y-2">
+              <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   Requisitos Obrigatórios
@@ -151,7 +145,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
               </div>
 
               {vaga.cargo.requisitosDesejaveis && (
-                <div className="space-y-2 pt-2 border-t border-border/40">
+                <div className="pt-2 border-t border-border/40">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground" />
                     Requisitos Desejáveis
@@ -163,7 +157,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
               )}
 
               {vaga.cargo.criteriosEliminatorios && (
-                <div className="space-y-2 pt-2 border-t border-border/40">
+                <div className="pt-2 border-t border-border/40">
                   <h3 className="text-sm font-semibold text-destructive flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                     Critérios Eliminatórios
@@ -179,8 +173,8 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
 
         {/* Sidebar Panel - 1 column */}
         <div className="space-y-4">
-          <Card className="shadow-xs border-border/60">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-4">
+          <Card>
+            <CardHeader className="border-b border-border/40 pb-4">
               <CardTitle className="text-lg">Informações da Vaga</CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-4">
