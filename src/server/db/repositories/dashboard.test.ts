@@ -49,9 +49,7 @@ describe("dashboardRepository", () => {
     expect(typeof dashboardRepository.getTriagensPorEtapa).toBe("function");
     expect(typeof dashboardRepository.getTriagensPorResultado).toBe("function");
     expect(typeof dashboardRepository.getMediaScoreIa).toBe("function");
-    expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
-      "function",
-    );
+    expect(typeof dashboardRepository.getVagasMaisAntigasPage).toBe("function");
     expect(typeof dashboardRepository.getProximasAtividadesPage).toBe(
       "function",
     );
@@ -166,36 +164,38 @@ describe("dashboardRepository", () => {
       );
     });
 
-    it("builds getVagasComMaisCandidatos query with joins, group by, and order by count", () => {
+    it("builds getVagasMaisAntigas query counting only triagens em andamento, oldest first", () => {
       const qb = mockDb
         .select({
           vagaId: vagas.id,
           cargoTitulo: cargos.titulo,
           departamentoNome: departamentos.nome,
           posicoesDisponiveis: vagas.posicoesDisponiveis,
-          totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
+          diasAberta: sql<number>`((now() at time zone 'America/Sao_Paulo')::date - (${vagas.createdAt} at time zone 'America/Sao_Paulo')::date)::int`,
+          triagensEmAndamento: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null and ${triagens.resultado} = 'em_andamento')::int`,
         })
         .from(vagas)
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
         .leftJoin(triagens, eq(vagas.id, triagens.vagaId))
-        .where(isNull(vagas.deletedAt))
+        .where(and(isNull(vagas.deletedAt), eq(vagas.status, "aberta")))
         .groupBy(
           vagas.id,
           cargos.titulo,
           departamentos.nome,
           vagas.posicoesDisponiveis,
+          vagas.createdAt,
         )
-        .orderBy(
-          desc(
-            sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
-          ),
-          desc(vagas.createdAt),
-        )
+        .orderBy(asc(vagas.createdAt), asc(vagas.id))
         .limit(5);
 
       const querySql = qb.toSQL().sql;
       expect(querySql).toContain('"wgotalent_vagas"."deleted_at" is null');
+      expect(querySql).toContain('"wgotalent_vagas"."status" =');
+      expect(querySql).toContain('"wgotalent_triagens"."resultado" =');
+      expect(querySql).toContain(
+        'order by "wgotalent_vagas"."created_at" asc, "wgotalent_vagas"."id" asc',
+      );
       expect(querySql).toContain("limit $");
 
       const countQb = notDeleted(
@@ -208,9 +208,11 @@ describe("dashboardRepository", () => {
             eq(cargos.departamentoId, departamentos.id),
           ),
         vagas,
+        eq(vagas.status, "aberta"),
       );
       const countSql = countQb.toSQL().sql;
       expect(countSql).toContain("count(distinct");
+      expect(countSql).toContain('"wgotalent_vagas"."status" =');
       expect(countSql).toContain('inner join "wgotalent_cargos"');
       expect(countSql).toContain('inner join "wgotalent_departamentos"');
     });
@@ -376,7 +378,7 @@ describe("dashboardRepository", () => {
     });
 
     it("exposes paginated dashboard table queries", () => {
-      expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
+      expect(typeof dashboardRepository.getVagasMaisAntigasPage).toBe(
         "function",
       );
       expect(typeof dashboardRepository.getProximasAtividadesPage).toBe(
@@ -419,7 +421,7 @@ describe("dashboardRepository", () => {
           banco_talentos: 5,
         });
       const spyVagasMais = vi
-        .spyOn(dashboardRepository, "getVagasComMaisCandidatosPage")
+        .spyOn(dashboardRepository, "getVagasMaisAntigasPage")
         .mockResolvedValueOnce({
           items: [
             {
@@ -428,7 +430,8 @@ describe("dashboardRepository", () => {
               departamentoNome: "Tecnologia",
               cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
               posicoesDisponiveis: 2,
-              totalCandidatos: 25,
+              diasAberta: 42,
+              triagensEmAndamento: 25,
             },
           ],
           total: 1,
@@ -460,7 +463,7 @@ describe("dashboardRepository", () => {
       expect(summary.mediaScoreIa).toEqual({ media: 78.4, totalAvaliadas: 30 });
       expect(summary.triagensPorEtapa.curriculo).toBe(15);
       expect(summary.triagensPorResultado.desistente).toBe(5);
-      expect(summary.vagasComMaisCandidatos.items).toHaveLength(1);
+      expect(summary.vagasMaisAntigas.items).toHaveLength(1);
       expect(summary.proximasAtividades.items).toHaveLength(1);
 
       spyAbertas.mockRestore();

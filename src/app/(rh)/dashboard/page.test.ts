@@ -97,7 +97,7 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
         desistente: 1,
         banco_talentos: 0,
       },
-      vagasComMaisCandidatos: {
+      vagasMaisAntigas: {
         items: [
           {
             vagaId: "vaga-123",
@@ -105,7 +105,8 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
             departamentoNome: "Engenharia",
             cidades: [{ id: "cidade-1", nome: "São Paulo", uf: "SP" }],
             posicoesDisponiveis: 1,
-            totalCandidatos: 8,
+            diasAberta: 37,
+            triagensEmAndamento: 8,
           },
         ],
         total: 1,
@@ -135,10 +136,10 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
     expect(data.vagasAbertas).toBe(4);
     expect(data.candidatosAtivos).toBe(18);
     expect(data.mediaScoreIa.media).toBe(78.4);
-    expect(data.vagasComMaisCandidatos.items).toHaveLength(1);
-    expect(data.vagasComMaisCandidatos.items[0]?.cargoTitulo).toBe(
-      "Dev Fullstack",
-    );
+    expect(data.vagasMaisAntigas.items).toHaveLength(1);
+    expect(data.vagasMaisAntigas.items[0]?.cargoTitulo).toBe("Dev Fullstack");
+    expect(data.vagasMaisAntigas.items[0]?.diasAberta).toBe(37);
+    expect(data.vagasMaisAntigas.items[0]?.triagensEmAndamento).toBe(8);
     expect(data.proximasAtividades.items[0]?.dataHora).toBe(
       "2024-03-05 14:30:00",
     );

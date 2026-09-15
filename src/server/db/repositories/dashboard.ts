@@ -1,4 +1,4 @@
-import { asc, countDistinct, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { asc, countDistinct, eq, gte, isNull, sql } from "drizzle-orm";
 import { unionAll, type PgColumn } from "drizzle-orm/pg-core";
 import { db } from "~/server/db";
 import {
@@ -42,13 +42,16 @@ export interface MediaScoreIaResult {
   totalAvaliadas: number;
 }
 
-export interface VagaComMaisCandidatosItem {
+export interface VagaMaisAntigaItem {
   vagaId: string;
   cargoTitulo: string;
   departamentoNome: string;
   cidades: CidadeRef[];
   posicoesDisponiveis: number;
-  totalCandidatos: number;
+  /** Dias inteiros desde a abertura da vaga. */
+  diasAberta: number;
+  /** Triagens ativas da vaga ainda com resultado `em_andamento`. */
+  triagensEmAndamento: number;
 }
 
 /** Etapas do funil que têm data e hora agendadas com o candidato. */
@@ -77,7 +80,7 @@ export interface DashboardSummary {
   mediaScoreIa: MediaScoreIaResult;
   triagensPorEtapa: TriagensPorEtapaCount;
   triagensPorResultado: TriagensPorResultadoCount;
-  vagasComMaisCandidatos: PaginatedResult<VagaComMaisCandidatosItem>;
+  vagasMaisAntigas: PaginatedResult<VagaMaisAntigaItem>;
   proximasAtividades: PaginatedResult<ProximaAtividadeItem>;
 }
 
@@ -92,6 +95,14 @@ export interface DashboardPagination {
  * de uma referência na mesma escala — independente do fuso do servidor.
  */
 const AGORA_LOCAL = sql`(now() at time zone 'America/Sao_Paulo')`;
+
+/**
+ * Dias inteiros entre a criação da vaga e hoje, contados em datas de Brasília
+ * para que o resultado não mude conforme o fuso do servidor.
+ */
+function diasDesdeAbertura() {
+  return sql<number>`(${AGORA_LOCAL}::date - (${vagas.createdAt} at time zone 'America/Sao_Paulo')::date)::int`;
+}
 
 /**
  * Um SELECT por coluna de agendamento, projetando etapa + data/hora em um
@@ -320,13 +331,16 @@ export const dashboardRepository = {
   },
 
   /**
-   * Semântica: Ranking de vagas ativas (não deletadas) com maior volume de candidatos/triagens associados.
-   * Evita overfetch: projeta apenas identificadores, título, departamento, localização e a contagem agregada.
+   * Semântica: Vagas abertas há mais tempo (`status = 'aberta'`, não deletadas),
+   * da mais antiga para a mais recente, com há quantos dias estão abertas e
+   * quantas triagens ainda correm nelas.
+   * Evita overfetch: projeta apenas identificadores, título, departamento,
+   * localização e as duas agregações.
    */
-  getVagasComMaisCandidatosPage: async (
+  getVagasMaisAntigasPage: async (
     pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<PaginatedResult<VagaComMaisCandidatosItem>> => {
+  ): Promise<PaginatedResult<VagaMaisAntigaItem>> => {
     const [rows, totalRows] = await Promise.all([
       notDeleted(
         dbOrTx
@@ -336,27 +350,24 @@ export const dashboardRepository = {
             departamentoNome: departamentos.nome,
             cidades: activeCitiesForVaga(dbOrTx),
             posicoesDisponiveis: vagas.posicoesDisponiveis,
-            totalCandidatos: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)::int`,
+            diasAberta: diasDesdeAbertura(),
+            triagensEmAndamento: sql<number>`count(${triagens.id}) filter (where ${triagens.deletedAt} is null and ${triagens.resultado} = 'em_andamento')::int`,
           })
           .from(vagas)
           .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
           .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
           .leftJoin(triagens, eq(vagas.id, triagens.vagaId)),
         vagas,
+        eq(vagas.status, "aberta"),
       )
         .groupBy(
           vagas.id,
           cargos.titulo,
           departamentos.nome,
           vagas.posicoesDisponiveis,
+          vagas.createdAt,
         )
-        .orderBy(
-          desc(
-            sql`count(${triagens.id}) filter (where ${triagens.deletedAt} is null)`,
-          ),
-          desc(vagas.createdAt),
-          desc(vagas.id),
-        )
+        .orderBy(asc(vagas.createdAt), asc(vagas.id))
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
       notDeleted(
@@ -369,6 +380,7 @@ export const dashboardRepository = {
             eq(cargos.departamentoId, departamentos.id),
           ),
         vagas,
+        eq(vagas.status, "aberta"),
       ),
     ]);
 
@@ -379,7 +391,8 @@ export const dashboardRepository = {
         departamentoNome: row.departamentoNome,
         cidades: row.cidades,
         posicoesDisponiveis: row.posicoesDisponiveis,
-        totalCandidatos: Number(row.totalCandidatos ?? 0),
+        diasAberta: Number(row.diasAberta ?? 0),
+        triagensEmAndamento: Number(row.triagensEmAndamento ?? 0),
       })),
       total: Number(totalRows[0]?.count ?? 0),
     };
@@ -458,7 +471,7 @@ export const dashboardRepository = {
       mediaScoreIa,
       triagensPorEtapa,
       triagensPorResultado,
-      vagasComMaisCandidatos,
+      vagasMaisAntigas,
       proximasAtividades,
     ] = await Promise.all([
       dashboardRepository.countVagasAbertas(dbOrTx),
@@ -468,10 +481,7 @@ export const dashboardRepository = {
       dashboardRepository.getMediaScoreIa(dbOrTx),
       dashboardRepository.getTriagensPorEtapa(dbOrTx),
       dashboardRepository.getTriagensPorResultado(dbOrTx),
-      dashboardRepository.getVagasComMaisCandidatosPage(
-        pagination.topVagas,
-        dbOrTx,
-      ),
+      dashboardRepository.getVagasMaisAntigasPage(pagination.topVagas, dbOrTx),
       dashboardRepository.getProximasAtividadesPage(
         pagination.atividade,
         dbOrTx,
@@ -486,7 +496,7 @@ export const dashboardRepository = {
       mediaScoreIa,
       triagensPorEtapa,
       triagensPorResultado,
-      vagasComMaisCandidatos,
+      vagasMaisAntigas,
       proximasAtividades,
     };
   },

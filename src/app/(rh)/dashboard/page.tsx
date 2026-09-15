@@ -119,6 +119,11 @@ const RESULTADOS_CONFIG = [
   },
 ] as const;
 
+function formatDiasAberta(dias: number): string {
+  if (dias <= 0) return "hoje";
+  return `${dias} ${dias === 1 ? "dia" : "dias"}`;
+}
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1)
@@ -144,7 +149,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
     atividade: { page: activityPage, pageSize: DASHBOARD_PAGE_SIZE },
   });
   const topVagasTotalPages = getTotalPages(
-    summary.vagasComMaisCandidatos.total,
+    summary.vagasMaisAntigas.total,
     DASHBOARD_PAGE_SIZE,
   );
   const activityTotalPages = getTotalPages(
@@ -152,8 +157,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
     DASHBOARD_PAGE_SIZE,
   );
   const invalidTopVagasPage =
-    summary.vagasComMaisCandidatos.total > 0 &&
-    topVagasPage > topVagasTotalPages;
+    summary.vagasMaisAntigas.total > 0 && topVagasPage > topVagasTotalPages;
   const invalidActivityPage =
     summary.proximasAtividades.total > 0 && activityPage > activityTotalPages;
 
@@ -167,7 +171,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
           activityPage: invalidActivityPage ? activityTotalPages : activityPage,
         },
         hash: invalidTopVagasPage
-          ? "vagas-com-mais-candidatos"
+          ? "vagas-mais-antigas"
           : "proximas-atividades",
       }),
     );
@@ -492,18 +496,18 @@ export default async function DashboardPage(props: DashboardPageProps) {
         </Card>
       </div>
 
-      {/* 3. Tabelas de Vagas com Mais Candidatos & Atividade Recente */}
+      {/* 3. Tabelas de Vagas mais Antigas & Próximas Atividades */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Vagas com Mais Candidatos */}
-        <Card id="vagas-com-mais-candidatos" className="scroll-mt-4">
+        {/* Vagas mais Antigas */}
+        <Card id="vagas-mais-antigas" className="scroll-mt-4">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-primary" />
-                Vagas com Mais Candidatos
+                Vagas mais Antigas
               </CardTitle>
               <CardDescription>
-                Posições com maior volume de candidatos associados
+                Posições abertas há mais tempo e ainda sem preenchimento
               </CardDescription>
             </div>
             <Link
@@ -515,10 +519,10 @@ export default async function DashboardPage(props: DashboardPageProps) {
             </Link>
           </CardHeader>
           <CardContent className="p-0">
-            {summary.vagasComMaisCandidatos.total === 0 ? (
+            {summary.vagasMaisAntigas.total === 0 ? (
               <div className="p-4">
                 <DataEmptyState
-                  title="Nenhuma vaga cadastrada"
+                  title="Nenhuma vaga aberta"
                   description="Crie novas vagas para receber candidaturas e avaliações."
                   className="py-4 border-0"
                 />
@@ -528,14 +532,15 @@ export default async function DashboardPage(props: DashboardPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[45%]">Cargo / Depto</TableHead>
+                      <TableHead className="w-[40%]">Cargo / Depto</TableHead>
                       <TableHead>Local</TableHead>
                       <TableHead className="text-center">Vagas</TableHead>
-                      <TableHead className="text-right">Candidatos</TableHead>
+                      <TableHead className="text-center">Aberta há</TableHead>
+                      <TableHead className="text-right">Em andamento</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {summary.vagasComMaisCandidatos.items.map((vaga) => (
+                    {summary.vagasMaisAntigas.items.map((vaga) => (
                       <TableRow key={vaga.vagaId} className="group">
                         <TableCell className="font-medium">
                           <Link
@@ -565,15 +570,15 @@ export default async function DashboardPage(props: DashboardPageProps) {
                             {vaga.posicoesDisponiveis === 1 ? "vaga" : "vagas"}
                           </Badge>
                         </TableCell>
+                        <TableCell className="text-center text-xs whitespace-nowrap">
+                          {formatDiasAberta(vaga.diasAberta)}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Badge
                             variant="secondary"
                             className="font-semibold text-xs"
                           >
-                            {vaga.totalCandidatos}{" "}
-                            {vaga.totalCandidatos === 1
-                              ? "candidato"
-                              : "candidatos"}
+                            {vaga.triagensEmAndamento}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -585,9 +590,9 @@ export default async function DashboardPage(props: DashboardPageProps) {
                   searchParams={searchParams}
                   page={topVagasPage}
                   pageSize={DASHBOARD_PAGE_SIZE}
-                  total={summary.vagasComMaisCandidatos.total}
+                  total={summary.vagasMaisAntigas.total}
                   pageParam="topVagasPage"
-                  hash="vagas-com-mais-candidatos"
+                  hash="vagas-mais-antigas"
                   itemLabel="vagas"
                   className="border-t px-4 py-3"
                 />
