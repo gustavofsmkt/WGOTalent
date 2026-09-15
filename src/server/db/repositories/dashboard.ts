@@ -1,4 +1,5 @@
-import { and, countDistinct, desc, eq, isNull, sql } from "drizzle-orm";
+import { asc, countDistinct, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { unionAll, type PgColumn } from "drizzle-orm/pg-core";
 import { db } from "~/server/db";
 import {
   vagas,
@@ -50,20 +51,22 @@ export interface VagaComMaisCandidatosItem {
   totalCandidatos: number;
 }
 
-export interface AtividadeRecenteItem {
-  id: string;
+/** Etapas do funil que têm data e hora agendadas com o candidato. */
+export type AtividadeEtapaKey = Extract<
+  TriagemEtapaKey,
+  "testes" | "entrevista_rh" | "entrevista_gestor"
+>;
+
+export interface ProximaAtividadeItem {
+  triagemId: string;
   candidatoId: string;
   candidatoNome: string;
   vagaId: string;
   cargoTitulo: string;
   departamentoNome: string;
-  etapa: TriagemEtapaKey;
-  resultado: TriagemResultadoKey;
-  motivo: string | null;
-  scoreIa: string | null;
-  parecerIa: string | null;
-  createdAt: string;
-  updatedAt: string;
+  etapa: AtividadeEtapaKey;
+  /** Horário de parede combinado com o candidato (`AAAA-MM-DD HH:mm:ss`). */
+  dataHora: string;
 }
 
 export interface DashboardSummary {
@@ -75,12 +78,71 @@ export interface DashboardSummary {
   triagensPorEtapa: TriagensPorEtapaCount;
   triagensPorResultado: TriagensPorResultadoCount;
   vagasComMaisCandidatos: PaginatedResult<VagaComMaisCandidatosItem>;
-  atividadeRecente: PaginatedResult<AtividadeRecenteItem>;
+  proximasAtividades: PaginatedResult<ProximaAtividadeItem>;
 }
 
 export interface DashboardPagination {
   topVagas: PaginationInput;
   atividade: PaginationInput;
+}
+
+/**
+ * "Agora" em horário de parede de Brasília. Os agendamentos são `timestamp`
+ * sem fuso (o horário combinado com o candidato), então a comparação precisa
+ * de uma referência na mesma escala — independente do fuso do servidor.
+ */
+const AGORA_LOCAL = sql`(now() at time zone 'America/Sao_Paulo')`;
+
+/**
+ * Um SELECT por coluna de agendamento, projetando etapa + data/hora em um
+ * formato comum para o `UNION ALL` que alimenta "Próximas Atividades".
+ * Filtra por triagens ativas (`em_andamento`) e compromissos ainda futuros.
+ */
+function selectAgendamentosDaEtapa(
+  dbOrTx: DbOrTx,
+  etapa: AtividadeEtapaKey,
+  coluna: PgColumn,
+) {
+  return notDeleted(
+    dbOrTx
+      .select({
+        triagemId: triagens.id,
+        candidatoId: triagens.candidatoId,
+        vagaId: triagens.vagaId,
+        // A etapa é um literal (o SELECT que produz a linha já diz qual é) e a
+        // data/hora vem de uma coluna diferente em cada braço do UNION, então
+        // ambos precisam de um alias fixo para as três partes casarem.
+        etapa: sql<AtividadeEtapaKey>`${sql.raw(`'${etapa}'`)}::text`.as(
+          "etapa",
+        ),
+        dataHora: sql<string>`${coluna}`.as("data_hora"),
+      })
+      .from(triagens),
+    triagens,
+    eq(triagens.resultado, "em_andamento"),
+    gte(coluna, AGORA_LOCAL),
+  );
+}
+
+/**
+ * Todos os compromissos futuros das triagens ativas em uma única relação
+ * (uma linha por etapa agendada). Exportada para que o teste possa inspecionar
+ * o SQL gerado.
+ */
+export function agendamentosSubquery(dbOrTx: DbOrTx) {
+  return unionAll(
+    selectAgendamentosDaEtapa(dbOrTx, "testes", triagens.agendamentoTestes),
+    selectAgendamentosDaEtapa(
+      dbOrTx,
+      "entrevista_rh",
+      triagens.agendamentoEntrevistaRh,
+    ),
+    selectAgendamentosDaEtapa(
+      dbOrTx,
+      "entrevista_gestor",
+      triagens.agendamentoEntrevistaGestor,
+    ),
+  ).as("agendamentos");
 }
 
 export const dashboardRepository = {
@@ -324,73 +386,55 @@ export const dashboardRepository = {
   },
 
   /**
-   * Semântica: Feed de atividades recentes de triagem (candidaturas, transições de etapa, aprovações, pareceres).
-   * Evita overfetch: projeta exclusivamente os dados essenciais para o feed de auditoria/histórico do dashboard.
+   * Semântica: Agenda das próximas atividades de triagem — testes e entrevistas
+   * com data e hora marcadas, ainda no futuro, de triagens em andamento.
+   * Uma triagem pode render até três linhas (uma por etapa agendada).
+   * Evita overfetch: projeta apenas candidato, vaga e o horário do compromisso.
    */
-  getAtividadeRecentePage: async (
+  getProximasAtividadesPage: async (
     pagination: PaginationInput,
     dbOrTx: DbOrTx = db,
-  ): Promise<PaginatedResult<AtividadeRecenteItem>> => {
+  ): Promise<PaginatedResult<ProximaAtividadeItem>> => {
+    const agendamentos = agendamentosSubquery(dbOrTx);
     const [rows, totalRows] = await Promise.all([
-      notDeleted(
-        dbOrTx
-          .select({
-            id: triagens.id,
-            candidatoId: candidatos.id,
-            candidatoNome: candidatos.nome,
-            vagaId: vagas.id,
-            cargoTitulo: cargos.titulo,
-            departamentoNome: departamentos.nome,
-            etapa: triagens.etapa,
-            resultado: triagens.resultado,
-            motivo: triagens.motivo,
-            scoreIa: avaliacaoIA.scoreIa,
-            parecerIa: avaliacaoIA.parecerIa,
-            createdAt: triagens.createdAt,
-            updatedAt: triagens.updatedAt,
-          })
-          .from(triagens)
-          .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
-          .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
-          .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
-          .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-          .leftJoin(
-            avaliacaoIA,
-            and(
-              eq(triagens.id, avaliacaoIA.triagemId),
-              isNull(avaliacaoIA.deletedAt),
-            ),
-          ),
-        triagens,
-      )
+      dbOrTx
+        .select({
+          triagemId: agendamentos.triagemId,
+          candidatoId: candidatos.id,
+          candidatoNome: candidatos.nome,
+          vagaId: vagas.id,
+          cargoTitulo: cargos.titulo,
+          departamentoNome: departamentos.nome,
+          etapa: agendamentos.etapa,
+          dataHora: agendamentos.dataHora,
+        })
+        .from(agendamentos)
+        .innerJoin(candidatos, eq(agendamentos.candidatoId, candidatos.id))
+        .innerJoin(vagas, eq(agendamentos.vagaId, vagas.id))
+        .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
+        .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
         .orderBy(
-          desc(triagens.updatedAt),
-          desc(triagens.createdAt),
-          desc(triagens.id),
+          asc(agendamentos.dataHora),
+          asc(candidatos.nome),
+          asc(agendamentos.triagemId),
         )
         .limit(pagination.pageSize)
         .offset(getPaginationOffset(pagination)),
-      notDeleted(
-        dbOrTx.select({ count: sql<number>`count(*)::int` }).from(triagens),
-        triagens,
-      ),
+      dbOrTx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agendamentosSubquery(dbOrTx)),
     ]);
 
     return {
       items: rows.map((row) => ({
-        id: row.id,
+        triagemId: row.triagemId,
         candidatoId: row.candidatoId,
         candidatoNome: row.candidatoNome,
         vagaId: row.vagaId,
         cargoTitulo: row.cargoTitulo,
         departamentoNome: row.departamentoNome,
         etapa: row.etapa,
-        resultado: row.resultado,
-        motivo: row.motivo,
-        scoreIa: row.scoreIa,
-        parecerIa: row.parecerIa,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
+        dataHora: row.dataHora,
       })),
       total: Number(totalRows[0]?.count ?? 0),
     };
@@ -415,7 +459,7 @@ export const dashboardRepository = {
       triagensPorEtapa,
       triagensPorResultado,
       vagasComMaisCandidatos,
-      atividadeRecente,
+      proximasAtividades,
     ] = await Promise.all([
       dashboardRepository.countVagasAbertas(dbOrTx),
       dashboardRepository.countCandidatosAtivos(dbOrTx),
@@ -428,7 +472,10 @@ export const dashboardRepository = {
         pagination.topVagas,
         dbOrTx,
       ),
-      dashboardRepository.getAtividadeRecentePage(pagination.atividade, dbOrTx),
+      dashboardRepository.getProximasAtividadesPage(
+        pagination.atividade,
+        dbOrTx,
+      ),
     ]);
 
     return {
@@ -440,7 +487,7 @@ export const dashboardRepository = {
       triagensPorEtapa,
       triagensPorResultado,
       vagasComMaisCandidatos,
-      atividadeRecente,
+      proximasAtividades,
     };
   },
 };

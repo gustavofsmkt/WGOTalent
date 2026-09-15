@@ -391,6 +391,17 @@ export const triagens = createTable(
     parecerRhEntrevistaRh: text("parecer_rh_entrevista_rh"),
     parecerRhEntrevistaGestor: text("parecer_rh_entrevista_gestor"),
     parecerRhFinalizado: text("parecer_rh_finalizado"),
+    // Agendamento (opcional) das etapas síncronas. Guardado como horário de
+    // parede (`timestamp` sem fuso): é o horário combinado com o candidato, não
+    // um instante absoluto — assim a hora exibida não depende do fuso do
+    // servidor nem do navegador.
+    agendamentoTestes: timestamp("agendamento_testes", { mode: "string" }),
+    agendamentoEntrevistaRh: timestamp("agendamento_entrevista_rh", {
+      mode: "string",
+    }),
+    agendamentoEntrevistaGestor: timestamp("agendamento_entrevista_gestor", {
+      mode: "string",
+    }),
     ...timestamps,
   },
   (table) => [

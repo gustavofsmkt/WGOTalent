@@ -20,6 +20,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 import { Field, FieldLabel, FieldDescription } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import {
   Select,
@@ -35,6 +36,9 @@ import {
   motivoDesistenciaLabels,
   RESULTADOS_ENCERRAMENTO,
   PARECER_FIELD_BY_ETAPA,
+  AGENDAMENTO_FIELD_BY_ETAPA,
+  isEtapaAgendavel,
+  toDatetimeLocalValue,
 } from "~/lib/triagem-format";
 import {
   motivosReprovacao,
@@ -54,6 +58,9 @@ interface TriagemEditorData {
   parecerRhEntrevistaRh: string | null;
   parecerRhEntrevistaGestor: string | null;
   parecerRhFinalizado: string | null;
+  agendamentoTestes: string | null;
+  agendamentoEntrevistaRh: string | null;
+  agendamentoEntrevistaGestor: string | null;
   candidato: { nome: string };
   vaga: {
     cargo: { titulo: string; departamento: { nome: string } };
@@ -70,6 +77,10 @@ interface PendingState {
   parecerRhEntrevistaRh: string;
   parecerRhEntrevistaGestor: string;
   parecerRhFinalizado: string;
+  /** Valores de `<input type="datetime-local">` — "" quando não agendado. */
+  agendamentoTestes: string;
+  agendamentoEntrevistaRh: string;
+  agendamentoEntrevistaGestor: string;
 }
 
 function buildInitialState(triagem: TriagemEditorData): PendingState {
@@ -82,6 +93,13 @@ function buildInitialState(triagem: TriagemEditorData): PendingState {
     parecerRhEntrevistaRh: triagem.parecerRhEntrevistaRh ?? "",
     parecerRhEntrevistaGestor: triagem.parecerRhEntrevistaGestor ?? "",
     parecerRhFinalizado: triagem.parecerRhFinalizado ?? "",
+    agendamentoTestes: toDatetimeLocalValue(triagem.agendamentoTestes),
+    agendamentoEntrevistaRh: toDatetimeLocalValue(
+      triagem.agendamentoEntrevistaRh,
+    ),
+    agendamentoEntrevistaGestor: toDatetimeLocalValue(
+      triagem.agendamentoEntrevistaGestor,
+    ),
   };
 }
 
@@ -319,6 +337,9 @@ export function TriagemDetailEditor({
       parecerRhEntrevistaRh: state.parecerRhEntrevistaRh || null,
       parecerRhEntrevistaGestor: state.parecerRhEntrevistaGestor || null,
       parecerRhFinalizado: state.parecerRhFinalizado || null,
+      agendamentoTestes: state.agendamentoTestes || null,
+      agendamentoEntrevistaRh: state.agendamentoEntrevistaRh || null,
+      agendamentoEntrevistaGestor: state.agendamentoEntrevistaGestor || null,
     };
   };
 
@@ -477,6 +498,9 @@ export function TriagemDetailEditor({
 
             {ETAPAS.map((etapa) => {
               const field = PARECER_FIELD_BY_ETAPA[etapa.value];
+              const agendamentoField = isEtapaAgendavel(etapa.value)
+                ? AGENDAMENTO_FIELD_BY_ETAPA[etapa.value]
+                : null;
               const isCurrentEtapa = etapa.value === pending.etapa;
               const isFinalEtapa = etapa.value === "finalizado";
 
@@ -486,6 +510,31 @@ export function TriagemDetailEditor({
                   value={etapa.value}
                   className="mt-4 space-y-2"
                 >
+                  {agendamentoField && (
+                    <Field className="max-w-xs">
+                      <FieldLabel htmlFor={`agendamento-${etapa.value}`}>
+                        Data e hora — {etapa.label}
+                      </FieldLabel>
+                      <Input
+                        id={`agendamento-${etapa.value}`}
+                        type="datetime-local"
+                        value={pending[agendamentoField]}
+                        onChange={(e) => {
+                          setPending((p) => ({
+                            ...p,
+                            [agendamentoField]: e.target.value,
+                          }));
+                          scheduleSave();
+                        }}
+                        onBlur={handleBlurSave}
+                      />
+                      {/* <FieldDescription>
+                        Opcional. Aparece em &quot;Próximas Atividades&quot; no
+                        dashboard.
+                      </FieldDescription> */}
+                    </Field>
+                  )}
+
                   <Field>
                     <FieldLabel htmlFor={`parecer-${etapa.value}`}>
                       Parecer do RH — {etapa.label}

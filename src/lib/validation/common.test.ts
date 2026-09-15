@@ -9,8 +9,10 @@ import {
   coercePositiveInt,
   coercePositiveNumber,
   dateStringSchema,
+  dateTimeStringSchema,
   emailSchema,
   nonEmptyString,
+  optionalDateTimeStringSchema,
   trimmedString,
   ufSchema,
   urlSchema,
@@ -187,6 +189,61 @@ describe("common validation schemas", () => {
     it("rejects Brazilian format DD/MM/YYYY expecting ISO YYYY-MM-DD", () => {
       const result = dateStringSchema.safeParse("25/08/1995");
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("dateTimeStringSchema", () => {
+    it("normalizes a datetime-local value adding seconds", () => {
+      const result = dateTimeStringSchema.safeParse("2026-09-16T14:30");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toBe("2026-09-16T14:30:00");
+      }
+    });
+
+    it("accepts the Postgres wall-clock format read back from the database", () => {
+      const result = dateTimeStringSchema.safeParse("2026-09-16 14:30:00");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toBe("2026-09-16T14:30:00");
+      }
+    });
+
+    it("rejects invalid calendar dates and clock times", () => {
+      expect(dateTimeStringSchema.safeParse("2023-02-29T10:00").success).toBe(
+        false,
+      );
+      expect(dateTimeStringSchema.safeParse("2026-09-16T24:00").success).toBe(
+        false,
+      );
+      expect(dateTimeStringSchema.safeParse("2026-09-16T10:60").success).toBe(
+        false,
+      );
+      expect(dateTimeStringSchema.safeParse("16/09/2026 14:30").success).toBe(
+        false,
+      );
+    });
+
+    it("rejects a date without time", () => {
+      expect(dateTimeStringSchema.safeParse("2026-09-16").success).toBe(false);
+    });
+  });
+
+  describe("optionalDateTimeStringSchema", () => {
+    it("normalizes empty, null and undefined to null", () => {
+      expect(optionalDateTimeStringSchema.parse("")).toBeNull();
+      expect(optionalDateTimeStringSchema.parse("   ")).toBeNull();
+      expect(optionalDateTimeStringSchema.parse(null)).toBeNull();
+      expect(optionalDateTimeStringSchema.parse(undefined)).toBeNull();
+    });
+
+    it("still validates a filled value", () => {
+      expect(optionalDateTimeStringSchema.parse("2026-09-16T08:05")).toBe(
+        "2026-09-16T08:05:00",
+      );
+      expect(optionalDateTimeStringSchema.safeParse("amanhã").success).toBe(
+        false,
+      );
     });
   });
 

@@ -10,13 +10,13 @@ import {
   UploadCloud,
   ArrowUpRight,
   MapPin,
-  Clock,
+  CalendarClock,
+  Eye,
   Briefcase,
   TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
-import { StatusBadge, type StatusTone } from "~/components/status-badge";
-import { AiScoreBadge } from "~/components/ai-score-badge";
+import { type StatusTone } from "~/components/status-badge";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import {
@@ -36,6 +36,7 @@ import {
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
 import { dashboardRepository } from "~/server/db/repositories/dashboard";
+import { splitDataHora } from "~/lib/triagem-format";
 import { cn } from "~/lib/utils";
 import { TablePagination } from "~/components/table-pagination";
 import {
@@ -118,20 +119,6 @@ const RESULTADOS_CONFIG = [
   },
 ] as const;
 
-function formatDate(dateStr: string | Date | null): string {
-  if (!dateStr) return "";
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateStr));
-  } catch {
-    return "";
-  }
-}
-
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1)
@@ -161,14 +148,14 @@ export default async function DashboardPage(props: DashboardPageProps) {
     DASHBOARD_PAGE_SIZE,
   );
   const activityTotalPages = getTotalPages(
-    summary.atividadeRecente.total,
+    summary.proximasAtividades.total,
     DASHBOARD_PAGE_SIZE,
   );
   const invalidTopVagasPage =
     summary.vagasComMaisCandidatos.total > 0 &&
     topVagasPage > topVagasTotalPages;
   const invalidActivityPage =
-    summary.atividadeRecente.total > 0 && activityPage > activityTotalPages;
+    summary.proximasAtividades.total > 0 && activityPage > activityTotalPages;
 
   if (invalidTopVagasPage || invalidActivityPage) {
     redirect(
@@ -181,7 +168,7 @@ export default async function DashboardPage(props: DashboardPageProps) {
         },
         hash: invalidTopVagasPage
           ? "vagas-com-mais-candidatos"
-          : "atividade-recente",
+          : "proximas-atividades",
       }),
     );
   }
@@ -609,32 +596,23 @@ export default async function DashboardPage(props: DashboardPageProps) {
           </CardContent>
         </Card>
 
-        {/* Atividade Recente */}
-        <Card id="atividade-recente" className="scroll-mt-4">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                Atividade Recente de Triagem
-              </CardTitle>
-              <CardDescription>
-                Últimas movimentações no funil de seleção
-              </CardDescription>
-            </div>
-            <Link
-              href="/triagens"
-              className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-2"
-            >
-              Ver todas
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
+        {/* Próximas Atividades */}
+        <Card id="proximas-atividades" className="scroll-mt-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              Próximas Atividades
+            </CardTitle>
+            <CardDescription>
+              Testes e entrevistas agendados nas triagens em andamento
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {summary.atividadeRecente.total === 0 ? (
+            {summary.proximasAtividades.total === 0 ? (
               <div className="p-4">
                 <DataEmptyState
-                  title="Nenhuma atividade recente"
-                  description="As movimentações e avaliações de triagem aparecerão aqui."
+                  title="Nenhuma atividade agendada"
+                  description="Marque a data e a hora dos testes e entrevistas na triagem para vê-las aqui."
                   className="py-4 border-0"
                 />
               </div>
@@ -646,54 +624,76 @@ export default async function DashboardPage(props: DashboardPageProps) {
                       <TableHead className="w-[40%]">
                         Candidato / Vaga
                       </TableHead>
-                      <TableHead>Etapa & Desfecho</TableHead>
-                      <TableHead className="text-center">Score IA</TableHead>
-                      <TableHead className="text-right">Atualização</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Hora</TableHead>
+                      <TableHead className="text-right">
+                        <span className="sr-only">Ações</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {summary.atividadeRecente.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                              {getInitials(item.candidatoNome)}
+                    {summary.proximasAtividades.items.map((item) => {
+                      const { data, hora } = splitDataHora(item.dataHora);
+                      const etapa = ETAPAS_CONFIG.find(
+                        (e) => e.key === item.etapa,
+                      );
+
+                      return (
+                        <TableRow key={`${item.triagemId}-${item.etapa}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                                {getInitials(item.candidatoNome)}
+                              </div>
+                              <div className="min-w-0">
+                                <Link
+                                  href={`/triagens/${item.triagemId}`}
+                                  className="font-medium text-foreground hover:underline block text-sm truncate max-w-[150px] sm:max-w-[200px]"
+                                >
+                                  {item.candidatoNome}
+                                </Link>
+                                <span className="text-xs text-muted-foreground block truncate max-w-[150px] sm:max-w-[200px]">
+                                  {item.cargoTitulo}
+                                </span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <Link
-                                href={`/triagens/${item.id}`}
-                                className="font-medium text-foreground hover:underline block text-sm truncate max-w-[150px] sm:max-w-[180px]"
-                              >
-                                {item.candidatoNome}
-                              </Link>
-                              <span className="text-xs text-muted-foreground block truncate max-w-[150px] sm:max-w-[180px]">
-                                {item.cargoTitulo}
-                              </span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-2 items-start">
-                            <StatusBadge
-                              status={item.resultado}
-                              className="text-[11px] py-0 px-2"
-                            />
-                            <span className="text-[11px] text-muted-foreground capitalize">
-                              {item.etapa.replace("_", " ")}
+                          </TableCell>
+                          <TableCell className="text-sm whitespace-nowrap">
+                            <span className="inline-flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2.5 w-2.5 rounded-full shrink-0",
+                                  etapa?.color ?? "bg-muted",
+                                )}
+                              />
+                              {etapa?.label ?? item.etapa}
                             </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <AiScoreBadge
-                            score={item.scoreIa}
-                            parecer={item.parecerIa}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDate(item.updatedAt || item.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="text-sm whitespace-nowrap">
+                            {data}
+                          </TableCell>
+                          <TableCell className="text-sm whitespace-nowrap">
+                            {hora}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link
+                              href={`/triagens/${item.triagemId}`}
+                              className={buttonVariants({
+                                variant: "ghost",
+                                size: "icon-sm",
+                                className:
+                                  "text-muted-foreground hover:text-primary",
+                              })}
+                              title={`Ver triagem de ${item.candidatoNome}`}
+                              aria-label={`Ver triagem de ${item.candidatoNome}`}
+                            >
+                              <Eye className="size-4" />
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 <TablePagination
@@ -701,9 +701,9 @@ export default async function DashboardPage(props: DashboardPageProps) {
                   searchParams={searchParams}
                   page={activityPage}
                   pageSize={DASHBOARD_PAGE_SIZE}
-                  total={summary.atividadeRecente.total}
+                  total={summary.proximasAtividades.total}
                   pageParam="activityPage"
-                  hash="atividade-recente"
+                  hash="proximas-atividades"
                   itemLabel="atividades"
                   className="border-t px-4 py-3"
                 />

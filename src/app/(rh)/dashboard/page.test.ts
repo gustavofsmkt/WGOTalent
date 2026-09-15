@@ -110,22 +110,17 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
         ],
         total: 1,
       },
-      atividadeRecente: {
+      proximasAtividades: {
         items: [
           {
-            id: "triagem-999",
+            triagemId: "triagem-999",
             candidatoId: "c-1",
             candidatoNome: "Lucas Oliveira",
             vagaId: "vaga-123",
             cargoTitulo: "Dev Fullstack",
             departamentoNome: "Engenharia",
-            etapa: "curriculo",
-            resultado: "em_andamento",
-            motivo: null,
-            scoreIa: "91",
-            parecerIa: "Perfil aderente à vaga.",
-            createdAt: "2024-03-01T10:00:00.000Z",
-            updatedAt: "2024-03-01T11:00:00.000Z",
+            etapa: "entrevista_rh",
+            dataHora: "2024-03-05 14:30:00",
           },
         ],
         total: 1,
@@ -144,6 +139,8 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
     expect(data.vagasComMaisCandidatos.items[0]?.cargoTitulo).toBe(
       "Dev Fullstack",
     );
-    expect(data.atividadeRecente.items[0]?.scoreIa).toBe("91");
+    expect(data.proximasAtividades.items[0]?.dataHora).toBe(
+      "2024-03-05 14:30:00",
+    );
   });
 });

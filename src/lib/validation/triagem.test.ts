@@ -123,4 +123,45 @@ describe("triagemSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("should normalize agendamentos and treat empty values as null", () => {
+    const result = triagemSchema.safeParse({
+      ...validBase,
+      resultado: "em_andamento",
+      motivo: null,
+      agendamentoTestes: "2026-09-16T14:30",
+      agendamentoEntrevistaRh: "",
+      agendamentoEntrevistaGestor: null,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.agendamentoTestes).toBe("2026-09-16T14:30:00");
+      expect(result.data.agendamentoEntrevistaRh).toBeNull();
+      expect(result.data.agendamentoEntrevistaGestor).toBeNull();
+    }
+  });
+
+  it("should accept a triagem without any agendamento", () => {
+    const result = triagemSchema.safeParse({
+      ...validBase,
+      resultado: "em_andamento",
+      motivo: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("should invalidate a malformed agendamento", () => {
+    const result = triagemSchema.safeParse({
+      ...validBase,
+      resultado: "em_andamento",
+      motivo: null,
+      agendamentoEntrevistaGestor: "16/09/2026 14:30",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.flatten().fieldErrors.agendamentoEntrevistaGestor,
+      ).toBeDefined();
+    }
+  });
 });

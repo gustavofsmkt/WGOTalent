@@ -117,6 +117,58 @@ export const PARECER_FIELD_BY_ETAPA = {
 
 export type ParecerField = (typeof PARECER_FIELD_BY_ETAPA)[TriagemEtapa];
 
+/**
+ * Etapas síncronas que têm encontro marcado com o candidato e, por isso,
+ * aceitam data e hora. "Currículo" e "Finalizado" não são agendáveis.
+ */
+export const AGENDAMENTO_FIELD_BY_ETAPA = {
+  testes: "agendamentoTestes",
+  entrevista_rh: "agendamentoEntrevistaRh",
+  entrevista_gestor: "agendamentoEntrevistaGestor",
+} as const;
+
+export type EtapaAgendavel = keyof typeof AGENDAMENTO_FIELD_BY_ETAPA;
+export type AgendamentoField =
+  (typeof AGENDAMENTO_FIELD_BY_ETAPA)[EtapaAgendavel];
+
+export function isEtapaAgendavel(etapa: TriagemEtapa): etapa is EtapaAgendavel {
+  return etapa in AGENDAMENTO_FIELD_BY_ETAPA;
+}
+
+/**
+ * Timestamps de agendamento são horário de parede (coluna `timestamp` sem
+ * fuso), então são lidos por partes em vez de passarem por `Date` — assim a
+ * hora combinada nunca é deslocada pelo fuso do servidor ou do navegador.
+ */
+const WALL_CLOCK_REGEX = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/;
+
+function wallClockParts(value: string | null | undefined) {
+  const match = value ? WALL_CLOCK_REGEX.exec(value) : null;
+  if (!match) return null;
+  const [, ano = "", mes = "", dia = "", hora = "", minuto = ""] = match;
+  return { ano, mes, dia, hora, minuto };
+}
+
+/** Timestamp de parede → `{ data: "16/09/2026", hora: "14:30" }`. */
+export function splitDataHora(value: string | null | undefined): {
+  data: string;
+  hora: string;
+} {
+  const parts = wallClockParts(value);
+  if (!parts) return { data: "", hora: "" };
+  return {
+    data: `${parts.dia}/${parts.mes}/${parts.ano}`,
+    hora: `${parts.hora}:${parts.minuto}`,
+  };
+}
+
+/** Timestamp de parede → valor de `<input type="datetime-local">`. */
+export function toDatetimeLocalValue(value: string | null | undefined): string {
+  const parts = wallClockParts(value);
+  if (!parts) return "";
+  return `${parts.ano}-${parts.mes}-${parts.dia}T${parts.hora}:${parts.minuto}`;
+}
+
 export function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1)

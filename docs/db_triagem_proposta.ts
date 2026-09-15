@@ -203,6 +203,11 @@ export interface CandidatoCertificacao {
 //   permitindo notas independentes do RH em cada fase. `updated_at` da triagem já cobre
 //   "quando foi a última edição" — não há timestamp por coluna de parecer.
 //
+// agendamento_<etapa>: data e hora (opcionais) combinadas com o candidato para as etapas
+//   síncronas (testes, entrevista RH, entrevista gestor). São TIMESTAMP sem fuso porque
+//   representam horário de parede acordado, não um instante absoluto. Alimentam a seção
+//   "Próximas Atividades" do dashboard.
+//
 // unique index: impede duas triagen do mesmo candidato para a mesma vaga.
 //   UNIQUE (candidato_id, vaga_id)'
 // ---------------------------------------------------------------------------
@@ -237,6 +242,10 @@ export interface Triagem {
   parecer_rh_entrevista_rh: string | null;      // TEXT, null = sem parecer nesta etapa
   parecer_rh_entrevista_gestor: string | null;  // TEXT, null = sem parecer nesta etapa
   parecer_rh_finalizado: string | null;         // TEXT, null = sem parecer nesta etapa
+
+  agendamento_testes: string | null;            // TIMESTAMP (sem fuso), null = não agendado
+  agendamento_entrevista_rh: string | null;     // TIMESTAMP (sem fuso), null = não agendado
+  agendamento_entrevista_gestor: string | null; // TIMESTAMP (sem fuso), null = não agendado
 }
  
 // ---------------------------------------------------------------------------

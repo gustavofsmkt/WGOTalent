@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uuidSchema } from "./common";
+import { optionalDateTimeStringSchema, uuidSchema } from "./common";
 
 export const triagemEtapaEnum = z.enum([
   "curriculo",
@@ -55,6 +55,9 @@ export const triagemBaseSchema = z.object({
   parecerRhEntrevistaRh: z.string().nullable().optional(),
   parecerRhEntrevistaGestor: z.string().nullable().optional(),
   parecerRhFinalizado: z.string().nullable().optional(),
+  agendamentoTestes: optionalDateTimeStringSchema.optional(),
+  agendamentoEntrevistaRh: optionalDateTimeStringSchema.optional(),
+  agendamentoEntrevistaGestor: optionalDateTimeStringSchema.optional(),
 });
 
 export const updateTriagemBaseSchema = triagemBaseSchema.omit({

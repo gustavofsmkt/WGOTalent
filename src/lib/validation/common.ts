@@ -160,6 +160,56 @@ export const optionalDateStringSchema = z.preprocess(
   dateStringSchema.nullable(),
 );
 
+const ISO_DATE_TIME_REGEX =
+  /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::\d{2})?$/;
+
+/**
+ * Quebra uma data e hora de parede em partes válidas, ou `null` quando o texto
+ * não for um `AAAA-MM-DDTHH:mm` (segundos opcionais) de calendário/relógio real.
+ */
+function parseDateTimeParts(
+  value: string,
+): { date: string; hour: string; minute: string } | null {
+  const match = ISO_DATE_TIME_REGEX.exec(value);
+  if (!match) return null;
+
+  const [, date = "", hour = "", minute = ""] = match;
+  if (!dateStringSchema.safeParse(date).success) return null;
+  if (Number(hour) > 23 || Number(minute) > 59) return null;
+
+  return { date, hour, minute };
+}
+
+/**
+ * Validação de data e hora em horário de parede (sem fuso), no formato entregue
+ * por `<input type="datetime-local">` (`AAAA-MM-DDTHH:mm`). Normaliza a saída
+ * para `AAAA-MM-DDTHH:mm:00`, que é o formato aceito por colunas `timestamp`.
+ */
+export const dateTimeStringSchema = z
+  .string({
+    required_error: "Data e hora são obrigatórias",
+    invalid_type_error: "Data e hora devem ser um texto",
+  })
+  .trim()
+  .refine((val) => parseDateTimeParts(val) !== null, {
+    message: "Data e hora inválidas. Use o formato AAAA-MM-DDTHH:mm",
+  })
+  .transform((val) => {
+    const parts = parseDateTimeParts(val)!;
+    return `${parts.date}T${parts.hour}:${parts.minute}:00`;
+  });
+
+/**
+ * Data e hora opcionais: normaliza string vazia/espaços, `undefined` e `null`
+ * para `null` antes de validar. A saída é sempre `string | null` (nunca
+ * `undefined`), casando com colunas `timestamp` nullable no banco.
+ */
+export const optionalDateTimeStringSchema = z.preprocess(
+  (val) =>
+    val == null || (typeof val === "string" && val.trim() === "") ? null : val,
+  dateTimeStringSchema.nullable(),
+);
+
 /**
  * Coerção para número inteiro.
  */

@@ -48,6 +48,9 @@ export default async function TriagemDetailPage({
     parecerRhEntrevistaRh: triagem.parecerRhEntrevistaRh,
     parecerRhEntrevistaGestor: triagem.parecerRhEntrevistaGestor,
     parecerRhFinalizado: triagem.parecerRhFinalizado,
+    agendamentoTestes: triagem.agendamentoTestes,
+    agendamentoEntrevistaRh: triagem.agendamentoEntrevistaRh,
+    agendamentoEntrevistaGestor: triagem.agendamentoEntrevistaGestor,
     candidato: { nome: triagem.candidato.nome },
     vaga: {
       cargo: {

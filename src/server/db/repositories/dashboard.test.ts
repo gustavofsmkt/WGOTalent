@@ -14,7 +14,11 @@ vi.mock("~/server/db/query-helpers", async (importOriginal) => {
   return { ...actual, notDeleted: vi.fn(actual.notDeleted) };
 });
 
-import { dashboardRepository, type DbOrTx } from "./dashboard";
+import {
+  agendamentosSubquery,
+  dashboardRepository,
+  type DbOrTx,
+} from "./dashboard";
 import {
   vagas,
   candidatos,
@@ -24,7 +28,7 @@ import {
   departamentos,
 } from "~/server/db/schema";
 import { notDeleted } from "~/server/db/query-helpers";
-import { and, countDistinct, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, countDistinct, desc, eq, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -48,7 +52,9 @@ describe("dashboardRepository", () => {
     expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
       "function",
     );
-    expect(typeof dashboardRepository.getAtividadeRecentePage).toBe("function");
+    expect(typeof dashboardRepository.getProximasAtividadesPage).toBe(
+      "function",
+    );
     expect(typeof dashboardRepository.getDashboardSummary).toBe("function");
   });
 
@@ -209,41 +215,54 @@ describe("dashboardRepository", () => {
       expect(countSql).toContain('inner join "wgotalent_departamentos"');
     });
 
-    it("builds getAtividadeRecente query with notDeleted on triagens and limit", () => {
-      const qb = mockDb
+    it("builds the proximas atividades union over the three agendamento columns", () => {
+      const querySql = mockDb
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agendamentosSubquery(mockDb as unknown as DbOrTx))
+        .toSQL().sql;
+
+      expect(querySql).toContain('"agendamento_testes"');
+      expect(querySql).toContain('"agendamento_entrevista_rh"');
+      expect(querySql).toContain('"agendamento_entrevista_gestor"');
+      expect(querySql.match(/union all/g)).toHaveLength(2);
+    });
+
+    it("filters proximas atividades by notDeleted, triagem em andamento and future wall-clock time", () => {
+      const querySql = mockDb
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agendamentosSubquery(mockDb as unknown as DbOrTx))
+        .toSQL().sql;
+
+      expect(querySql).toContain('"wgotalent_triagens"."deleted_at" is null');
+      expect(querySql).toContain('"wgotalent_triagens"."resultado" =');
+      expect(querySql).toContain("now() at time zone 'America/Sao_Paulo'");
+    });
+
+    it("joins candidato and vaga onto the agendamentos relation", () => {
+      const agendamentos = agendamentosSubquery(mockDb as unknown as DbOrTx);
+      const querySql = mockDb
         .select({
-          id: triagens.id,
-          candidatoId: candidatos.id,
+          triagemId: agendamentos.triagemId,
           candidatoNome: candidatos.nome,
-          vagaId: vagas.id,
           cargoTitulo: cargos.titulo,
-          departamentoNome: departamentos.nome,
-          etapa: triagens.etapa,
-          resultado: triagens.resultado,
-          motivo: triagens.motivo,
-          scoreIa: avaliacaoIA.scoreIa,
-          parecerIa: avaliacaoIA.parecerIa,
-          createdAt: triagens.createdAt,
-          updatedAt: triagens.updatedAt,
+          dataHora: agendamentos.dataHora,
         })
-        .from(triagens)
-        .innerJoin(candidatos, eq(triagens.candidatoId, candidatos.id))
-        .innerJoin(vagas, eq(triagens.vagaId, vagas.id))
+        .from(agendamentos)
+        .innerJoin(candidatos, eq(agendamentos.candidatoId, candidatos.id))
+        .innerJoin(vagas, eq(agendamentos.vagaId, vagas.id))
         .innerJoin(cargos, eq(vagas.cargoId, cargos.id))
         .innerJoin(departamentos, eq(cargos.departamentoId, departamentos.id))
-        .leftJoin(
-          avaliacaoIA,
-          and(
-            eq(triagens.id, avaliacaoIA.triagemId),
-            isNull(avaliacaoIA.deletedAt),
-          ),
-        )
-        .where(isNull(triagens.deletedAt))
-        .orderBy(desc(triagens.updatedAt), desc(triagens.createdAt))
-        .limit(5);
+        .orderBy(asc(agendamentos.dataHora))
+        .limit(5)
+        .toSQL().sql;
 
-      const querySql = qb.toSQL().sql;
-      expect(querySql).toContain('"wgotalent_triagens"."deleted_at" is null');
+      expect(querySql).toContain(
+        '"agendamentos"."candidato_id" = "wgotalent_candidatos"."id"',
+      );
+      expect(querySql).toContain(
+        '"agendamentos"."vaga_id" = "wgotalent_vagas"."id"',
+      );
+      expect(querySql).toContain('order by "data_hora"');
     });
   });
 
@@ -360,7 +379,7 @@ describe("dashboardRepository", () => {
       expect(typeof dashboardRepository.getVagasComMaisCandidatosPage).toBe(
         "function",
       );
-      expect(typeof dashboardRepository.getAtividadeRecentePage).toBe(
+      expect(typeof dashboardRepository.getProximasAtividadesPage).toBe(
         "function",
       );
     });
@@ -415,23 +434,18 @@ describe("dashboardRepository", () => {
           total: 1,
         });
       const spyAtividades = vi
-        .spyOn(dashboardRepository, "getAtividadeRecentePage")
+        .spyOn(dashboardRepository, "getProximasAtividadesPage")
         .mockResolvedValueOnce({
           items: [
             {
-              id: "triagem-1",
+              triagemId: "triagem-1",
               candidatoId: "cand-1",
               candidatoNome: "Ana Silva",
               vagaId: "vaga-1",
               cargoTitulo: "Dev Fullstack",
               departamentoNome: "Tecnologia",
               etapa: "entrevista_rh",
-              resultado: "em_andamento",
-              motivo: null,
-              scoreIa: "85.00",
-              parecerIa: "Perfil aderente à vaga.",
-              createdAt: "2026-08-20T10:00:00Z",
-              updatedAt: "2026-08-20T12:00:00Z",
+              dataHora: "2026-08-25 09:00:00",
             },
           ],
           total: 1,
@@ -447,7 +461,7 @@ describe("dashboardRepository", () => {
       expect(summary.triagensPorEtapa.curriculo).toBe(15);
       expect(summary.triagensPorResultado.desistente).toBe(5);
       expect(summary.vagasComMaisCandidatos.items).toHaveLength(1);
-      expect(summary.atividadeRecente.items).toHaveLength(1);
+      expect(summary.proximasAtividades.items).toHaveLength(1);
 
       spyAbertas.mockRestore();
       spyCandidatos.mockRestore();
