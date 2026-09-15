@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Menu } from "lucide-react";
-import { logout } from "~/actions/auth";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { NavLinks } from "~/components/nav-links";
 import { Button } from "~/components/ui/button";
@@ -41,7 +40,6 @@ export async function AuthenticatedShell({
             </div>
             <NavLinks
               username={user.username}
-              logoutAction={logout}
               className="h-[calc(100dvh-4rem)] p-4"
             />
           </SheetContent>
@@ -59,7 +57,6 @@ export async function AuthenticatedShell({
         </div>
         <NavLinks
           username={user.username}
-          logoutAction={logout}
           className="flex-1 overflow-y-auto p-4"
         />
       </aside>

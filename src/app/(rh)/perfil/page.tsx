@@ -1,8 +1,10 @@
-import { CalendarDays, Clock3, UserRound } from "lucide-react";
+import { CalendarDays, Clock3, LogOut, UserRound } from "lucide-react";
 import { changeOwnPassword } from "~/actions/usuarios";
+import { logout } from "~/actions/auth";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { PageHeader } from "~/components/page-header";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardAction,
@@ -42,8 +44,14 @@ export default async function PerfilPage() {
               <CardDescription>Conta com acesso ao WGOTalent</CardDescription>
             </div>
           </div>
-          <CardAction>
+          <CardAction className="flex items-center gap-2">
             <ChangePasswordDialog action={changeOwnPassword} />
+            <form action={logout}>
+              <Button type="submit" variant="outline">
+                <LogOut data-icon="inline-start" />
+                Sair
+              </Button>
+            </form>
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
