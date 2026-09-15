@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   Mail,
   Phone,
   MessageSquare,
@@ -19,6 +18,7 @@ import { getWhatsAppUrl } from "~/lib/whatsapp";
 import { formatarCelular } from "~/lib/celular";
 import { TriagemDetailEditor } from "./_components/triagem-detail-editor";
 import { CandidatoObservacoesCard } from "./_components/candidato-observacoes-card";
+import { BackButton } from "~/components/back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -62,17 +62,7 @@ export default async function TriagemDetailPage({
     <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
-        <Link
-          href="/triagens"
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "text-muted-foreground hover:text-foreground",
-          })}
-        >
-          <ArrowLeft className="size-4 mr-2" />
-          Voltar para Triagens
-        </Link>
+        <BackButton fallbackHref="/triagens">Voltar</BackButton>
       </div>
 
       {/* Interactive editor: PageHeader + Tabs */}

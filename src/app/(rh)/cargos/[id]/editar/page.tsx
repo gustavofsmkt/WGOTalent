@@ -1,11 +1,9 @@
 import * as React from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
+import { BackButton } from "~/components/back-button";
 import { CargoForm } from "~/components/cargo-form";
 import { cargoRepository } from "~/server/db/repositories/cargo";
-import { buttonVariants } from "~/components/ui/button";
 
 interface EditarCargoPageProps {
   params: Promise<{ id: string }>;
@@ -24,17 +22,7 @@ export default async function EditarCargoPage(props: EditarCargoPageProps) {
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <div className="flex items-center gap-2">
-        <Link
-          href={`/cargos/${cargo.id}`}
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "text-muted-foreground hover:text-foreground",
-          })}
-        >
-          <ArrowLeft className="size-4 mr-2" />
-          Voltar para Detalhes
-        </Link>
+        <BackButton fallbackHref={`/cargos/${cargo.id}`}>Voltar</BackButton>
       </div>
 
       <PageHeader

@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Pencil,
   Building2,
-  ArrowLeft,
   MapPin,
   Users,
   ExternalLink,
@@ -18,6 +17,7 @@ import { vagaRepository } from "~/server/db/repositories/vaga";
 import { DeleteVagaButton } from "../_components/delete-vaga-button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { VagaTriagensSection } from "./_components/vaga-triagens-section";
+import { BackButton } from "~/components/back-button";
 import type { TriagemListSearchParams } from "~/lib/triagem-list-filters";
 
 interface VagaDetailPageProps {
@@ -56,17 +56,7 @@ export default async function VagaDetailPage(props: VagaDetailPageProps) {
     <div className="p-4 sm:p-4 lg:p-4 max-w-7xl mx-auto w-full space-y-4">
       {/* Breadcrumb / Back button */}
       <div className="flex items-center gap-2">
-        <Link
-          href="/vagas"
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "text-muted-foreground hover:text-foreground",
-          })}
-        >
-          <ArrowLeft className="size-4 mr-2" />
-          Voltar para Vagas
-        </Link>
+        <BackButton fallbackHref="/vagas">Voltar</BackButton>
       </div>
 
       <PageHeader

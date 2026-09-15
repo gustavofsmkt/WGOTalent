@@ -1,10 +1,9 @@
-import Link from "next/link";
-import { ArrowLeft, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
 import { createUsuario, resetUsuarioPassword } from "~/actions/usuarios";
 import { requireAuthenticatedUser } from "~/lib/auth/dal";
 import { usuarioRepository } from "~/server/db/repositories/usuario";
 import { PageHeader } from "~/components/page-header";
-import { buttonVariants } from "~/components/ui/button";
+import { BackButton } from "~/components/back-button";
 import {
   Empty,
   EmptyDescription,
@@ -36,13 +35,7 @@ export default async function UsuariosPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
       <div>
-        <Link
-          href="/admin"
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          <ArrowLeft data-icon="inline-start" />
-          Voltar para Administração
-        </Link>
+        <BackButton fallbackHref="/admin">Voltar</BackButton>
       </div>
 
       <PageHeader

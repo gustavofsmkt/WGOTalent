@@ -1,8 +1,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, UserPlus, Briefcase, Users } from "lucide-react";
+import { UserPlus, Briefcase, Users } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
+import { BackButton } from "~/components/back-button";
 import { TriagemForm } from "~/components/triagem-form";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { triagemRepository } from "~/server/db/repositories/triagem";
@@ -41,24 +42,11 @@ export default async function NovaTriagemPage(props: NovaTriagemPageProps) {
   ]);
 
   const backHref = candidato ? `/candidatos/${candidato.id}` : "/triagens";
-  const backLabel = candidato
-    ? "Voltar para o Candidato"
-    : "Voltar para Triagens";
 
   return (
     <div className="p-4 sm:p-4 lg:p-4 max-w-4xl mx-auto w-full space-y-4">
       <div className="flex items-center gap-2">
-        <Link
-          href={backHref}
-          className={buttonVariants({
-            variant: "ghost",
-            size: "sm",
-            className: "text-muted-foreground hover:text-foreground",
-          })}
-        >
-          <ArrowLeft className="size-4 mr-2" />
-          {backLabel}
-        </Link>
+        <BackButton fallbackHref={backHref}>Voltar</BackButton>
       </div>
 
       <PageHeader
