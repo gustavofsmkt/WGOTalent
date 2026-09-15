@@ -2,7 +2,6 @@ import * as React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  Sparkles,
   Eye,
   Layers,
   CheckCircle2,
@@ -13,6 +12,7 @@ import { PageHeader } from "~/components/page-header";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import { StatusBadge } from "~/components/status-badge";
+import { AiScoreBadge } from "~/components/ai-score-badge";
 import { triagemRepository } from "~/server/db/repositories/triagem";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
 import { MOTIVO_LABELS, getInitials, formatDate } from "~/lib/triagem-format";
@@ -139,18 +139,12 @@ async function TriagensContent({
     {
       header: "Score IA",
       sortKey: "score",
-      cell: (item) =>
-        item.avaliacaoIa ? (
-          <span
-            className="inline-flex items-center gap-2 px-2  rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20"
-            title={item.avaliacaoIa.parecerIa || undefined}
-          >
-            <Sparkles className="size-3 text-primary" />
-            {Math.round(Number(item.avaliacaoIa.scoreIa))}%
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        ),
+      cell: (item) => (
+        <AiScoreBadge
+          score={item.avaliacaoIa?.scoreIa}
+          parecer={item.avaliacaoIa?.parecerIa}
+        />
+      ),
     },
     {
       header: "Data",

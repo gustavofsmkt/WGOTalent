@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Sparkles, Briefcase, Building2, MapPin, Calendar } from "lucide-react";
+import { Briefcase, Building2, MapPin, Calendar } from "lucide-react";
 import { Card, CardContent } from "~/components/ui/card";
 import { StatusBadge } from "~/components/status-badge";
+import { AiScoreBadge } from "~/components/ai-score-badge";
 import type { TriagemListItem } from "~/server/db/repositories/triagem";
 import { DeleteTriagemButton } from "~/app/(rh)/triagens/_components/delete-triagem-button";
 import {
@@ -97,13 +98,11 @@ function PipelineCard({ item }: { item: TriagemListItem }) {
             <Briefcase className="size-3.5 text-muted-foreground shrink-0" />
             <span className="truncate">{item.vaga.cargoTitulo}</span>
             {item.avaliacaoIa && (
-              <span
-                className="inline-flex items-center gap-2 px-2 rounded-md text-xs font-bold bg-primary/10 text-primary border border-primary/20 shrink-0"
-                title={`Score IA: ${item.avaliacaoIa.scoreIa}/100`}
-              >
-                <Sparkles className="size-3 text-primary" />
-                <span>{Math.round(Number(item.avaliacaoIa.scoreIa))}</span>
-              </span>
+              <AiScoreBadge
+                score={item.avaliacaoIa.scoreIa}
+                parecer={item.avaliacaoIa.parecerIa}
+                className="shrink-0"
+              />
             )}
           </div>
           <div className="flex items-center gap-2 text-[11px] truncate">

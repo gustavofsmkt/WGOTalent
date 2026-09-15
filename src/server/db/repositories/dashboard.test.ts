@@ -222,6 +222,7 @@ describe("dashboardRepository", () => {
           resultado: triagens.resultado,
           motivo: triagens.motivo,
           scoreIa: avaliacaoIA.scoreIa,
+          parecerIa: avaliacaoIA.parecerIa,
           createdAt: triagens.createdAt,
           updatedAt: triagens.updatedAt,
         })
@@ -428,6 +429,7 @@ describe("dashboardRepository", () => {
               resultado: "em_andamento",
               motivo: null,
               scoreIa: "85.00",
+              parecerIa: "Perfil aderente à vaga.",
               createdAt: "2026-08-20T10:00:00Z",
               updatedAt: "2026-08-20T12:00:00Z",
             },

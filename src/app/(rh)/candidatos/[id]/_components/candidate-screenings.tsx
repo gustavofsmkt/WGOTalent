@@ -2,7 +2,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
   GitBranch,
-  Sparkles,
   Calendar,
   MessageSquare,
   ArrowRight,
@@ -11,6 +10,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { StatusBadge } from "~/components/status-badge";
+import { AiScoreBadge } from "~/components/ai-score-badge";
 import { buttonVariants } from "~/components/ui/button";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
 import { PARECER_FIELD_BY_ETAPA } from "~/lib/triagem-format";
@@ -129,16 +129,10 @@ export function CandidateScreenings({
                       <StatusBadge status={triagem.resultado} />
                       <StatusBadge status={triagem.etapa} />
                       {triagem.avaliacaoIA?.scoreIa && (
-                        <div className="inline-flex items-center gap-2 px-2  rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                          <Sparkles className="size-3" />
-                          <span>
-                            Score IA:{" "}
-                            {Math.round(
-                              parseFloat(triagem.avaliacaoIA.scoreIa),
-                            )}
-                            /100
-                          </span>
-                        </div>
+                        <AiScoreBadge
+                          score={triagem.avaliacaoIA.scoreIa}
+                          parecer={triagem.avaliacaoIA.parecerIa}
+                        />
                       )}
                     </div>
                   </div>

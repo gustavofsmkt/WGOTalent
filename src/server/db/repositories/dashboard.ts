@@ -61,6 +61,7 @@ export interface AtividadeRecenteItem {
   resultado: TriagemResultadoKey;
   motivo: string | null;
   scoreIa: string | null;
+  parecerIa: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -344,6 +345,7 @@ export const dashboardRepository = {
             resultado: triagens.resultado,
             motivo: triagens.motivo,
             scoreIa: avaliacaoIA.scoreIa,
+            parecerIa: avaliacaoIA.parecerIa,
             createdAt: triagens.createdAt,
             updatedAt: triagens.updatedAt,
           })
@@ -386,6 +388,7 @@ export const dashboardRepository = {
         resultado: row.resultado,
         motivo: row.motivo,
         scoreIa: row.scoreIa,
+        parecerIa: row.parecerIa,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       })),

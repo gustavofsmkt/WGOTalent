@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "~/components/page-header";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
+import { AiScoreBadge } from "~/components/ai-score-badge";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { buttonVariants } from "~/components/ui/button";
 import {
@@ -683,19 +684,10 @@ export default async function DashboardPage(props: DashboardPageProps) {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          {item.scoreIa ? (
-                            <Badge
-                              variant="outline"
-                              className="text-xs font-semibold bg-primary/5 text-primary border-primary/20"
-                            >
-                              <Sparkles className="h-3 w-3 mr-2 text-primary" />
-                              {item.scoreIa}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              —
-                            </span>
-                          )}
+                          <AiScoreBadge
+                            score={item.scoreIa}
+                            parecer={item.parecerIa}
+                          />
                         </TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
                           {formatDate(item.updatedAt || item.createdAt)}

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Eye, Sparkles, Users } from "lucide-react";
+import { Eye, Users } from "lucide-react";
 import { DataEmptyState } from "~/components/data-empty-state";
 import { DataTable, type ColumnDef } from "~/components/data-table";
 import { StatusBadge } from "~/components/status-badge";
+import { AiScoreBadge } from "~/components/ai-score-badge";
 import { TablePagination } from "~/components/table-pagination";
 import { TriagemPageFilter } from "~/components/triagem-page-filter";
 import { TriagemPipelineBoard } from "~/components/triagem-pipeline";
@@ -103,18 +104,12 @@ export async function VagaTriagensSection({
     {
       header: "Score IA",
       sortKey: "score",
-      cell: (item) =>
-        item.avaliacaoIa ? (
-          <span
-            className="inline-flex items-center gap-2 rounded-md border border-primary/20 bg-primary/10 px-2 text-xs font-semibold text-primary"
-            title={item.avaliacaoIa.parecerIa || undefined}
-          >
-            <Sparkles className="size-3" aria-hidden="true" />
-            {Math.round(Number(item.avaliacaoIa.scoreIa))}%
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        ),
+      cell: (item) => (
+        <AiScoreBadge
+          score={item.avaliacaoIa?.scoreIa}
+          parecer={item.avaliacaoIa?.parecerIa}
+        />
+      ),
     },
     {
       header: "Data",

@@ -123,6 +123,7 @@ describe("DashboardPage - Server Component Logic & Data Aggregation", () => {
             resultado: "em_andamento",
             motivo: null,
             scoreIa: "91",
+            parecerIa: "Perfil aderente à vaga.",
             createdAt: "2024-03-01T10:00:00.000Z",
             updatedAt: "2024-03-01T11:00:00.000Z",
           },
