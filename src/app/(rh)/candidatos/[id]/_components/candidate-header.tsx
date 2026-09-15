@@ -1,7 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  ChevronRight,
   Mail,
   Phone,
   Smartphone,
@@ -12,6 +11,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { buttonVariants } from "~/components/ui/button";
+import { BackButton } from "~/components/back-button";
 import { StatusBadge, type StatusTone } from "~/components/status-badge";
 import { DeleteCandidatoButton } from "~/app/(rh)/candidatos/_components/delete-candidato-button";
 import type { CandidatoDetailCompleto } from "~/server/db/repositories/candidato";
@@ -48,16 +48,9 @@ export function CandidateHeader({ candidato }: CandidateHeaderProps) {
 
   return (
     <div className="space-y-4">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link
-          href="/candidatos"
-          className="hover:text-foreground transition-colors"
-        >
-          Candidatos
-        </Link>
-        <ChevronRight className="size-3" />
-        <span className="text-foreground font-medium">Detalhes</span>
+      {/* Breadcrumb / Back button */}
+      <div className="flex items-center gap-2">
+        <BackButton fallbackHref="/candidatos">Voltar</BackButton>
       </div>
 
       {/* Main Profile Header Banner */}
